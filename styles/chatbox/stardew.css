@@ -1,0 +1,99 @@
+/* 1. Importar y configurar la fuente pixelada */
+@font-face {
+  font-family: 'Stardew Valley';
+  src: url('Stardew_Valley.ttf') format('truetype');
+}
+
+/* Colores de texto estilo Stardew Valley (Versión Oscura y Apagada) */
+.text_white { color: #000000; }  /* El blanco ahora es negro puro */
+.text_blue { color: #2a5a8f; }   /* Azul marino oscuro */
+.text_green { color: #3c6e2d; }  /* Verde bosque/pino oscuro */
+.text_red { color: #8e2a1d; }    /* Rojo ladrillo/sangre apagado */
+.text_orange { color: #9c4f23; } /* Marrón arcilla / naranja quemado */
+.text_yellow { color: #b08218; } /* Oro viejo / amarillo mostaza oscuro */
+.text_pink { color: #a65853; }   /* Rosa viejo / terracota apagado */
+.text_cyan { color: #207570; }   /* Aguamarina oscuro / verde azulado */
+.text_grey { color: #4a4a4a; }   /* Gris ceniza oscuro */
+
+/* 2. Contenedor Principal (La pantalla de diálogo entera) */
+#client_chatcontainer {
+  position: absolute;
+  width: 100%;
+  height: 50%; /* Ajustado para mantener proporción */
+  bottom: 0;
+  left: 0;
+  font-family: 'Stardew Valley', sans-serif;
+  image-rendering: pixelated; /* Mantiene los bordes pixelados nítidos */
+  
+  /* Aquí aplicamos tu PNG de fondo que ya incluye el marco marrón */
+  background-image: url("stardew.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  
+  /* IMPORTANTE: Evita que cualquier elemento hijo se desborde hacia arriba */
+  overflow: hidden; 
+  box-sizing: border-box;
+}
+
+/* 3. El cuadro del Nombre (Fondo y bordes ocultos para usar los del PNG) */
+#client_name {
+  position: absolute;
+  display: block;
+  top: 77%;
+  left: 66%;
+  height: 20%;
+  min-width: 22%;
+  padding: 0.2em 0.8em;
+  text-align: center;
+  color: #4a2711; /* Mantiene el texto marrón oscuro típico de Stardew */
+  font-size: 0.8em;
+  font-weight: bold;
+  z-index: 2;
+  
+  /* Eliminados: background, border y border-radius para que sea invisible */
+}
+
+#client_inner_name {
+  margin: 0;
+  padding: 0;
+}
+
+/* 4. El cuadro del Chat (Texto principal) */
+#client_chat {
+  position: absolute;
+  display: block;
+  bottom: 35%;
+  left: 3%;
+  width: 55%; /* Reducido para dejarle espacio limpio al menú derecho */
+  height: 60%;
+  background: transparent; /* Transparente porque el fondo ya lo da stardew.png */
+  font-size: 1.1em;
+  color: #4a2711; /* Texto marrón oscuro */
+  text-align: left;
+  overflow: hidden;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  scroll-behavior: smooth;
+  z-index: 1;
+}
+
+#client_inner_chat {
+  padding: 2% 4%;
+  line-height: 110%;
+  letter-spacing: 0.03em;
+}
+
+/* 5. El cuadro del Estado / Menú Derecho ("None") */
+/* Completamente ocultado para que no moleste en pantalla */
+#client_trackstatus {
+  display: none !important; /* Fuerza la desaparición total del contenedor */
+}
+
+/* El texto de dentro de ese recuadro */
+#client_trackstatustext {
+  display: none !important; /* Oculta el texto por si acaso el motor intenta forzarlo */
+}
+/* Desactivar elementos innecesarios del viejo CSS */
+#client_chatwaiting, #client_clock {
+  display: none;
+}
