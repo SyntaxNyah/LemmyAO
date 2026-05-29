@@ -18,7 +18,7 @@
  */
 
 import { packet } from "../schema";
-import { num, custom, type CustomField } from "../fields";
+import { custom, type CustomField } from "../fields";
 
 /** Which area-metadata field the packet updates. */
 export enum AreaUpdateType {
@@ -128,9 +128,9 @@ export const ARUP = packet(
       const update_data: AreaUpdateData =
         update_type === AreaUpdateType.PLAYER_COUNT
           ? rest.map((v) => {
-              const n = Number(v);
-              return Number.isFinite(n) ? n : 0;
-            })
+            const n = Number(v);
+            return Number.isFinite(n) ? n : 0;
+          })
           : rest.map(unescapeFanta);
       return { update_type, update_data };
     },

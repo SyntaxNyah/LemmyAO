@@ -33,12 +33,7 @@
  *     path.
  */
 
-import type {
-  Field,
-  LiteralField,
-  ArrayField,
-  OptionalField,
-} from "./fields";
+import type { Field, LiteralField, ArrayField } from "./fields";
 import type { Fields } from "./schema";
 
 /**

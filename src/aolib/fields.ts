@@ -219,8 +219,8 @@ export function lit<T extends string | number | boolean>(
 ): LiteralField<T> {
   const inner =
     typeof value === "string" ? str()
-    : typeof value === "number" ? num()
-    : bool();
+      : typeof value === "number" ? num()
+        : bool();
   return {
     kind: "literal",
     fromFanta: inner.fromFanta as Field<T>["fromFanta"],

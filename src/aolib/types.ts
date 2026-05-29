@@ -32,7 +32,7 @@ import type {
   NestedField,
   ArrayField,
 } from "./fields";
-import type { Fields, Schema } from "./schema";
+import type { Schema } from "./schema";
 
 // ---------------------------------------------------------------------
 // Per-field value type derivation.

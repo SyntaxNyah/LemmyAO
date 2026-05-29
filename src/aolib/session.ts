@@ -49,7 +49,6 @@ export interface SessionConfig {
   onHandlerError?(header: string, err: Error, packet: unknown): void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySchema = Schema<any>;
 
 type Sender<S extends AnySchema> = (packet: In<S>) => void;
@@ -147,15 +146,17 @@ function makeSession(role: Role, config: SessionConfig): ServerSession & ClientS
     try {
       header = readHeader(wire);
     } catch (err) {
-      callHook(config.onMalformedFrame, err as Error, wire) ??
+      if (!callHook(config.onMalformedFrame, err as Error, wire)) {
         defaultMalformedFrame(err as Error, wire);
+      }
       return;
     }
 
     const schema = (inboundSchemas as Record<string, AnySchema>)[header];
     if (!schema) {
-      callHook(config.onUnknownHeader, header, wire) ??
+      if (!callHook(config.onUnknownHeader, header, wire)) {
         defaultUnknownHeader(header, wire);
+      }
       return;
     }
 
@@ -163,8 +164,9 @@ function makeSession(role: Role, config: SessionConfig): ServerSession & ClientS
     try {
       packet = decode(schema, wire);
     } catch (err) {
-      callHook(config.onDecodeError, header, err as Error, wire) ??
+      if (!callHook(config.onDecodeError, header, err as Error, wire)) {
         defaultDecodeError(header, err as Error, wire);
+      }
       return;
     }
 
@@ -176,16 +178,18 @@ function makeSession(role: Role, config: SessionConfig): ServerSession & ClientS
 
     const handler = handlers[header];
     if (!handler) {
-      callHook(config.onUnhandled, header, packet) ??
+      if (!callHook(config.onUnhandled, header, packet)) {
         defaultUnhandled(header, packet);
+      }
       return;
     }
 
     try {
       handler(packet);
     } catch (err) {
-      callHook(config.onHandlerError, header, err as Error, packet) ??
+      if (!callHook(config.onHandlerError, header, err as Error, packet)) {
         defaultHandlerError(header, err as Error, packet);
+      }
     }
   }
 
@@ -256,33 +260,28 @@ function callHook<A extends unknown[]>(
 }
 
 function defaultMalformedFrame(err: Error, wire: string): void {
-  // eslint-disable-next-line no-console
   console.warn(
     `[aolib] malformed wire frame: ${err.message}\n  wire: ${truncate(wire)}`,
   );
 }
 
 function defaultUnknownHeader(header: string, wire: string): void {
-  // eslint-disable-next-line no-console
   console.warn(
     `[aolib] unknown packet header '${header}' (no schema registered)\n  wire: ${truncate(wire)}`,
   );
 }
 
 function defaultDecodeError(header: string, err: Error, wire: string): void {
-  // eslint-disable-next-line no-console
   console.warn(
     `[aolib] decode error for '${header}': ${err.message}\n  wire: ${truncate(wire)}`,
   );
 }
 
 function defaultUnhandled(header: string, _packet: unknown): void {
-  // eslint-disable-next-line no-console
   console.warn(`[aolib] no handler registered for '${header}'`);
 }
 
 function defaultHandlerError(header: string, err: Error, _packet: unknown): void {
-  // eslint-disable-next-line no-console
   console.error(`[aolib] handler for '${header}' threw: ${err.message}`);
 }
 

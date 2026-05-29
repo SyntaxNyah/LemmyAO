@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { decode } from "../decode";
 import { encode } from "../encode";
 import { packet } from "../schema";
-import { str, num, bool, opt, lit, nested, array } from "../fields";
+import { str, num, opt, lit, nested, array } from "../fields";
 
 // ---------------------------------------------------------------------
 // Worked schemas — same as encode.test.ts so round-trip tests work.
