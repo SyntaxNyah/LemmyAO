@@ -1,14 +1,19 @@
 /**
- * SM (s2c) — server pushes the music list to the client.
+ * SM (s2c) — server pushes the music list (and area list) to the client.
  *
- * The music list is greedy-packed at the end of the wire: each track
- * occupies one positional slot, so `SM#track1#track2#%` decodes as
- * `{ music_list: ["track1", "track2"] }`.
+ * Per spec, `music_list` is an array of `{name}` objects:
+ *
+ *   Fanta:  SM#{music1_name}#{music2_name}#...#%
+ *   JSON:   {"$header":"SM","music_list":[{"name":"..."}, ...]}
+ *
+ * Each entry is either a track filename (the name ends in a file
+ * extension) or an area name (no extension). The receiver splits the
+ * list on that rule.
  */
 
 import { packet } from "../schema";
-import { str, array } from "../fields";
+import { str, nested, array } from "../fields";
 
 export const SM = packet("SM", {
-  music_list: array(str()),
+  music_list: array(nested({ name: str() })),
 });

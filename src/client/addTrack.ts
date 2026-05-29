@@ -21,7 +21,9 @@ import type * as aolib from "../aolib";
 
 /**
  * SM: server pushes the full music + area list at once. Areas come
- * first (until we hit an entry that's an audio file), then music.
+ * first (until we hit an entry whose name looks like an audio file),
+ * then music. The fanta wire-format may leave a trailing empty-name
+ * entry from the `#` split; we skip those.
  */
 export function applyMusicListBatch(packet: aolib.SMPacket) {
   document.getElementById("client_loadingtext")!.innerHTML = "Loading Music";
@@ -29,23 +31,19 @@ export function applyMusicListBatch(packet: aolib.SMPacket) {
   client.resetAreaList();
   client.musics_time = false;
 
-  const tracks = packet.music_list;
-  // Legacy iterated up to length-1 to skip the trailing empty entry from the
-  // wire-format split.
-  const end = tracks.length > 0 && tracks[tracks.length - 1] === ""
-    ? tracks.length - 1
-    : tracks.length;
-  for (let i = 0; i < end; i++) {
-    const trackname = tracks[i];
+  let index = 0;
+  for (const { name } of packet.music_list) {
+    if (!name) continue;
     if (client.musics_time) {
-      addTrack(trackname);
-    } else if (isAudio(trackname)) {
+      addTrack(name);
+    } else if (isAudio(name)) {
       client.musics_time = true;
       fix_last_area();
-      addTrack(trackname);
+      addTrack(name);
     } else {
-      createArea(i, trackname);
+      createArea(index, name);
     }
+    index++;
   }
 
   // Music done, carry on
@@ -55,15 +53,9 @@ export function applyMusicListBatch(packet: aolib.SMPacket) {
 /** FM: server pushes the full music list (refresh after edits). */
 export function applyFullMusicList(packet: aolib.FMPacket) {
   client.resetMusicList();
-
-  // Legacy iterated 1..length-1 to skip the trailing empty entry from
-  // the wire-format split; we preserve that by dropping a trailing "".
-  const tracks = packet.music_list;
-  const end = tracks.length > 0 && tracks[tracks.length - 1] === ""
-    ? tracks.length - 1
-    : tracks.length;
-  for (let i = 0; i < end; i++) {
-    addTrack(tracks[i]);
+  for (const { name } of packet.music_list) {
+    if (!name) continue;
+    addTrack(name);
   }
 }
 

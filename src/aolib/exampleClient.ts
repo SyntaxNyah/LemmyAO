@@ -62,7 +62,7 @@ server.on.MC((packet) => {
 
 server.on.BB((packet) => alert(packet.message));
 server.on.PV((packet) => loadCharacter(packet.char_id));
-server.on.SM((packet) => loadMusicList(packet.music_list));
+server.on.SM((packet) => loadMusicList(packet.music_list.map((m) => m.name)));
 server.on.DONE(() => console.log("handshake done"));
 
 // ---------------------------------------------------------------------

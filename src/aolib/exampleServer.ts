@@ -70,7 +70,7 @@ wss.on("connection", (ws) => {
       software: "LemmyAO-server",
       version: "1.0",
     });
-    client.send.SM({ music_list: ["track1.mp3", "track2.mp3"] });
+    client.send.SM({ music_list: [{ name: "track1.mp3" }, { name: "track2.mp3" }] });
     client.send.DONE({});
   });
 
