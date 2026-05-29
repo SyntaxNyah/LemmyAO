@@ -155,9 +155,11 @@ import type * as aolib from "../aolib";
 const { mode: characterListMode } = queryParser();
 
 /**
- * SC: server pushes the full character roster. Each entry's `&`-delimited
- * fields are split here and forwarded to `setupCharacterBasic`. Once the
- * roster is loaded we ask the server for the music list.
+ * SC: server pushes the full character roster. aolib delivers each
+ * entry as `{name, desc, evidence}`; we adapt it to the legacy
+ * positional `chargs` layout `setupCharacterBasic` expects (with an
+ * empty blips slot at index 2). Once the roster is loaded we ask the
+ * server for the music list.
  */
 export async function applyFullCharacterList(packet: aolib.SCPacket) {
   if (characterListMode === "watch") {
@@ -168,8 +170,8 @@ export async function applyFullCharacterList(packet: aolib.SCPacket) {
   }
 
   for (let i = 0; i < packet.char_data.length; i++) {
-    const chargs = packet.char_data[i].split("&");
-    setupCharacterBasic(chargs, i);
+    const c = packet.char_data[i];
+    setupCharacterBasic([c.name, c.desc, "", c.evidence], i);
   }
   client.server.send.RM({});
 }

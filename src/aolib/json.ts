@@ -44,13 +44,22 @@ export function fromJson<T>(field: Field<T>, value: unknown, name: string): T {
       }
       return value as T;
 
-    case "number":
-      if (typeof value !== "number" || Number.isNaN(value)) {
-        throw new Error(
-          `Field '${name}': expected number, got ${typeOfDesc(value)}`,
-        );
+    case "number": {
+      // Tolerate string-encoded numbers — legacy servers (Athena, etc.)
+      // sometimes JSON-stringify positional values one-to-one, so a
+      // `num()` field may arrive as `"0"` instead of `0`. As long as
+      // the string parses to a finite number we accept it.
+      if (typeof value === "number" && !Number.isNaN(value)) {
+        return value as T;
       }
-      return value as T;
+      if (typeof value === "string" && value !== "") {
+        const n = Number(value);
+        if (Number.isFinite(n)) return n as T;
+      }
+      throw new Error(
+        `Field '${name}': expected number, got ${typeOfDesc(value)}`,
+      );
+    }
 
     case "boolean":
       if (typeof value !== "boolean") {

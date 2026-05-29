@@ -35,14 +35,26 @@ describe("fromJson: number", () => {
     expect(fromJson(num(), 42, "n")).toBe(42);
   });
 
-  it("rejects a stringified number", () => {
-    expect(() => fromJson(num(), "42", "n")).toThrow(
-      /Field 'n': expected number, got string/,
-    );
+  it("accepts a stringified number (legacy servers JSON-stringify positional values)", () => {
+    expect(fromJson(num(), "42", "n")).toBe(42);
+    expect(fromJson(num(), "0", "n")).toBe(0);
+    expect(fromJson(num(), "-3.14", "n")).toBe(-3.14);
   });
 
   it("rejects NaN", () => {
     expect(() => fromJson(num(), NaN, "n")).toThrow(
+      /Field 'n': expected number/,
+    );
+  });
+
+  it("rejects empty string", () => {
+    expect(() => fromJson(num(), "", "n")).toThrow(
+      /Field 'n': expected number/,
+    );
+  });
+
+  it("rejects non-numeric strings", () => {
+    expect(() => fromJson(num(), "abc", "n")).toThrow(
       /Field 'n': expected number/,
     );
   });
@@ -74,7 +86,7 @@ describe("fromJson: optional", () => {
   });
 
   it("recurses into inner for validation when value present", () => {
-    expect(() => fromJson(f, "5", "n")).toThrow(/expected number/);
+    expect(() => fromJson(f, "abc", "n")).toThrow(/expected number/);
   });
 });
 
@@ -104,10 +116,10 @@ describe("fromJson: nested", () => {
   });
 
   it("propagates sub-field errors with dotted path", () => {
-    expect(() => fromJson(f, { x: "5", y: 3 }, "offset")).toThrow(
+    expect(() => fromJson(f, { x: "abc", y: 3 }, "offset")).toThrow(
       /Field 'offset\.x': expected number/,
     );
-    expect(() => fromJson(f, { x: 5, y: "3" }, "offset")).toThrow(
+    expect(() => fromJson(f, { x: 5, y: "abc" }, "offset")).toThrow(
       /Field 'offset\.y'/,
     );
   });
