@@ -66,11 +66,17 @@ describe("fromJson: boolean", () => {
     expect(fromJson(bool(), false, "b")).toBe(false);
   });
 
-  it("rejects '0' / '1' strings (JSON has native booleans)", () => {
-    expect(() => fromJson(bool(), "1", "b")).toThrow(
-      /Field 'b': expected boolean/,
-    );
+  it("accepts '1' / '0' string forms (legacy servers JSON-stringify positional values)", () => {
+    expect(fromJson(bool(), "1", "b")).toBe(true);
+    expect(fromJson(bool(), "0", "b")).toBe(false);
+  });
+
+  it("rejects non-bool / non-'1'-'0' values", () => {
     expect(() => fromJson(bool(), 0, "b")).toThrow(/expected boolean/);
+    expect(() => fromJson(bool(), 1, "b")).toThrow(/expected boolean/);
+    expect(() => fromJson(bool(), "true", "b")).toThrow(/expected boolean/);
+    expect(() => fromJson(bool(), "", "b")).toThrow(/expected boolean/);
+    expect(() => fromJson(bool(), null, "b")).toThrow(/expected boolean/);
   });
 });
 

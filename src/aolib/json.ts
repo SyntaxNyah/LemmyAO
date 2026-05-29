@@ -62,12 +62,15 @@ export function fromJson<T>(field: Field<T>, value: unknown, name: string): T {
     }
 
     case "boolean":
-      if (typeof value !== "boolean") {
-        throw new Error(
-          `Field '${name}': expected boolean, got ${typeOfDesc(value)}`,
-        );
-      }
-      return value as T;
+      // Tolerate the legacy `"1"` / `"0"` string forms — same family
+      // of compat as the `num()` case below. Native booleans pass
+      // straight through.
+      if (typeof value === "boolean") return value as T;
+      if (value === "1") return true as T;
+      if (value === "0") return false as T;
+      throw new Error(
+        `Field '${name}': expected boolean, got ${typeOfDesc(value)}`,
+      );
 
     case "optional": {
       const f = field as unknown as OptionalField<T>;
