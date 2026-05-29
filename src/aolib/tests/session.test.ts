@@ -375,44 +375,52 @@ describe("receive: hooks", () => {
 });
 
 // ---------------------------------------------------------------------
-// Wire-mode flip on decryptor("JSON")
+// Wire mode (setMode)
 // ---------------------------------------------------------------------
 
-describe("wire-mode flip on decryptor", () => {
-  // No handler is registered for decryptor in these tests — the
-  // mode-flip side-effect runs regardless. Mute the default console
-  // warn so the test output stays clean.
-  const quiet = { onUnhandled: () => {} };
-
+describe("setMode: explicit outbound-format switching", () => {
   it("starts in fanta", () => {
-    const { out, config } = makeBuf(quiet);
+    const { out, config } = makeBuf();
     const s = server(config);
     s.send.HI({ hdid: "x" });
     expect(out[0]).toBe("HI#x#%");
   });
 
-  it("after receiving decryptor with value `JSON`, outbound flips to JSON", () => {
-    const { out, config } = makeBuf(quiet);
+  it("setMode('json') flips outbound to JSON envelopes", () => {
+    const { out, config } = makeBuf();
     const s = server(config);
-    s.receive("decryptor#JSON#%");
+    s.setMode("json");
     s.send.HI({ hdid: "x" });
     expect(out[0]).toBe('{"$header":"HI","hdid":"x"}');
   });
 
-  it("does not flip on other decryptor values (legacy FANTA key)", () => {
-    const { out, config } = makeBuf(quiet);
+  it("setMode('fanta') flips back to positional", () => {
+    const { out, config } = makeBuf();
     const s = server(config);
-    s.receive("decryptor#FANTA#%");
+    s.setMode("json");
+    s.setMode("fanta");
+    s.send.HI({ hdid: "x" });
+    expect(out[0]).toBe("HI#x#%");
+  });
+
+  it("the library does NOT auto-flip on decryptor — it's the app's job", () => {
+    // Receiving decryptor("JSON") used to flip outbound mode. That
+    // magic is gone: aolib no longer inspects packet bodies for
+    // protocol meaning. The application's handler is responsible for
+    // calling setMode() in response.
+    const { out, config } = makeBuf({ onUnhandled: () => {} });
+    const s = server(config);
+    s.receive("decryptor#JSON#%");
     s.send.HI({ hdid: "x" });
     expect(out[0]).toBe("HI#x#%");
   });
 
   it("mode is per-session — two sessions don't share state", () => {
-    const a = makeBuf(quiet);
-    const b = makeBuf(quiet);
+    const a = makeBuf();
+    const b = makeBuf();
     const sa = server(a.config);
     const sb = server(b.config);
-    sa.receive("decryptor#JSON#%");
+    sa.setMode("json");
     sa.send.HI({ hdid: "a" });
     sb.send.HI({ hdid: "b" });
     expect(a.out[0]).toBe('{"$header":"HI","hdid":"a"}');

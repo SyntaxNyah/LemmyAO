@@ -14,16 +14,16 @@
  * lookup we do at every `.send.X` / `.on.X` access — wrong-direction
  * calls fail at compile time AND runtime.
  *
- * Wire mode is per-session and starts at `"fanta"`. If the dispatcher
- * sees `{ value: "JSON" }` for the `decryptor` header it flips the
- * mode to `"json"` for all subsequent outbound packets.
+ * Wire mode is per-session and starts at `"fanta"`. Switching to JSON
+ * (or back) is the application's job — call `session.setMode("json")`
+ * from whatever handler reads the protocol's mode-switch signal. The
+ * library doesn't inspect packet contents to flip modes on its own.
  *
  *   transport bytes ─► receive(wire)
  *      │
  *      ├── readHeader(wire)                  ─── fail ─► onMalformedFrame
  *      ├── lookup schema in inbound map      ─── miss ─► onUnknownHeader
  *      ├── decode(schema, wire)              ─── fail ─► onDecodeError
- *      ├── if header === "decryptor" && value === "JSON" → mode = "json"
  *      ├── handler = handlers[header]        ─── miss ─► onUnhandled
  *      └── handler(packet)                   ─── throw ► onHandlerError
  *
@@ -69,6 +69,8 @@ export interface ServerSession {
   on: OnMap<S2CSchemas>;
   receive(wire: string): void;
   close(): void;
+  /** Switch the outbound wire format. Inbound always auto-detects. */
+  setMode(mode: WireMode): void;
 }
 
 /** Returned from `client(config)`. Owns the S2C send side, C2S on side. */
@@ -77,6 +79,8 @@ export interface ClientSession {
   on: OnMap<C2SSchemas>;
   receive(wire: string): void;
   close(): void;
+  /** Switch the outbound wire format. Inbound always auto-detects. */
+  setMode(mode: WireMode): void;
   area?: number;
 }
 
@@ -170,12 +174,6 @@ function makeSession(role: Role, config: SessionConfig): ServerSession & ClientS
       return;
     }
 
-    // Mode-flip: once the server advertises JSON via `decryptor`, all
-    // subsequent outbound packets from this session go on the JSON wire.
-    if (header === "decryptor" && packet.value === "JSON") {
-      mode = "json";
-    }
-
     const handler = handlers[header];
     if (!handler) {
       if (!callHook(config.onUnhandled, header, packet)) {
@@ -198,11 +196,16 @@ function makeSession(role: Role, config: SessionConfig): ServerSession & ClientS
     for (const k of Object.keys(handlers)) delete handlers[k];
   }
 
+  function setMode(next: WireMode): void {
+    mode = next;
+  }
+
   return {
     send: send as unknown as SendMap<C2SSchemas> & SendMap<S2CSchemas>,
     on: on as unknown as OnMap<S2CSchemas> & OnMap<C2SSchemas>,
     receive,
     close,
+    setMode,
   };
 }
 

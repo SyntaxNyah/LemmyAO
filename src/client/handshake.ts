@@ -15,11 +15,15 @@ import type * as aolib from "../aolib";
 const { mode } = queryParser();
 
 /**
- * decryptor: legacy FantaCrypt handshake marker. aolib auto-flips the
- * session into JSON mode when `value === "JSON"`; we kick off the
- * client-side join by sending HI.
+ * decryptor: legacy FantaCrypt handshake marker. Modern servers
+ * repurpose it as a wire-format negotiation signal — `value === "JSON"`
+ * means "switch outbound to JSON envelopes from here on". We flip the
+ * session mode explicitly and then kick off the join by sending HI.
  */
-export function applyEncryptionMode() {
+export function applyEncryptionMode(packet: aolib.decryptorPacket) {
+  if (packet.value === "JSON") {
+    client.server.setMode("json");
+  }
   client.joinServer();
 }
 
