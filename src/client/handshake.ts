@@ -21,9 +21,7 @@ const { mode } = queryParser();
  * session mode explicitly and then kick off the join by sending HI.
  */
 export function applyEncryptionMode(packet: aolib.decryptorPacket) {
-  if (packet.value === "JSON") {
-    client.server.setMode("json");
-  }
+  client.server.setJsonMode(packet.value === "JSON");
   client.joinServer();
 }
 

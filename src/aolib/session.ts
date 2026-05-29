@@ -14,8 +14,8 @@
  * lookup we do at every `.send.X` / `.on.X` access — wrong-direction
  * calls fail at compile time AND runtime.
  *
- * Wire mode is per-session and starts at `"fanta"`. Switching to JSON
- * (or back) is the application's job — call `session.setMode("json")`
+ * Wire mode is per-session and starts at fanta. Switching to JSON
+ * (or back) is the application's job — call `session.setJsonMode(true)`
  * from whatever handler reads the protocol's mode-switch signal. The
  * library doesn't inspect packet contents to flip modes on its own.
  *
@@ -69,8 +69,11 @@ export interface ServerSession {
   on: OnMap<S2CSchemas>;
   receive(wire: string): void;
   close(): void;
-  /** Switch the outbound wire format. Inbound always auto-detects. */
-  setMode(mode: WireMode): void;
+  /**
+   * Toggle the outbound wire format: `true` = JSON envelopes,
+   * `false` = positional fanta. Inbound always auto-detects.
+   */
+  setJsonMode(enabled: boolean): void;
 }
 
 /** Returned from `client(config)`. Owns the S2C send side, C2S on side. */
@@ -79,8 +82,11 @@ export interface ClientSession {
   on: OnMap<C2SSchemas>;
   receive(wire: string): void;
   close(): void;
-  /** Switch the outbound wire format. Inbound always auto-detects. */
-  setMode(mode: WireMode): void;
+  /**
+   * Toggle the outbound wire format: `true` = JSON envelopes,
+   * `false` = positional fanta. Inbound always auto-detects.
+   */
+  setJsonMode(enabled: boolean): void;
   area?: number;
 }
 
@@ -196,8 +202,8 @@ function makeSession(role: Role, config: SessionConfig): ServerSession & ClientS
     for (const k of Object.keys(handlers)) delete handlers[k];
   }
 
-  function setMode(next: WireMode): void {
-    mode = next;
+  function setJsonMode(enabled: boolean): void {
+    mode = enabled ? "json" : "fanta";
   }
 
   return {
@@ -205,7 +211,7 @@ function makeSession(role: Role, config: SessionConfig): ServerSession & ClientS
     on: on as unknown as OnMap<S2CSchemas> & OnMap<C2SSchemas>,
     receive,
     close,
-    setMode,
+    setJsonMode,
   };
 }
 

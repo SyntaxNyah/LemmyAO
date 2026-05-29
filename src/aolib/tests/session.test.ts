@@ -375,10 +375,10 @@ describe("receive: hooks", () => {
 });
 
 // ---------------------------------------------------------------------
-// Wire mode (setMode)
+// Wire mode (setJsonMode)
 // ---------------------------------------------------------------------
 
-describe("setMode: explicit outbound-format switching", () => {
+describe("setJsonMode: explicit outbound-format switching", () => {
   it("starts in fanta", () => {
     const { out, config } = makeBuf();
     const s = server(config);
@@ -386,19 +386,19 @@ describe("setMode: explicit outbound-format switching", () => {
     expect(out[0]).toBe("HI#x#%");
   });
 
-  it("setMode('json') flips outbound to JSON envelopes", () => {
+  it("setJsonMode(true) flips outbound to JSON envelopes", () => {
     const { out, config } = makeBuf();
     const s = server(config);
-    s.setMode("json");
+    s.setJsonMode(true);
     s.send.HI({ hdid: "x" });
     expect(out[0]).toBe('{"$header":"HI","hdid":"x"}');
   });
 
-  it("setMode('fanta') flips back to positional", () => {
+  it("setJsonMode(false) flips back to positional fanta", () => {
     const { out, config } = makeBuf();
     const s = server(config);
-    s.setMode("json");
-    s.setMode("fanta");
+    s.setJsonMode(true);
+    s.setJsonMode(false);
     s.send.HI({ hdid: "x" });
     expect(out[0]).toBe("HI#x#%");
   });
@@ -407,7 +407,7 @@ describe("setMode: explicit outbound-format switching", () => {
     // Receiving decryptor("JSON") used to flip outbound mode. That
     // magic is gone: aolib no longer inspects packet bodies for
     // protocol meaning. The application's handler is responsible for
-    // calling setMode() in response.
+    // calling setJsonMode() in response.
     const { out, config } = makeBuf({ onUnhandled: () => {} });
     const s = server(config);
     s.receive("decryptor#JSON#%");
@@ -420,7 +420,7 @@ describe("setMode: explicit outbound-format switching", () => {
     const b = makeBuf();
     const sa = server(a.config);
     const sb = server(b.config);
-    sa.setMode("json");
+    sa.setJsonMode(true);
     sa.send.HI({ hdid: "a" });
     sb.send.HI({ hdid: "b" });
     expect(a.out[0]).toBe('{"$header":"HI","hdid":"a"}');
