@@ -8,7 +8,7 @@ import { packet } from "../schema";
 import { num } from "../fields";
 
 export const SI = packet("SI", {
-  char_cnt: num(),
-  evi_cnt: num(),
-  mus_cnt: num(),
+  char_count: num(),
+  evi_count: num(),
+  mus_count: num(),
 });

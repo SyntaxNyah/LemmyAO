@@ -84,9 +84,9 @@ import type * as aolib from "../aolib";
  * sequence by sending RC.
  */
 export function applyServerCounts(packet: aolib.SIPacket) {
-  client.char_list_length = packet.char_cnt;
-  client.evidence_list_length = packet.evi_cnt;
-  client.music_list_length = packet.mus_cnt;
+  client.char_list_length = packet.char_count;
+  client.evidence_list_length = packet.evi_count;
+  client.music_list_length = packet.mus_count;
 
   fetchExtensions();
 

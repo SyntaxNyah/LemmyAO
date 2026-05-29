@@ -207,7 +207,7 @@ describe("session integration: new packets are reachable", () => {
     s.receive("FL#a#b#%");
     s.receive("VS_AUDIO#3#abc==#%");
     expect(seen.BN).toEqual({ background: "court", position: "" });
-    expect(seen.SI).toEqual({ char_cnt: 10, evi_cnt: 5, mus_cnt: 20 });
+    expect(seen.SI).toEqual({ char_count: 10, evi_count: 5, mus_count: 20 });
     expect(seen.FL).toEqual({ features: ["a", "b"] });
     expect(seen.VS_AUDIO).toEqual({ fromUid: 3, payload: "abc==" });
   });
