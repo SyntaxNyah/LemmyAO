@@ -16,6 +16,8 @@ export function pickChar(ccharacter: number) {
   client.server.send.CC({
     player_id: client.playerID,
     char_id: ccharacter,
+    // Some servers reject "" as a char_password — send a non-empty sentinel.
+    char_password: "none",
   });
 }
 
