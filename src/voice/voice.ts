@@ -1,13 +1,13 @@
 // Server-relayed voice transport.
 //
-// Every audio frame travels client → AO2 server → other clients over the
+// Every audio frame travels client -> AO2 server -> other clients over the
 // existing AO2 WebSocket. There is no WebRTC, no STUN/TURN/ICE, no SDP.
 // Peers never connect to each other, so their IPs cannot leak via packet
 // capture — this is a structural privacy property of the transport.
 //
 // Wire protocol (`#` separator, `%` terminator; base64 needs no escaping):
 //
-//   Server → client
+//   Server -> client
 //     VS_CAPS#<enabled>#<ptt_only>#<max_peers>#<codec>#<sample_rate>#<frame_ms>#<max_frame_bytes>#%
 //     VS_PEERS#<csv_uids>#%
 //     VS_JOIN#<uid>#%
@@ -15,7 +15,7 @@
 //     VS_SPEAK#<uid>#<on_off>#%
 //     VS_AUDIO#<from_uid>#<b64_opus>#%
 //
-//   Client → server
+//   Client -> server
 //     VS_JOIN#%
 //     VS_LEAVE#%
 //     VS_FRAME#<b64_opus>#%
@@ -285,7 +285,7 @@ function syncSpeakState(): void {
   if (want === lastEmittedSpeak) return;
   lastEmittedSpeak = want;
   if (inVoice) {
-    client.sendToServer(`VS_SPEAK#${want ? 1 : 0}#%`);
+    client.server.send.VS_SPEAK({ on: want });
   }
   notifySpeakingListeners();
 }
@@ -368,7 +368,7 @@ async function startCapture(): Promise<void> {
         // Server would drop oversize frames anyway
         return;
       }
-      client.sendToServer(`VS_FRAME#${b64}#%`);
+      client.server.send.VS_FRAME({ payload: b64 });
     },
     error: (e: DOMException) => {
       console.error("voice: encoder error", e);
@@ -566,7 +566,7 @@ export async function joinVoiceListenOnly(): Promise<void> {
   }
   inVoice = true;
   listenOnly = true;
-  client.sendToServer(`VS_JOIN#%`);
+  client.server.send.VS_JOIN({});
   syncSpeakState();
 }
 
@@ -606,7 +606,7 @@ export async function joinVoice(): Promise<void> {
   }
   if (!wasListenOnly) {
     inVoice = true;
-    client.sendToServer(`VS_JOIN#%`);
+    client.server.send.VS_JOIN({});
   }
   listenOnly = false;
   syncSpeakState();
@@ -616,9 +616,9 @@ export function leaveVoice(): void {
   if (!inVoice) return;
   if (lastEmittedSpeak) {
     lastEmittedSpeak = false;
-    client.sendToServer(`VS_SPEAK#0#%`);
+    client.server.send.VS_SPEAK({ on: false });
   }
-  client.sendToServer(`VS_LEAVE#%`);
+  client.server.send.VS_LEAVE({});
   teardownAll();
   notifyCapsUpdated();
 }
@@ -802,4 +802,66 @@ export function setVCMuted(muted: boolean): void {
   remotePeers.forEach((peer) => {
     peer.gain.gain.value = vol;
   });
+}
+
+// ---------------------------------------------------------------------
+// Inbound packet handlers. Registered against the aolib session in
+// `src/packets.ts` and dispatched on s2c traffic.
+// ---------------------------------------------------------------------
+
+import { installVoiceUI } from "./voiceUI";
+import type * as aolib from "../aolib";
+
+/** VS_CAPS: server announces voice subsystem capabilities (idempotent). */
+export function applyVoiceCapabilities(packet: aolib.VS_CAPSPacket) {
+  console.debug(
+    `voice: VS_CAPS received enabled=${packet.enabled} ptt=${packet.pttOnly} maxPeers=${packet.maxPeers} codec=${packet.codec} sr=${packet.sampleRate} frame=${packet.frameMs}ms maxBytes=${packet.maxFrameBytes}`,
+  );
+  installVoiceUI();
+  applyVoiceCaps(
+    packet.enabled,
+    packet.pttOnly,
+    packet.maxPeers,
+    packet.codec,
+    packet.sampleRate,
+    packet.frameMs,
+    packet.maxFrameBytes,
+  );
+}
+
+/** VS_PEERS: initial list of voice-active peer uids when we join. */
+export function applyVoicePeerList(packet: aolib.VS_PEERSPacket) {
+  void handleInitialPeers(packet.uids);
+}
+
+/** VS_JOIN: a remote peer joined the voice mesh. */
+export function handleVoicePeerJoin(packet: aolib.VS_JOINPacket) {
+  if (!Number.isFinite(packet.uid)) return;
+  void handlePeerJoined(packet.uid);
+}
+
+/**
+ * VS_LEAVE: a remote peer left the voice mesh. If it's our own uid
+ * (server auto-kicked us, e.g. on area change or `/voicearea off`),
+ * we tear down locally instead.
+ */
+export function handleVoicePeerLeave(packet: aolib.VS_LEAVEPacket) {
+  if (!Number.isFinite(packet.uid)) return;
+  if (packet.uid === client.playerID) {
+    leaveVoice();
+  } else {
+    handlePeerLeft(packet.uid);
+  }
+}
+
+/** VS_SPEAK: a remote peer toggled their speaking-state indicator. */
+export function applyVoicePeerSpeak(packet: aolib.VS_SPEAKPacket) {
+  if (!Number.isFinite(packet.uid)) return;
+  notifyRemoteSpeaking(packet.uid, packet.on);
+}
+
+/** VS_AUDIO: opus audio frame from a remote peer; play it. */
+export function handleVoiceAudio(packet: aolib.VS_AUDIOPacket) {
+  if (!Number.isFinite(packet.fromUid) || !packet.payload) return;
+  handleRemoteAudio(packet.fromUid, packet.payload);
 }

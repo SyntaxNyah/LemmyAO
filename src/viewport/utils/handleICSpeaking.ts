@@ -11,7 +11,8 @@ import transparentPng from "../../constants/transparentPng";
 import { COLORS } from "../constants/colors";
 import mlConfig from "../../utils/aoml";
 import request from "../../services/request";
-import { decodeChat, safeTags } from "../../encoding";
+import { unescapeUnicode, safeHtmlTags } from "../../escaping";
+import * as aolib from "../../aolib";
 import {
   DeskModifier,
   EmoteModifier,
@@ -19,8 +20,7 @@ import {
   isFullView,
   ShoutModifier,
   Side,
-  type MSPacketClient,
-} from "../../packets/MS";
+} from "../../aolib";
 import preloadMessageAssets from "./preloadMessageAssets";
 import { setBlipUrl } from "./blipAudio";
 
@@ -56,17 +56,17 @@ const initAttorneyMarkdown = async () => {
 };
 
 export let startFirstTickCheck: boolean;
-export const setStartFirstTickCheck = (val: boolean) => {
+export function setStartFirstTickCheck(val: boolean) {
   startFirstTickCheck = val;
-};
+}
 export let startSecondTickCheck: boolean;
-export const setStartSecondTickCheck = (val: boolean) => {
+export function setStartSecondTickCheck(val: boolean) {
   startSecondTickCheck = val;
-};
+}
 export let startThirdTickCheck: boolean;
-export const setStartThirdTickCheck = (val: boolean) => {
+export function setStartThirdTickCheck(val: boolean) {
   startThirdTickCheck = val;
-};
+}
 
 /** Per-axis mirroring CSS transform for a Flip value. */
 const flipTransform = (flip: Flip | undefined): string => {
@@ -83,17 +83,17 @@ const flipTransform = (flip: Flip | undefined): string => {
 
 /**
  * Builds the viewport's render state from an incoming MS packet. The
- * `ChatMsg` type is `MSPacketClient & {render-state extras}`, so we just
+ * `ChatMsg` type is `aolib.MSPacket & {render-state extras}`, so we just
  * spread the packet and add the display-transformed / char-derived /
  * render-loop fields on top.
  */
-const buildChatMsg = (packet: MSPacketClient): ChatMsg => {
+const buildChatMsg = (packet: aolib.MSPacket): ChatMsg => {
   const char = client.chars[packet.char_id];
   const msg_nameplate = char?.showname ?? packet.character;
   const msg_blips = char?.blips ?? "male";
   const char_chatbox = char?.chat ?? "default";
 
-  let content = safeTags(decodeChat(packet.message));
+  let content = safeHtmlTags(unescapeUnicode(packet.message));
   let chatbox = char_chatbox;
   if (content.trim() === "") {
     // blankpost: empty chatbox means hide it
@@ -104,20 +104,20 @@ const buildChatMsg = (packet: MSPacketClient): ChatMsg => {
   return {
     ...packet,
     // Display-safe transforms (preanim/showname/paired_name/paired_emote
-    // shadow the raw packet fields with safeTags'd versions).
+    // shadow the raw packet fields with safeHtmlTags'd versions).
     content,
-    name: safeTags(packet.character),
-    sprite: safeTags(packet.emote).toLowerCase(),
-    sound: safeTags(packet.sfx_name).toLowerCase(),
-    preanim: safeTags(packet.preanim).toLowerCase(),
-    showname: safeTags(decodeChat(packet.showname)),
-    paired_name: safeTags(packet.paired_name),
-    paired_emote: safeTags(packet.paired_emote),
+    name: safeHtmlTags(packet.character),
+    sprite: safeHtmlTags(packet.emote).toLowerCase(),
+    sound: safeHtmlTags(packet.sfx_name).toLowerCase(),
+    preanim: safeHtmlTags(packet.preanim).toLowerCase(),
+    showname: safeHtmlTags(unescapeUnicode(packet.showname)),
+    paired_name: safeHtmlTags(packet.paired_name),
+    paired_emote: safeHtmlTags(packet.paired_emote),
     effects: packet.effect.split("|"),
     // Char-derived
     nameplate: msg_nameplate,
     chatbox,
-    blips: safeTags(msg_blips),
+    blips: safeHtmlTags(msg_blips),
     // Render-loop state
     speed: UPDATE_INTERVAL,
   };
@@ -156,7 +156,7 @@ const parseContent = async (chatmsg: ChatMsg): Promise<HTMLSpanElement[]> => {
  * preload, markdown parsing) and computes derived render-loop flags.
  * No DOM mutation here -- only state on the chatmsg object itself.
  */
-const prepareICMessage = async (packet: MSPacketClient): Promise<ChatMsg> => {
+const prepareICMessage = async (packet: aolib.MSPacket): Promise<ChatMsg> => {
   const chatmsg = buildChatMsg(packet);
 
   // Preload all assets in parallel; primes browser cache.
@@ -393,11 +393,11 @@ const renderICMessage = (chatmsg: ChatMsg) => {
           ? 400
           : 0;
     pairLayers.style.left = `${baseLeft + (chatmsg.paired_offset?.x ?? 0)}%`;
-    charLayers.style.left = `${baseLeft + (chatmsg.self_offset?.x ?? 0)}%`;
+    charLayers.style.left = `${baseLeft + (chatmsg.offset?.x ?? 0)}%`;
 
     // Vertical offsets.
     pairLayers.style.top = `${chatmsg.paired_offset?.y ?? 0}%`;
-    charLayers.style.top = `${chatmsg.self_offset?.y ?? 0}%`;
+    charLayers.style.top = `${chatmsg.offset?.y ?? 0}%`;
   }
 
   setBlipUrl(
@@ -428,7 +428,43 @@ const renderICMessage = (chatmsg: ChatMsg) => {
  *   prepareICMessage(packet)  // async: build chatmsg, preload, parse markdown
  *   renderICMessage(chatmsg)  // sync:  apply to DOM, start chat_tick
  */
-export const handle_ic_speaking = async (packet: MSPacketClient) => {
+export async function handle_ic_speaking(packet: aolib.MSPacket) {
   const chatmsg = await prepareICMessage(packet);
   renderICMessage(chatmsg);
-};
+}
+
+import { handleCharacterInfo as handleCharacterInfoForChat, ensureCharIni as ensureCharIniForChat } from "../../client/handleCharacterInfo";
+import { resetICParams } from "../../client/resetICParams";
+
+/**
+ * MS: in-character chat broadcast. Gatekeeps (duplicate / iniedit /
+ * muted) and delegates rendering to `handle_ic_speaking`.
+ */
+export function handleChatMessage(packet: aolib.MSPacket) {
+  // duplicate message
+  if (packet.message === client.viewport.getChatmsg().content) return;
+
+  const char_id = packet.char_id;
+  const char_name = safeHtmlTags(packet.character);
+
+  if (char_id >= 0 && char_id < client.char_list_length) {
+    if (client.chars[char_id].name !== char_name) {
+      console.info(
+        `${client.chars[char_id].name} is iniediting to ${char_name}`,
+      );
+      handleCharacterInfoForChat([char_name, "iniediter"], char_id);
+    } else if (!client.chars[char_id].inifile) {
+      // Lazily load char.ini in background so future messages have proper data
+      ensureCharIniForChat(char_id);
+    }
+  }
+
+  if (client.chars[char_id]?.muted) return;
+
+  // our own message appeared, reset the buttons
+  if (char_id === client.charID) {
+    resetICParams();
+  }
+
+  handle_ic_speaking(packet);
+}

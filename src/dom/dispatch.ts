@@ -1,5 +1,5 @@
 /**
- * DOM → TS dispatch via `data-action` attributes.
+ * DOM -> TS dispatch via `data-action` attributes.
  *
  * HTML elements declare their handler with `data-action="<name>"`. The
  * default event is "click"; override with `data-event="change"` etc.
@@ -14,8 +14,6 @@
  * non-bubbling events (`error`, `volumechange`) work the same way.
  */
 import { client } from "../client";
-import { sendHP } from "../packets/HP";
-import { sendRT } from "../packets/RT";
 
 import { addEvidence } from "./addEvidence";
 import { applyCustomFont, setFont } from "./setFont";
@@ -66,20 +64,20 @@ import { toggleVoice } from "./toggleVoice";
 import { updateBackgroundPreview } from "./updateBackgroundPreview";
 import { updateEvidenceIcon } from "./updateEvidenceIcon";
 import { updateIniswap } from "./updateIniswap";
-import { ShoutModifier } from "../packets/MS";
+import { ShoutModifier } from "../aolib";
 
 const datasetOf = (e: Event) => (e.currentTarget as HTMLElement).dataset;
 
 const actions: Record<string, (e: Event) => void> = {
   // Trivial inline handlers.
-  guilty: () => sendRT({ animation: "judgeruling", judgeId: 1 }),
-  notguilty: () => sendRT({ animation: "judgeruling", judgeId: 0 }),
-  initCE: () => sendRT({ animation: "testimony2" }),
-  initWT: () => sendRT({ animation: "testimony1" }),
-  redHPD: () => sendHP({ bar: 1, value: client.hp[0] - 1 }),
-  addHPD: () => sendHP({ bar: 1, value: client.hp[0] + 1 }),
-  redHPP: () => sendHP({ bar: 2, value: client.hp[1] - 1 }),
-  addHPP: () => sendHP({ bar: 2, value: client.hp[1] + 1 }),
+  guilty: () => client.server.send.RT({ animation: "judgeruling", judgeId: 1 }),
+  notguilty: () => client.server.send.RT({ animation: "judgeruling", judgeId: 0 }),
+  initCE: () => client.server.send.RT({ animation: "testimony2" }),
+  initWT: () => client.server.send.RT({ animation: "testimony1" }),
+  redHPD: () => client.server.send.HP({ bar: 1, value: client.hp[0] - 1 }),
+  addHPD: () => client.server.send.HP({ bar: 1, value: client.hp[0] + 1 }),
+  redHPP: () => client.server.send.HP({ bar: 2, value: client.hp[1] - 1 }),
+  addHPP: () => client.server.send.HP({ bar: 2, value: client.hp[1] + 1 }),
   resetOffset: () => {
     (<HTMLInputElement>document.getElementById("pair_offset")).value = "0";
     (<HTMLInputElement>document.getElementById("pair_y_offset")).value = "0";

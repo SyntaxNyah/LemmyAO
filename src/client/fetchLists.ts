@@ -2,7 +2,7 @@ import { client } from "../client";
 import { AO_HOST } from "./aoHost";
 import { request } from "../services/request";
 
-export const fetchBackgroundList = async () => {
+export async function fetchBackgroundList() {
   try {
     const bgdata = await request(`${AO_HOST}backgrounds.json`);
     const bg_array = JSON.parse(bgdata);
@@ -18,9 +18,9 @@ export const fetchBackgroundList = async () => {
   } catch (err) {
     console.warn("there was no backgrounds.json file");
   }
-};
+}
 
-export const fetchCharacterList = async () => {
+export async function fetchCharacterList() {
   const char_select = <HTMLSelectElement>(
     document.getElementById("client_iniselect")
   );
@@ -39,9 +39,9 @@ export const fetchCharacterList = async () => {
   } catch (err) {
     console.warn("there was no characters.json file");
   }
-};
+}
 
-export const fetchEvidenceList = async () => {
+export async function fetchEvidenceList() {
   const evi_select = <HTMLSelectElement>document.getElementById("evi_select");
   evi_select.innerHTML = "";
 
@@ -56,9 +56,9 @@ export const fetchEvidenceList = async () => {
   } catch (err) {
     console.warn("there was no evidence.json file");
   }
-};
+}
 
-export const fetchExtensions = async () => {
+export async function fetchExtensions() {
   try {
     const extensiondata = await request(`${AO_HOST}extensions.json`);
     const allextensions = JSON.parse(extensiondata);
@@ -73,4 +73,50 @@ export const fetchExtensions = async () => {
   } catch (err) {
     console.warn("there was no extensions.json file");
   }
-};
+}
+
+import { applyFavourites } from "../dom/toggleFavourite";
+import type * as aolib from "../aolib";
+
+/**
+ * SI: server announces its asset counts. We seed the char-select grid
+ * with placeholder slots (filled in by SC / CI) and start the download
+ * sequence by sending RC.
+ */
+export function applyServerCounts(packet: aolib.SIPacket) {
+  client.char_list_length = packet.char_count;
+  client.evidence_list_length = packet.evi_count;
+  client.music_list_length = packet.mus_count;
+
+  fetchExtensions();
+
+  // Build the char-select grid; the character loader will fill icons in.
+  document.getElementById("client_chartable")!.innerHTML = "";
+
+  for (let i = 0; i < client.char_list_length; i++) {
+    const slot = document.createElement("div");
+    slot.className = "char-slot";
+    slot.dataset.charid = String(i);
+
+    const demothing = document.createElement("img");
+    demothing.className = "demothing";
+    demothing.loading = "lazy";
+    demothing.id = `demo_${i}`;
+    demothing.dataset.action = "pickChar";
+    demothing.dataset.char = String(i);
+
+    const favBtn = document.createElement("button");
+    favBtn.className = "fav-btn";
+    favBtn.title = "Favourite";
+    favBtn.dataset.action = "toggleFavourite";
+    favBtn.textContent = "★";
+
+    slot.appendChild(demothing);
+    slot.appendChild(favBtn);
+    document.getElementById("client_chartable")!.appendChild(slot);
+  }
+
+  applyFavourites();
+
+  client.server.send.RC({});
+}

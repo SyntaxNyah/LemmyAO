@@ -2,7 +2,7 @@ import { AO_HOST } from "../client/aoHost";
 
 const getFavKey = () => `favourites_${AO_HOST}`;
 
-export const getFavourites = (): Set<number> => {
+export function getFavourites(): Set<number> {
   try {
     const raw = localStorage.getItem(getFavKey());
     if (raw) return new Set(JSON.parse(raw) as number[]);
@@ -10,16 +10,16 @@ export const getFavourites = (): Set<number> => {
     // ignore parse errors
   }
   return new Set();
-};
+}
 
-const saveFavourites = (favs: Set<number>) => {
+function saveFavourites(favs: Set<number>) {
   localStorage.setItem(getFavKey(), JSON.stringify([...favs]));
-};
+}
 
 /**
  * Re-orders the character grid so that favourited characters appear first.
  */
-export const sortFavourites = () => {
+export function sortFavourites() {
   const favs = getFavourites();
   const chartable = document.getElementById("client_chartable");
   if (!chartable) return;
@@ -39,13 +39,13 @@ export const sortFavourites = () => {
   const fragment = document.createDocumentFragment();
   slots.forEach((slot) => fragment.appendChild(slot));
   chartable.appendChild(fragment);
-};
+}
 
 /**
  * Marks the star buttons for all saved favourites and sorts the grid.
  * Call this after the character grid has been built.
  */
-export const applyFavourites = () => {
+export function applyFavourites() {
   const favs = getFavourites();
   favs.forEach((charid) => {
     const btn = document.querySelector<HTMLButtonElement>(
@@ -54,7 +54,7 @@ export const applyFavourites = () => {
     if (btn) btn.classList.add("active");
   });
   sortFavourites();
-};
+}
 
 /**
  * Toggles a character's favourite status.

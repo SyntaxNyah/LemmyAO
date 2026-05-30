@@ -7,14 +7,14 @@ import "./styles/client.css";
 import "./styles/goldenlayout.css";
 import "golden-layout/dist/css/themes/goldenlayout-dark-theme.css";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
-import { sendCH } from "./packets/CH";
 import queryParser from "./utils/queryParser";
 import getResources from "./utils/getResources";
 import masterViewport from "./viewport/viewport";
 import { Viewport } from "./viewport/interfaces/Viewport";
 import { EventEmitter } from "events";
 import { onReplayGo } from "./dom/onReplayGo";
-import { packetRegistry } from "./packets";
+import * as aolib from "./aolib";
+import { registerProtocol } from "./registerProtocol";
 import { appendICNotice } from "./client/appendICNotice";
 import { loadResources } from "./client/loadResources";
 import { AO_HOST } from "./client/aoHost";
@@ -30,30 +30,31 @@ export { autoChar, autoArea };
 document.title = serverName;
 
 export let CHATBOX: string;
-export const setCHATBOX = (val: string) => {
+export function setCHATBOX(val: string) {
   CHATBOX = val;
-};
+}
 export let client: Client;
-export const setClient = (val: Client) => {
+export function setClient(val: Client) {
   client = val;
-};
+}
 
 export const UPDATE_INTERVAL = 60;
 
 // presettings
 export let selectedMenu = 1;
-export const setSelectedMenu = (val: number) => {
+export function setSelectedMenu(val: number) {
   selectedMenu = val;
-};
-import { ShoutModifier } from "./packets/MS";
+}
+import { ShoutModifier } from "./aolib";
 export let selectedShout: ShoutModifier = ShoutModifier.NONE;
-export const setSelectedShout = (val: ShoutModifier) => {
+export function setSelectedShout(val: ShoutModifier) {
   selectedShout = val;
-};
+}
 export let extrafeatures: string[] = [];
-export const setExtraFeatures = (val: any) => {
+export function setExtraFeatures(val: any) {
   extrafeatures = val;
-};
+}
+
 
 let hdid: string;
 
@@ -96,7 +97,9 @@ fpPromise
     installVoiceUI();
   });
 
-export const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+export function delay(ms: number) {
+  return new Promise((res) => setTimeout(res, ms));
+}
 
 export enum clientState {
   NotConnected,
@@ -109,11 +112,35 @@ export enum clientState {
 }
 
 export let lastICMessageTime = new Date(0);
-export const setLastICMessageTime = (val: Date) => {
+export function setLastICMessageTime(val: Date) {
   lastICMessageTime = val;
-};
+}
 
 class Client extends EventEmitter {
+  /**
+   * Session representing the remote server. Owns the C2S send side
+   * (`server.send.HI(...)`, etc.) and the S2C receive side
+   * (`server.on.MS(...)`, registered from `packets.ts`).
+   * Initialised in `connect()` once the transport is ready.
+   */
+  server!: aolib.ServerSession;
+
+  /**
+   * Session representing a remote client. Used only in replay /
+   * acting-as-server mode where we synthesise server-side packets
+   * locally — `clientSession.send.MC(...)` loops back to
+   * `server.receive(wire)` as if a real server had sent it.
+   */
+  clientSession!: aolib.ClientSession;
+
+  /**
+   * When true, we synthesise the server locally instead of talking
+   * to a real one. In this mode, outbound from `server.send` is
+   * looped back into `clientSession.receive` so the synthesised
+   * server can react.
+   */
+  acting_as_server = false;
+
   serv: any;
   hp: number[];
   playerID: number;
@@ -138,7 +165,6 @@ class Client extends EventEmitter {
   checkUpdater: any;
   _lastTimeICReceived: any;
   viewport: Viewport;
-  temp_packet: string;
   state: clientState;
   connect: () => void;
   loadResources: () => void;
@@ -151,12 +177,57 @@ class Client extends EventEmitter {
   constructor(connectionString: string) {
     super();
 
+    this.acting_as_server = mode === "replay";
     this.state = clientState.NotConnected;
     this.connect = () => {
       this.on("open", this.onOpen.bind(this));
       this.on("close", this.onClose.bind(this));
       this.on("message", this.onMessage.bind(this));
       this.on("error", this.onError.bind(this));
+
+      // Wire the aolib sessions. Both must exist before handlers are
+      // registered so the wrong-direction guard sees the full picture.
+      // server.send.X ships outbound; in replay mode it loops back to
+      // clientSession.receive instead of going to the wire.
+      // clientSession.send.X is used only in replay mode (to synthesise
+      // server -> client packets) — its output always loops to
+      // server.receive.
+      this.server = aolib.server({
+        send: (wire) => {
+          console.debug(`C: ${wire}`);
+          if (this.acting_as_server) {
+            this.clientSession.receive(wire);
+          } else {
+            this.serv.send(wire);
+          }
+        },
+        onUnknownHeader: (header, wire) => {
+          console.warn(`[aolib] unknown s2c header '${header}'`, { wire });
+        },
+        onDecodeError: (header, err, wire) => {
+          console.error(`[aolib] decode error for '${header}':`, err, { wire });
+        },
+        onHandlerError: (header, err) => {
+          console.error(`[aolib] handler for '${header}' threw:`, err);
+        },
+      });
+      this.clientSession = aolib.client({
+        send: (wire) => {
+          console.debug(`S: ${wire}`);
+          this.server.receive(wire);
+        },
+        onUnknownHeader: (header, wire) => {
+          console.warn(`[aolib] unknown c2s header '${header}'`, { wire });
+        },
+        onDecodeError: (header, err, wire) => {
+          console.error(`[aolib] decode error for '${header}':`, err, { wire });
+        },
+        onHandlerError: (header, err) => {
+          console.error(`[aolib] server-side handler for '${header}' threw:`, err);
+        },
+      });
+      registerProtocol(this.server, this.clientSession);
+
       if (mode !== "replay") {
         this.serv = new WebSocket(connectionString);
         // Assign the websocket events
@@ -199,7 +270,6 @@ class Client extends EventEmitter {
     this.checkUpdater = null;
     this.viewport = masterViewport();
     this._lastTimeICReceived = new Date(0);
-    this.temp_packet = "";
     this.playerlist = new Map();
     this.charicon_extensions = [".png", ".webp"];
     this.emote_extensions = [".gif", ".png", ".apng", ".webp", ".webp.static"];
@@ -231,48 +301,14 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Hook for sending messages to the client
-   * @param {string} message the message to send
-   */
-  handleSelf(message: string) {
-    const message_event = new MessageEvent("websocket", { data: message });
-    setTimeout(() => this.onMessage(message_event), 1);
-  }
-
-  /**
-   * Echoes a wire message back into our own dispatcher. Used by handlers
-   * that synthesize follow-up packets (e.g. RD → BN/DONE) and by replay
-   * mode to feed pre-recorded packets through.
-   */
-  sendToSelf(message: string) {
-    (<HTMLInputElement>document.getElementById("client_ooclog")).value +=
-      `${message}\r\n`;
-    this.handleSelf(message);
-  }
-
-  /**
-   * Writes a wire message to the server. In replay mode the websocket
-   * isn't live, so outgoing packets loop back through `sendToSelf` to
-   * drive the local dispatcher.
-   */
-  sendToServer(message: string) {
-    console.debug("C: " + message);
-    if (mode === "replay") {
-      this.sendToSelf(message);
-    } else {
-      this.serv.send(message);
-    }
-  }
-
-  /**
    * Begins the handshake process by sending an identifier
    * to the server.
    */
   joinServer() {
-    this.sendToServer(`HI#${hdid}#%`);
+    this.server.send.HI({ hdid });
     if (mode !== "replay") {
       this.checkUpdater = setInterval(
-        () => sendCH({ charId: this.charID }),
+        () => this.server.send.CH({ char_id: this.charID }),
         5000,
       );
     }
@@ -280,6 +316,7 @@ class Client extends EventEmitter {
 
   /**
    * Triggered when a connection is established to the server.
+   * @param {Event} _e
    */
   onOpen(_e: Event) {
     client.state = clientState.Connected;
@@ -288,7 +325,6 @@ class Client extends EventEmitter {
     document.getElementById("client_loading").style.display = "block";
     document.getElementById("client_charselect").style.display = "none";
     appendICNotice("Connected");
-    client.joinServer();
   }
 
   /**
@@ -320,60 +356,7 @@ class Client extends EventEmitter {
   onMessage(e: MessageEvent) {
     const msg = e.data;
     console.debug(`S: ${msg}`);
-    this.handleServerPacket(msg);
-  }
-
-  /**
-   * Splits a server chunk on the `%` packet terminator and dispatches each
-   * complete packet. A trailing incomplete packet (no terminator yet) is
-   * buffered in `temp_packet` for the next chunk.
-   */
-  handleServerPacket(chunk: string) {
-    const segments = (this.temp_packet + chunk).split("%");
-    this.temp_packet = segments.pop() ?? "";
-    for (const segment of segments) this.dispatchPacket(segment);
-  }
-
-  /** Decodes a single complete packet body (sans `%` terminator) and dispatches it. */
-  dispatchPacket(packet: string) {
-    if (packet === "") return;
-
-    // Packet should always end with #; parse anyway if it somehow doesn't.
-    const body = packet.endsWith("#") ? packet.slice(0, -1) : packet;
-    const args = body.split("#");
-    const header = args[0];
-    if (header === "") {
-      console.warn("WARNING: Empty packet received from server, skipping...");
-      return;
-    }
-
-    // packetRegistry maps header -> { codec, receive?, send? }: decode the
-    // wire args into a typed packet, then dispatch to the receiver. Decode
-    // and receive are guarded individually so a single malformed/buggy packet
-    // can't poison its siblings in the same WebSocket frame.
-    const entry = packetRegistry.get(header);
-    if (!entry) {
-      console.warn(`Invalid packet header ${header}`);
-      return;
-    }
-    if (!entry.receive) {
-      console.warn(`Received ${header} but no receiver is registered`);
-      return;
-    }
-
-    let decoded;
-    try {
-      decoded = entry.codec.decode(args);
-    } catch (err) {
-      console.error(`Failed to decode ${header} packet:`, err, { body });
-      return;
-    }
-
-    try {
-      entry.receive(decoded);
-    } catch (err) {
-      console.error(`Receiver for ${header} threw:`, err, { body });
-    }
+    this.server.receive(msg);
   }
 
   /**
@@ -402,7 +385,6 @@ class Client extends EventEmitter {
 
   /**
    * Parse the lines in the OOC and play them
-   * @param {*} args packet arguments
    */
   handleReplay() {
     const ooclog = <HTMLInputElement>document.getElementById("client_ooclog");
@@ -414,7 +396,7 @@ class Client extends EventEmitter {
     const clines = ooclog.value.split(/\r?\n/);
     if (clines[0]) {
       const currentLine = String(clines[0]);
-      this.handleSelf(currentLine);
+      this.server.receive(currentLine);
       ooclog.value = clines.slice(1).join("\r\n");
       if (currentLine.substr(0, 4) === "wait" && rawLog === false) {
         rtime = Number(currentLine.split("#")[1]);
