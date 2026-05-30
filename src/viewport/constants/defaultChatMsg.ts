@@ -12,7 +12,7 @@ import { ChatMsg } from "../interfaces/ChatMsg";
 // Define UPDATE_INTERVAL locally to avoid circular dependency
 const UPDATE_INTERVAL = 60;
 
-const defaultPacket: aolib.MSPacket = {
+const defaultPacket: aolib.MSBroadcast = {
   desk_modifier: DeskModifier.SHOWN,
   preanim: "",
   character: "",

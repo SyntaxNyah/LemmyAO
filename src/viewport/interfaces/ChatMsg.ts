@@ -7,7 +7,7 @@ import { PreloadedAssets } from "./PreloadedAssets";
  * transforms of a few packet fields, character-derived display data
  * that doesn't live on the wire, and chat-tick render-loop state.
  */
-export type ChatMsg = aolib.MSPacket & {
+export type ChatMsg = aolib.MSBroadcast & {
   // Display-safe versions of packet fields (shadow the raw value when
   // the name matches; new fields otherwise).
   content: string;

@@ -83,11 +83,11 @@ const flipTransform = (flip: Flip | undefined): string => {
 
 /**
  * Builds the viewport's render state from an incoming MS packet. The
- * `ChatMsg` type is `aolib.MSPacket & {render-state extras}`, so we just
+ * `ChatMsg` type is `aolib.MSBroadcast & {render-state extras}`, so we just
  * spread the packet and add the display-transformed / char-derived /
  * render-loop fields on top.
  */
-const buildChatMsg = (packet: aolib.MSPacket): ChatMsg => {
+const buildChatMsg = (packet: aolib.MSBroadcast): ChatMsg => {
   const char = client.chars[packet.char_id];
   const msg_nameplate = char?.showname ?? packet.character;
   const msg_blips = char?.blips ?? "male";
@@ -156,7 +156,7 @@ const parseContent = async (chatmsg: ChatMsg): Promise<HTMLSpanElement[]> => {
  * preload, markdown parsing) and computes derived render-loop flags.
  * No DOM mutation here -- only state on the chatmsg object itself.
  */
-const prepareICMessage = async (packet: aolib.MSPacket): Promise<ChatMsg> => {
+const prepareICMessage = async (packet: aolib.MSBroadcast): Promise<ChatMsg> => {
   const chatmsg = buildChatMsg(packet);
 
   // Preload all assets in parallel; primes browser cache.
@@ -428,7 +428,7 @@ const renderICMessage = (chatmsg: ChatMsg) => {
  *   prepareICMessage(packet)  // async: build chatmsg, preload, parse markdown
  *   renderICMessage(chatmsg)  // sync:  apply to DOM, start chat_tick
  */
-export async function handle_ic_speaking(packet: aolib.MSPacket) {
+export async function handle_ic_speaking(packet: aolib.MSBroadcast) {
   const chatmsg = await prepareICMessage(packet);
   renderICMessage(chatmsg);
 }
@@ -440,7 +440,7 @@ import { resetICParams } from "../../client/resetICParams";
  * MS: in-character chat broadcast. Gatekeeps (duplicate / iniedit /
  * muted) and delegates rendering to `handle_ic_speaking`.
  */
-export function handleChatMessage(packet: aolib.MSPacket) {
+export function handleChatMessage(packet: aolib.MSBroadcast) {
   // duplicate message
   if (packet.message === client.viewport.getChatmsg().content) return;
 

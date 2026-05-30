@@ -39,7 +39,7 @@ import type * as aolib from "../../aolib";
  * meaningful only for `judgeruling`; `testimony1#1` (since 2.9) hides
  * the indicator instead of showing it.
  */
-export function applyTestimonyState(packet: aolib.RTPacket) {
+export function applyTestimonyState(packet: aolib.RT) {
   const judgeid = packet.judgeId ?? 0;
   switch (packet.animation) {
     case "testimony1":

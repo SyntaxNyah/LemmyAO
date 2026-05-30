@@ -6,7 +6,7 @@ import type * as aolib from "../aolib";
  *   2 = show the timer
  *   3 = hide the timer
  */
-export function applyTimerUpdate(packet: aolib.TIPacket) {
+export function applyTimerUpdate(packet: aolib.TI) {
   switch (packet.command) {
     case 0:
     case 1:

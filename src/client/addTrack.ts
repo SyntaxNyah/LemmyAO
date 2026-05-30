@@ -25,7 +25,7 @@ import type * as aolib from "../aolib";
  * then music. The fanta wire-format may leave a trailing empty-name
  * entry from the `#` split; we skip those.
  */
-export function applyMusicListBatch(packet: aolib.SMPacket) {
+export function applyMusicListBatch(packet: aolib.SM) {
   document.getElementById("client_loadingtext")!.innerHTML = "Loading Music";
   client.resetMusicList();
   client.resetAreaList();
@@ -51,7 +51,7 @@ export function applyMusicListBatch(packet: aolib.SMPacket) {
 }
 
 /** FM: server pushes the full music list (refresh after edits). */
-export function applyFullMusicList(packet: aolib.FMPacket) {
+export function applyFullMusicList(packet: aolib.FM) {
   client.resetMusicList();
   for (const { name } of packet.music_list) {
     if (!name) continue;
@@ -64,7 +64,7 @@ export function applyFullMusicList(packet: aolib.FMPacket) {
  * the first audio file are areas; everything after is music. Acks by
  * requesting the next batch.
  */
-export function applyEvidenceListBatch(packet: aolib.EMPacket) {
+export function applyEvidenceListBatch(packet: aolib.EM) {
   document.getElementById("client_loadingtext")!.innerHTML = "Loading Music";
   if (packet.batchIndex === 0) {
     client.resetMusicList();

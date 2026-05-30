@@ -25,7 +25,7 @@ const { mode, json_mode: jsonModeEnabled } = queryParser();
  * server-by-server while keeping the default path on the known-good
  * fanta wire.
  */
-export function applyEncryptionMode(packet: aolib.decryptorPacket) {
+export function applyEncryptionMode(packet: aolib.decryptor) {
   const useJson = jsonModeEnabled && packet.value === "JSON";
   client.server.setJsonMode(useJson);
   client.joinServer();
@@ -39,13 +39,13 @@ export function applyEncryptionMode(packet: aolib.decryptorPacket) {
  * `onClientIdentified` in `./replay.ts`), which synthesises the
  * server's next packet (PN) so the UI keeps moving.
  */
-export function applyServerIdentity(packet: aolib.IDPacket) {
+export function applyServerIdentity(packet: aolib.ID) {
   client.playerID = packet.player_id;
   client.server.send.ID({ software: "webAO", version });
 }
 
 /** PN: server population. Triggers the character list request. */
-export function applyServerInfo(_packet: aolib.PNPacket) {
+export function applyServerInfo(_packet: aolib.PN) {
   client.server.send.askchaa({});
 }
 
