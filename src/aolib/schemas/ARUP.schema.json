@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARUP",
+  "type": "object",
+  "properties": {
+    "$header": {
+      "type": "string",
+      "const": "ARUP"
+    },
+    "update_type": {},
+    "update_data": {}
+  },
+  "required": [
+    "$header",
+    "update_type",
+    "update_data"
+  ],
+  "additionalProperties": false
+}
