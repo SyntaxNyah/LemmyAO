@@ -23,6 +23,7 @@ import type { In, Out } from "../types";
 describe("MS: enum values round-trip", () => {
   const minimal = {
     character: "Phoenix",
+    emote: "normal",
     message: "Objection!",
     side: Side.DEFENSE,
     char_id: 1,
@@ -109,6 +110,7 @@ describe("MS: enum fallbacks on malformed wire", () => {
       MSRequest,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "hi",
         side: Side.WITNESS,
         char_id: 1,
@@ -167,6 +169,7 @@ describe("MS: minimal-input encoding fills every default", () => {
       MSRequest,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "Hello",
         side: Side.WITNESS,
         char_id: 5,
@@ -185,6 +188,7 @@ describe("MS: minimal-input encoding fills every default", () => {
       MSRequest,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "Hello",
         side: Side.WITNESS,
         char_id: 5,
@@ -196,7 +200,7 @@ describe("MS: minimal-input encoding fills every default", () => {
       desk_modifier: DeskModifier.SHOWN,
       preanim: "",
       character: "Phoenix",
-      emote: "",
+      emote: "normal",
       message: "Hello",
       side: Side.WITNESS,
       sfx_name: "",
@@ -233,6 +237,7 @@ describe("MS: offset codec", () => {
       MSRequest,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "hi",
         side: Side.WITNESS,
         char_id: 0,
@@ -251,6 +256,7 @@ describe("MS: offset codec", () => {
       MSRequest,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "hi",
         side: Side.WITNESS,
         char_id: 0,
@@ -267,6 +273,7 @@ describe("MS: offset codec", () => {
       MSRequest,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "hi",
         side: Side.WITNESS,
         char_id: 0,
@@ -284,6 +291,7 @@ describe("MS: offset codec", () => {
       MSRequest,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "hi",
         side: Side.WITNESS,
         char_id: 0,
@@ -307,6 +315,7 @@ describe("MS: request vs broadcast shape divergence", () => {
       MSRequest,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "hi",
         side: Side.WITNESS,
         char_id: 1,
@@ -322,6 +331,7 @@ describe("MS: request vs broadcast shape divergence", () => {
       MSBroadcast,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "hi",
         side: Side.WITNESS,
         char_id: 1,
@@ -336,6 +346,7 @@ describe("MS: request vs broadcast shape divergence", () => {
       MSBroadcast,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "I am paired",
         side: Side.WITNESS,
         char_id: 1,
@@ -370,6 +381,7 @@ describe("MS: chat-meta in user fields round-trips", () => {
   it("message field with #, &, %, $ survives", () => {
     const p = {
       character: "Phoenix",
+      emote: "normal",
       message: "100% sure & #1 takes $5",
       side: Side.WITNESS,
       char_id: 1,
@@ -382,6 +394,7 @@ describe("MS: chat-meta in user fields round-trips", () => {
   it("showname with meta-chars", () => {
     const p = {
       character: "Phoenix",
+      emote: "normal",
       message: "hi",
       side: Side.WITNESS,
       char_id: 1,
@@ -441,6 +454,7 @@ describe("MS: JSON envelope round-trip", () => {
   it("enums survive a JSON round-trip with the correct typed value", () => {
     const p: In<typeof MSRequest> = {
       character: "Phoenix",
+      emote: "normal",
       message: "Objection!",
       side: Side.PROSECUTION,
       char_id: 7,
@@ -465,6 +479,7 @@ describe("MS: session integration", () => {
     const s = server({ send: (w) => out.push(w) });
     s.send.MS({
       character: "Phoenix",
+      emote: "normal",
       message: "hi",
       side: Side.WITNESS,
       char_id: 1,
@@ -485,6 +500,7 @@ describe("MS: session integration", () => {
       MSBroadcast,
       {
         character: "Edgeworth",
+        emote: "normal",
         message: "I object",
         side: Side.PROSECUTION,
         char_id: 2,
@@ -505,6 +521,7 @@ describe("MS: session integration", () => {
     const c = client({ send: (w) => out.push(w) });
     c.send.MS({
       character: "Phoenix",
+      emote: "normal",
       message: "broadcast",
       side: Side.WITNESS,
       char_id: 1,
@@ -525,6 +542,7 @@ describe("MS: session integration", () => {
       MSRequest,
       {
         character: "Phoenix",
+        emote: "normal",
         message: "from client",
         side: Side.DEFENSE,
         char_id: 5,

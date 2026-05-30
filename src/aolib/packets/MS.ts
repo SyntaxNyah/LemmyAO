@@ -177,23 +177,44 @@ const parseSide = (s: string): Side => {
 // field so the schema-walker treats it uniformly. JSON form is the
 // underlying value (number for the integer enums, string for Side);
 // fanta form is `String(value)` — these match exactly for both kinds.
+//
+// `jsonSchema` is attached so toJsonSchema() emits a proper `enum`
+// rather than the permissive `{}` default for custom fields.
 // ---------------------------------------------------------------------
 
-function enumField<T>(parse: (token: string) => T): CustomField<T> {
-  return custom<T>({
+function enumField<T>(
+  parse: (token: string) => T,
+  jsonSchema: Record<string, unknown>,
+): CustomField<T> {
+  const field = custom<T>({
     fromFanta: (token) => parse(token),
     toFanta: (value) => String(value),
     fromJson: (value) => parse(String(value)),
     toJson: (value) => value,
-  });
+  }) as CustomField<T> & { jsonSchema: Record<string, unknown> };
+  field.jsonSchema = jsonSchema;
+  return field;
 }
 
-const deskModifier = () => enumField(parseDeskModifier);
-const emoteModifier = () => enumField(parseEmoteModifier);
-const shoutModifier = () => enumField(parseShoutModifier);
-const flipField = () => enumField(parseFlip);
-const textColor = () => enumField(parseTextColor);
-const side = () => enumField(parseSide);
+const intEnum = (values: readonly number[]) => ({
+  type: "integer",
+  enum: [...values],
+});
+
+const deskModifier = () =>
+  enumField(parseDeskModifier, intEnum([0, 1, 2, 3, 4, 5]));
+const emoteModifier = () =>
+  enumField(parseEmoteModifier, intEnum([0, 1, 2, 5, 6]));
+const shoutModifier = () =>
+  enumField(parseShoutModifier, intEnum([0, 1, 2, 3, 4]));
+const flipField = () => enumField(parseFlip, intEnum([0, 1, 2, 3]));
+const textColor = () =>
+  enumField(parseTextColor, intEnum([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]));
+const side = () =>
+  enumField(parseSide, {
+    type: "string",
+    enum: Object.values(Side),
+  });
 
 // ---------------------------------------------------------------------
 // Offset codec.
@@ -211,8 +232,8 @@ const side = () => enumField(parseSide);
 const escapeAmp = (s: string): string => s.replaceAll("&", "<and>");
 const unescapeAmp = (s: string): string => s.replaceAll("<and>", "&");
 
-const offset = (): CustomField<Offset> =>
-  custom<Offset>({
+const offset = (): CustomField<Offset> => {
+  const field = custom<Offset>({
     fromFanta: (token) => {
       const [xs = "0", ys = "0"] = unescapeAmp(token).split("&");
       const x = Number(xs);
@@ -223,7 +244,18 @@ const offset = (): CustomField<Offset> =>
       };
     },
     toFanta: (value) => escapeAmp(`${value.x}&${value.y}`),
-  });
+  }) as CustomField<Offset> & { jsonSchema: Record<string, unknown> };
+  field.jsonSchema = {
+    type: "object",
+    properties: {
+      x: { type: "number" },
+      y: { type: "number" },
+    },
+    required: ["x", "y"],
+    additionalProperties: false,
+  };
+  return field;
+};
 
 const DEFAULT_OFFSET: Offset = { x: 0, y: 0 };
 
@@ -241,7 +273,7 @@ const HEAD = {
   desk_modifier: opt(deskModifier(), DeskModifier.SHOWN),
   preanim: opt(str(), ""),
   character: str(),
-  emote: opt(str(), ""),
+  emote: str(),
   message: str(),
   side: side(),
   sfx_name: opt(str(), ""),
