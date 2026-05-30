@@ -81,12 +81,12 @@ export type decryptor = Out<typeof s.decryptor>;
 // Asymmetric bidirectional packets.
 //
 // `XRequest` validates against the client→server schema, `XBroadcast`
-// against the server→client schema. ID is asymmetric in the legacy
-// shape where only the request side has a `Request` qualifier.
+// against the server→client schema. ID's two sides are named by who
+// owns the identity instead — IDServer / IDClient.
 // ---------------------------------------------------------------------
 
-export type ID = Out<typeof s.ID>;
-export type IDRequest = Out<typeof s.IDRequest>;
+export type IDServer = Out<typeof s.IDServer>;
+export type IDClient = Out<typeof s.IDClient>;
 
 export type MCRequest = Out<typeof s.MCRequest>;
 export type MCBroadcast = Out<typeof s.MCBroadcast>;

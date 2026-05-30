@@ -73,7 +73,7 @@ export type {
   KB, KK, LE, MA, PE, PN, PR, PU, PV, RC, RD, RM, RMC, RT,
   SC, SI, SM, SP, TI, VS_AUDIO, VS_CAPS, VS_FRAME, VS_PEERS, ZZ,
   askchaa, decryptor,
-  ID, IDRequest,
+  IDServer, IDClient,
   MCBroadcast, MCRequest,
   MSBroadcast, MSRequest,
   CTBroadcast, CTRequest,

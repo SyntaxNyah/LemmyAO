@@ -31,7 +31,7 @@ export function onClientIdentify(_packet: aolib.HI) {
  * follow this with PN; here we synthesise an empty one so the client
  * advances to askchaa.
  */
-export function onClientIdentified(_packet: aolib.IDRequest) {
+export function onClientIdentified(_packet: aolib.IDClient) {
   client.server.receive("PN#0#1#%");
 }
 

@@ -38,7 +38,7 @@ export function applyEncryptionMode(packet: aolib.decryptor) {
  * `onClientIdentified` in `./replay.ts`), which synthesises the
  * server's next packet (PN) so the UI keeps moving.
  */
-export function applyServerIdentity(packet: aolib.ID) {
+export function applyServerIdentity(packet: aolib.IDServer) {
   client.playerID = packet.player_id;
   client.server.send.ID({ software: client.software, version: client.version });
 }
