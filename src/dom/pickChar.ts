@@ -14,6 +14,7 @@ export function pickChar(ccharacter: number) {
     document.getElementById("client_charselect")!.style.display = "none";
   }
   client.server.send.CC({
+    player_id: client.playerID,
     char_id: ccharacter,
   });
 }

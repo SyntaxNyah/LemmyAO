@@ -82,7 +82,7 @@ export function finishServerJoin() {
       (c: any) => c && c.name.toLowerCase() === autoChar.toLowerCase(),
     );
     if (charIndex !== -1) {
-      client.server.send.CC({ char_id: charIndex });
+      client.server.send.CC({ player_id: client.playerID, char_id: charIndex });
     }
   }
 }
