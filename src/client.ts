@@ -11,7 +11,7 @@ import queryParser from "./utils/queryParser";
 import getResources from "./utils/getResources";
 import masterViewport from "./viewport/viewport";
 import { Viewport } from "./viewport/interfaces/Viewport";
-import { EventEmitter } from "events";
+import { version } from "./version";
 import { onReplayGo } from "./dom/onReplayGo";
 import * as aolib from "./aolib";
 import { registerProtocol } from "./registerProtocol";
@@ -116,7 +116,7 @@ export function setLastICMessageTime(val: Date) {
   lastICMessageTime = val;
 }
 
-class Client extends EventEmitter {
+class Client {
   /**
    * Session representing the remote server. Owns the C2S send side
    * (`server.send.HI(...)`, etc.) and the S2C receive side
@@ -141,7 +141,12 @@ class Client extends EventEmitter {
    */
   acting_as_server = false;
 
-  serv: any;
+  /** Raw WebSocket transport. Undefined in replay mode. */
+  socket: WebSocket | undefined;
+  /** Cancels the current attempt's socket listeners + watchdog. */
+  private connectAbort: AbortController | undefined;
+  software = "LemmyAO";
+  version = version;
   hp: number[];
   playerID: number;
   charID: number;
@@ -175,15 +180,13 @@ class Client extends EventEmitter {
   emotions_extensions: string[];
   background_extensions: string[];
   constructor(connectionString: string) {
-    super();
-
     this.acting_as_server = mode === "replay";
     this.state = clientState.NotConnected;
     this.connect = () => {
-      this.on("open", this.onOpen.bind(this));
-      this.on("close", this.onClose.bind(this));
-      this.on("message", this.onMessage.bind(this));
-      this.on("error", this.onError.bind(this));
+      // Detach the previous attempt's socket listeners + watchdog.
+      this.connectAbort?.abort();
+      const abort = new AbortController();
+      this.connectAbort = abort;
 
       // Wire the aolib sessions. Both must exist before handlers are
       // registered so the wrong-direction guard sees the full picture.
@@ -198,7 +201,7 @@ class Client extends EventEmitter {
           if (this.acting_as_server) {
             this.clientSession.receive(wire);
           } else {
-            this.serv.send(wire);
+            this.socket.send(wire);
           }
         },
         onUnknownHeader: (header, wire) => {
@@ -229,20 +232,20 @@ class Client extends EventEmitter {
       registerProtocol(this.server, this.clientSession);
 
       if (mode !== "replay") {
-        this.serv = new WebSocket(connectionString);
-        // Assign the websocket events
-        this.serv.addEventListener("open", this.emit.bind(this, "open"));
-        this.serv.addEventListener("close", this.emit.bind(this, "close"));
-        this.serv.addEventListener("message", this.emit.bind(this, "message"));
-        this.serv.addEventListener("error", this.emit.bind(this, "error"));
+        this.socket = new WebSocket(connectionString);
+        const opts = { signal: abort.signal };
+        this.socket.addEventListener("open", this.onOpen.bind(this), opts);
+        this.socket.addEventListener("close", this.onClose.bind(this), opts);
+        this.socket.addEventListener("message", this.onMessage.bind(this), opts);
+        this.socket.addEventListener("error", this.onError.bind(this), opts);
 
-        // If the client is still not connected 5 seconds after attempting to join
-        // It's fair to assume that the server is not reachable
-        setTimeout(() => {
+        // 5s watchdog — if the socket hasn't opened, assume unreachable.
+        const watchdog = setTimeout(() => {
           if (this.state === clientState.NotConnected) {
-            this.serv.close();
+            this.socket?.close();
           }
         }, 5000);
+        abort.signal.addEventListener("abort", () => clearTimeout(watchdog));
       } else {
         this.joinServer();
       }
@@ -360,10 +363,11 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Triggered when an network error occurs.
-   * @param {ErrorEvent} e
+   * Triggered when a network error occurs. WebSocket fires a plain
+   * `Event` here, not `ErrorEvent` — the browser doesn't expose error
+   * detail by design.
    */
-  onError(e: ErrorEvent) {
+  onError(e: Event) {
     console.error(`A network error occurred`);
     console.error(e);
     if (this.state === clientState.Reconnecting) return;
@@ -375,12 +379,11 @@ class Client extends EventEmitter {
     this.cleanup();
   }
 
-  /**
-   * Stop sending keepalives to the server.
-   */
+  /** Stop keepalives, detach socket listeners, close the socket. */
   cleanup() {
     clearInterval(this.checkUpdater);
-    if (this.serv) this.serv.close();
+    this.connectAbort?.abort();
+    if (this.socket) this.socket.close();
   }
 
   /**

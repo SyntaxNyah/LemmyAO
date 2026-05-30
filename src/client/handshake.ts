@@ -9,7 +9,6 @@
 import { client, clientState, autoChar, autoArea } from "../client";
 import { area_click } from "../dom/areaClick";
 import queryParser from "../utils/queryParser";
-import { version } from "../version";
 import type * as aolib from "../aolib";
 
 const { mode, json_mode: jsonModeEnabled } = queryParser();
@@ -41,7 +40,7 @@ export function applyEncryptionMode(packet: aolib.decryptor) {
  */
 export function applyServerIdentity(packet: aolib.ID) {
   client.playerID = packet.player_id;
-  client.server.send.ID({ software: "webAO", version });
+  client.server.send.ID({ software: client.software, version: client.version });
 }
 
 /** PN: server population. Triggers the character list request. */

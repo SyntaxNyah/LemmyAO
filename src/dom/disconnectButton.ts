@@ -5,7 +5,7 @@ import { client } from "../client";
  * Forces a disconnection for testing purposes.
  */
 export function DisconnectButton() {
-  if (client.serv && client.serv.readyState === WebSocket.OPEN) {
-    client.serv.close();
+  if (client.socket && client.socket.readyState === WebSocket.OPEN) {
+    client.socket.close();
   }
 }
