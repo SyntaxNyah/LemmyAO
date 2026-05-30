@@ -6,8 +6,8 @@
 import { packet } from "../schema";
 import { num } from "../fields";
 
-export const VSLeaveRequest = packet("VS_LEAVE", {});
+export const VS_LEAVERequest = packet("VS_LEAVE", {});
 
-export const VSLeaveBroadcast = packet("VS_LEAVE", {
+export const VS_LEAVEBroadcast = packet("VS_LEAVE", {
   uid: num(),
 });

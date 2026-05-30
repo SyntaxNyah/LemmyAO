@@ -8,11 +8,11 @@
 import { packet } from "../schema";
 import { num, bool } from "../fields";
 
-export const VSSpeakRequest = packet("VS_SPEAK", {
+export const VS_SPEAKRequest = packet("VS_SPEAK", {
   on: bool(),
 });
 
-export const VSSpeakBroadcast = packet("VS_SPEAK", {
+export const VS_SPEAKBroadcast = packet("VS_SPEAK", {
   uid: num(),
   on: bool(),
 });

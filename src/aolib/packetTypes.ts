@@ -97,11 +97,11 @@ export type MSBroadcast = Out<typeof s.MSBroadcast>;
 export type CTRequest = Out<typeof s.CTRequest>;
 export type CTBroadcast = Out<typeof s.CTBroadcast>;
 
-export type VSJoinRequest = Out<typeof s.VSJoinRequest>;
-export type VSJoinBroadcast = Out<typeof s.VSJoinBroadcast>;
+export type VS_JOINRequest = Out<typeof s.VS_JOINRequest>;
+export type VS_JOINBroadcast = Out<typeof s.VS_JOINBroadcast>;
 
-export type VSLeaveRequest = Out<typeof s.VSLeaveRequest>;
-export type VSLeaveBroadcast = Out<typeof s.VSLeaveBroadcast>;
+export type VS_LEAVERequest = Out<typeof s.VS_LEAVERequest>;
+export type VS_LEAVEBroadcast = Out<typeof s.VS_LEAVEBroadcast>;
 
-export type VSSpeakRequest = Out<typeof s.VSSpeakRequest>;
-export type VSSpeakBroadcast = Out<typeof s.VSSpeakBroadcast>;
+export type VS_SPEAKRequest = Out<typeof s.VS_SPEAKRequest>;
+export type VS_SPEAKBroadcast = Out<typeof s.VS_SPEAKBroadcast>;

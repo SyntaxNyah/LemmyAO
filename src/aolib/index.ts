@@ -77,9 +77,9 @@ export type {
   MCBroadcast, MCRequest,
   MSBroadcast, MSRequest,
   CTBroadcast, CTRequest,
-  VSJoinBroadcast, VSJoinRequest,
-  VSLeaveBroadcast, VSLeaveRequest,
-  VSSpeakBroadcast, VSSpeakRequest,
+  VS_JOINBroadcast, VS_JOINRequest,
+  VS_LEAVEBroadcast, VS_LEAVERequest,
+  VS_SPEAKBroadcast, VS_SPEAKRequest,
 } from "./packetTypes";
 
 // ---------------------------------------------------------------------

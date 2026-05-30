@@ -835,7 +835,7 @@ export function applyVoicePeerList(packet: aolib.VS_PEERS) {
 }
 
 /** VS_JOIN: a remote peer joined the voice mesh. */
-export function handleVoicePeerJoin(packet: aolib.VSJoinBroadcast) {
+export function handleVoicePeerJoin(packet: aolib.VS_JOINBroadcast) {
   if (!Number.isFinite(packet.uid)) return;
   void handlePeerJoined(packet.uid);
 }
@@ -845,7 +845,7 @@ export function handleVoicePeerJoin(packet: aolib.VSJoinBroadcast) {
  * (server auto-kicked us, e.g. on area change or `/voicearea off`),
  * we tear down locally instead.
  */
-export function handleVoicePeerLeave(packet: aolib.VSLeaveBroadcast) {
+export function handleVoicePeerLeave(packet: aolib.VS_LEAVEBroadcast) {
   if (!Number.isFinite(packet.uid)) return;
   if (packet.uid === client.playerID) {
     leaveVoice();
@@ -855,7 +855,7 @@ export function handleVoicePeerLeave(packet: aolib.VSLeaveBroadcast) {
 }
 
 /** VS_SPEAK: a remote peer toggled their speaking-state indicator. */
-export function applyVoicePeerSpeak(packet: aolib.VSSpeakBroadcast) {
+export function applyVoicePeerSpeak(packet: aolib.VS_SPEAKBroadcast) {
   if (!Number.isFinite(packet.uid)) return;
   notifyRemoteSpeaking(packet.uid, packet.on);
 }
