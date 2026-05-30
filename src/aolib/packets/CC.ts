@@ -1,17 +1,18 @@
 /**
  * CC (c2s) — client requests a specific character slot.
  *
- * Wire shape is `CC#0#<char_id>##%` — a leading literal `0` (legacy
- * player-id slot the server ignores) and a trailing literal `""`
- * (legacy password slot). Both literals are stripped from the typed
- * API; callers only see `{ char_id }`.
+ * Wire shape is `CC#<player_id>#<char_id>#<char_password>#%`. The
+ * leading slot is the player id the server handed us in the ID
+ * packet; servers validate that we echo it back. `char_password` is
+ * the legacy character-claim password (empty by default; some
+ * servers gate locked slots on a non-empty value).
  */
 
 import { packet } from "../schema";
-import { num, lit } from "../fields";
+import { num, str, opt } from "../fields";
 
 export const CC = packet("CC", {
-  _0: lit(0),
+  player_id: num(),
   char_id: num(),
-  _pw: lit(""),
+  char_password: opt(str(), ""),
 });

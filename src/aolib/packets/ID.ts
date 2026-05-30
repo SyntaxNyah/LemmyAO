@@ -1,11 +1,11 @@
 /**
  * ID — identity packet. Bidirectional with asymmetric shapes:
  *
- *   Server -> client (ID): `ID#<player_id>#<software>#<version>#%`.
+ *   Server -> client (IDServer): `ID#<player_id>#<software>#<version>#%`.
  *     Server identifies itself in response to HI and assigns the
  *     client its player slot id (NOT a population count — that's PN).
  *
- *   Client -> server (IDRequest): `ID#<software>#<version>#%`.
+ *   Client -> server (IDClient): `ID#<software>#<version>#%`.
  *     The client identifies itself back. Most legacy servers (akashi,
  *     tsuserver, KFO) gate the rest of the handshake on receiving
  *     this; without it the server stops sending packets after its own
@@ -17,14 +17,14 @@ import { packet } from "../schema";
 import { str, num } from "../fields";
 
 /** Server -> client: the server identifies itself and assigns a slot. */
-export const ID = packet("ID", {
+export const IDServer = packet("ID", {
   player_id: num(),
   software: str(),
   version: str(),
 });
 
 /** Client -> server: the client identifies itself back. */
-export const IDRequest = packet("ID", {
+export const IDClient = packet("ID", {
   software: str(),
   version: str(),
 });

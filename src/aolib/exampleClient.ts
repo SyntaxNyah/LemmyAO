@@ -16,7 +16,7 @@ import { aolib } from "./index";
 // already have. Defined here so the example is self-contained.
 // ---------------------------------------------------------------------
 
-const state = { charID: -1 };
+const state = { charID: -1, playerID: 0 };
 
 function getHardwareID(): string { return "stub-hwid"; }
 function playMusic(_track: string, _channel: number): void {}
@@ -55,6 +55,12 @@ ws.onmessage = (e) => server.receive(e.data);
 // Fully typed, defaults filled, literals stripped.
 // ---------------------------------------------------------------------
 
+// Server's ID packet hands us a player slot id; subsequent c2s packets
+// (CC etc.) echo it back, so stash it on local state.
+server.on.ID((packet) => {
+  state.playerID = packet.player_id;
+});
+
 server.on.MC((packet) => {
   // packet.showname defaults to "" if the server omitted it.
   playMusic(packet.name, packet.channel);
@@ -76,5 +82,5 @@ export function onMusicListClick(track: string): void {
 }
 
 export function onCharacterPick(charId: number): void {
-  server.send.CC({ char_id: charId });
+  server.send.CC({ player_id: state.playerID, char_id: charId });
 }

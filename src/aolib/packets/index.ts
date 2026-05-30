@@ -26,9 +26,9 @@ import { CTRequest, CTBroadcast } from "./CT";
 import { HP } from "./HP";
 import { RT } from "./RT";
 import { ZZ } from "./ZZ";
-import { VSJoinRequest, VSJoinBroadcast } from "./VS_JOIN";
-import { VSLeaveRequest, VSLeaveBroadcast } from "./VS_LEAVE";
-import { VSSpeakRequest, VSSpeakBroadcast } from "./VS_SPEAK";
+import { VS_JOINRequest, VS_JOINBroadcast } from "./VS_JOIN";
+import { VS_LEAVERequest, VS_LEAVEBroadcast } from "./VS_LEAVE";
+import { VS_SPEAKRequest, VS_SPEAKBroadcast } from "./VS_SPEAK";
 
 import { AE } from "./AE";
 import { AM } from "./AM";
@@ -45,7 +45,7 @@ import { RM } from "./RM";
 import { VS_FRAME } from "./VS_FRAME";
 
 import { decryptor } from "./decryptor";
-import { ID, IDRequest } from "./ID";
+import { IDServer, IDClient } from "./ID";
 import { PV } from "./PV";
 import { BB } from "./BB";
 import { DONE } from "./DONE";
@@ -84,7 +84,7 @@ import { LE } from "./LE";
 export const c2sSchemas = {
   // handshake / lifecycle
   HI,
-  ID: IDRequest,
+  ID: IDClient,
   askchaa,
   RC,
   RD,
@@ -109,15 +109,15 @@ export const c2sSchemas = {
   MA,
   // voice
   VS_FRAME,
-  VS_JOIN: VSJoinRequest,
-  VS_LEAVE: VSLeaveRequest,
-  VS_SPEAK: VSSpeakRequest,
+  VS_JOIN: VS_JOINRequest,
+  VS_LEAVE: VS_LEAVERequest,
+  VS_SPEAK: VS_SPEAKRequest,
 } as const;
 
 export const s2cSchemas = {
   // handshake / lifecycle
   decryptor,
-  ID,
+  ID: IDServer,
   SI,
   DONE,
   CHECK,
@@ -161,9 +161,9 @@ export const s2cSchemas = {
   VS_AUDIO,
   VS_CAPS,
   VS_PEERS,
-  VS_JOIN: VSJoinBroadcast,
-  VS_LEAVE: VSLeaveBroadcast,
-  VS_SPEAK: VSSpeakBroadcast,
+  VS_JOIN: VS_JOINBroadcast,
+  VS_LEAVE: VS_LEAVEBroadcast,
+  VS_SPEAK: VS_SPEAKBroadcast,
 } as const;
 
 export type C2SSchemas = typeof c2sSchemas;
@@ -175,11 +175,11 @@ export type S2CSchemas = typeof s2cSchemas;
 
 export {
   HI, CC, MCRequest, MCBroadcast, MSRequest, MSBroadcast,
-  decryptor, ID, IDRequest, PV, BB, DONE, SM,
+  decryptor, IDServer, IDClient, PV, BB, DONE, SM,
   CTRequest, CTBroadcast, HP, RT, ZZ,
-  VSJoinRequest, VSJoinBroadcast,
-  VSLeaveRequest, VSLeaveBroadcast,
-  VSSpeakRequest, VSSpeakBroadcast,
+  VS_JOINRequest, VS_JOINBroadcast,
+  VS_LEAVERequest, VS_LEAVEBroadcast,
+  VS_SPEAKRequest, VS_SPEAKBroadcast,
   AE, AM, AN, askchaa, CH, DE, EE, MA, PE, RC, RD, RM, VS_FRAME,
   ARUP, ASS, AUTH, BD, BN, CHECK, CharsCheck, FA, FL, FM, JD, KB, KK,
   PN, PR, PU, RMC, SC, SI, SP, TI,

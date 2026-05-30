@@ -31,10 +31,10 @@ describe("server(): send (C2S)", () => {
     expect(out).toEqual(["HI#device-1#%"]);
   });
 
-  it("send.CC includes the schema's positional literals on the wire", () => {
+  it("send.CC echoes the assigned player_id and trails the legacy password literal", () => {
     const { out, config } = makeBuf();
-    server(config).send.CC({ char_id: 5 });
-    expect(out).toEqual(["CC#0#5##%"]);
+    server(config).send.CC({ player_id: 3, char_id: 5 });
+    expect(out).toEqual(["CC#3#5##%"]);
   });
 
   it("send.MC fills defaults via cast before encoding", () => {
@@ -153,14 +153,14 @@ describe("client(): on (C2S)", () => {
     expect(received).toEqual({ hdid: "device-1" });
   });
 
-  it("on.CC strips both literals from the decoded shape", () => {
+  it("on.CC decodes player_id, char_id, and the optional char_password slot", () => {
     const c = client(makeBuf().config);
-    let received: { char_id: number } | undefined;
+    let received: { player_id: number; char_id: number; char_password: string } | undefined;
     c.on.CC((p) => {
       received = p;
     });
-    c.receive("CC#0#5##%");
-    expect(received).toEqual({ char_id: 5 });
+    c.receive("CC#3#5##%");
+    expect(received).toEqual({ player_id: 3, char_id: 5, char_password: "" });
   });
 
   it("on.<S2C> throws role-aware wrong-direction error", () => {

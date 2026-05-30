@@ -161,7 +161,7 @@ const { mode: characterListMode } = queryParser();
  * empty blips slot at index 2). Once the roster is loaded we ask the
  * server for the music list.
  */
-export async function applyFullCharacterList(packet: aolib.SCPacket) {
+export async function applyFullCharacterList(packet: aolib.SC) {
   if (characterListMode === "watch") {
     // Spectators don't pick a character
     document.getElementById("client_charselect")!.style.display = "none";
@@ -180,7 +180,7 @@ export async function applyFullCharacterList(packet: aolib.SCPacket) {
  * CI: server pushes one incremental character batch; we forward each
  * `&`-delimited entry and request the next batch.
  */
-export function applyCharacterBatch(packet: aolib.CIPacket) {
+export function applyCharacterBatch(packet: aolib.CI) {
   document.getElementById("client_loadingtext")!.innerHTML =
     `Loading Character ${packet.batchIndex}/${client.char_list_length}`;
   for (const { index, data } of packet.entries) {

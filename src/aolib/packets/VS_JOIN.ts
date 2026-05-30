@@ -6,8 +6,8 @@
 import { packet } from "../schema";
 import { num } from "../fields";
 
-export const VSJoinRequest = packet("VS_JOIN", {});
+export const VS_JOINRequest = packet("VS_JOIN", {});
 
-export const VSJoinBroadcast = packet("VS_JOIN", {
+export const VS_JOINBroadcast = packet("VS_JOIN", {
   uid: num(),
 });

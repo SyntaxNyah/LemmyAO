@@ -36,11 +36,14 @@ import { server, client } from "./session";
 export const aolib = { server, client };
 
 // ---------------------------------------------------------------------
-// Packet schemas.
+// Packet types and supporting enums.
 //
-// Direction-keyed registries are the source of truth for which packets
-// can flow which way; individual schema constants are re-exported for
-// callers who want them by name.
+// The direction-keyed registries (c2sSchemas / s2cSchemas) are the
+// runtime source of truth for which packets can flow which way. The
+// individual schema constants are NOT re-exported as values from this
+// barrel — only as types via `./packetTypes`. Type-namespace `aolib.X`
+// gives callers the decoded-packet shape for handler signatures; the
+// underlying schema values stay internal to the session layer.
 // ---------------------------------------------------------------------
 
 export {
@@ -48,21 +51,6 @@ export {
   s2cSchemas,
   type C2SSchemas,
   type S2CSchemas,
-  // unidirectional and symmetric-bidirectional schemas
-  HI, CC, decryptor, ID, PV, BB, DONE, SM,
-  HP, RT, ZZ,
-  AE, AM, AN, askchaa, CH, DE, EE, MA, PE, RC, RD, RM, VS_FRAME,
-  ARUP, ASS, AUTH, BD, BN, CHECK, CharsCheck, FA, FL, FM, JD, KB, KK,
-  PN, PR, PU, RMC, SC, SI, SP, TI,
-  VS_AUDIO, VS_CAPS, VS_PEERS,
-  CI, EM, EI, LE,
-  // bidirectional asymmetric (per-direction shapes)
-  MCRequest, MCBroadcast,
-  MSRequest, MSBroadcast,
-  CTRequest, CTBroadcast,
-  VSJoinRequest, VSJoinBroadcast,
-  VSLeaveRequest, VSLeaveBroadcast,
-  VSSpeakRequest, VSSpeakBroadcast,
   // MS enums (public type surface for chat fields)
   Side,
   DeskModifier,
@@ -77,9 +65,22 @@ export {
   type AreaUpdateData,
 } from "./packets";
 
-// Public typed-packet aliases — `aolib.MSPacket` instead of
-// `aolib.Out<typeof aolib.MSBroadcast>` in handler signatures.
-export type * from "./packetTypes";
+// Typed-packet aliases — `aolib.MSBroadcast` (a type) instead of
+// `Out<typeof MSBroadcast>` in handler signatures.
+export type {
+  ARUP, ASS, AUTH, BB, BD, BN, CC, CH, CHECK, CharsCheck, CI,
+  DE, DONE, EE, EI, EM, FA, FL, FM, HI, HP, JD,
+  KB, KK, LE, MA, PE, PN, PR, PU, PV, RC, RD, RM, RMC, RT,
+  SC, SI, SM, SP, TI, VS_AUDIO, VS_CAPS, VS_FRAME, VS_PEERS, ZZ,
+  askchaa, decryptor,
+  IDServer, IDClient,
+  MCBroadcast, MCRequest,
+  MSBroadcast, MSRequest,
+  CTBroadcast, CTRequest,
+  VS_JOINBroadcast, VS_JOINRequest,
+  VS_LEAVEBroadcast, VS_LEAVERequest,
+  VS_SPEAKBroadcast, VS_SPEAKRequest,
+} from "./packetTypes";
 
 // ---------------------------------------------------------------------
 // Field primitives (schema DSL).

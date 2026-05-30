@@ -67,13 +67,16 @@ const parseUpdateType = (s: string): AreaUpdateType => {
     : AreaUpdateType.PLAYER_COUNT;
 };
 
-const areaUpdateTypeField = (): CustomField<AreaUpdateType> =>
-  custom<AreaUpdateType>({
+const areaUpdateTypeField = (): CustomField<AreaUpdateType> => {
+  const field = custom<AreaUpdateType>({
     fromFanta: (token) => parseUpdateType(token),
     toFanta: (value) => String(value),
     fromJson: (value) => parseUpdateType(String(value)),
     toJson: (value) => value,
-  });
+  }) as CustomField<AreaUpdateType> & { jsonSchema: Record<string, unknown> };
+  field.jsonSchema = { type: "integer", enum: [0, 1, 2, 3] };
+  return field;
+};
 
 /**
  * The payload field is a placeholder — its fanta codec throws if it
@@ -82,8 +85,8 @@ const areaUpdateTypeField = (): CustomField<AreaUpdateType> =>
  * (heterogeneous) array through; JSON-native serialization preserves
  * `number[]` and `string[]` cleanly.
  */
-const updateDataField = (): CustomField<AreaUpdateData> =>
-  custom<AreaUpdateData>({
+const updateDataField = (): CustomField<AreaUpdateData> => {
+  const field = custom<AreaUpdateData>({
     fromFanta: () => {
       throw new Error(
         "aolib: ARUP.update_data is consumed by the schema's fromArgs " +
@@ -98,7 +101,15 @@ const updateDataField = (): CustomField<AreaUpdateData> =>
           "never be invoked.",
       );
     },
-  });
+  }) as CustomField<AreaUpdateData> & { jsonSchema: Record<string, unknown> };
+  // Whole array is homogeneous at runtime (number[] OR string[]) but the
+  // choice depends on update_type — leave that for callers to handle.
+  field.jsonSchema = {
+    type: "array",
+    items: { type: ["integer", "string"] },
+  };
+  return field;
+};
 
 // ---------------------------------------------------------------------
 // Schema

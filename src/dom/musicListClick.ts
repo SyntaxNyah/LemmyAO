@@ -1,7 +1,7 @@
 import { client } from "../client";
 /**
  * Triggered when an item on the music list is clicked.
- * @param {MouseEvent} event
+ * @param {MouseEvent} _event
  */
 export function musiclist_click(_event: Event) {
   const playtrack = (<HTMLInputElement>(
