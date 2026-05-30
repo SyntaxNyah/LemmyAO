@@ -7,8 +7,24 @@
       "type": "string",
       "const": "ARUP"
     },
-    "update_type": {},
-    "update_data": {}
+    "update_type": {
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    "update_data": {
+      "type": "array",
+      "items": {
+        "type": [
+          "integer",
+          "string"
+        ]
+      }
+    }
   },
   "required": [
     "$header",
