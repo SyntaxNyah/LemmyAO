@@ -32,8 +32,10 @@ export function appendOOCMessage(packet: aolib.CTBroadcast) {
   let message = addLinks(rawMessage);
   message = message.replace(/\n/g, "<br>");
 
+  const wasAtBottom =
+    oocLog.scrollTop + oocLog.offsetHeight + 120 > oocLog.scrollHeight;
   oocLog.innerHTML += `${username}: ${message}<br>`;
-  if (oocLog.scrollTop + oocLog.offsetHeight + 120 > oocLog.scrollHeight) {
+  if (wasAtBottom) {
     oocLog.scrollTo(0, oocLog.scrollHeight);
   }
 
@@ -44,8 +46,9 @@ export function appendOOCMessage(packet: aolib.CTBroadcast) {
 export function showModcallNotice(packet: aolib.ZZ) {
   const oocLog = document.getElementById("client_ooclog")!;
   const message = safeHtmlTags(unescapeUnicode(packet.reason)).replace(/\n/g, "<br>");
+  const wasAtBottom = oocLog.scrollTop > oocLog.scrollHeight - 60;
   oocLog.innerHTML += `$Alert: ${message}<br>`;
-  if (oocLog.scrollTop > oocLog.scrollHeight - 60) {
+  if (wasAtBottom) {
     oocLog.scrollTop = oocLog.scrollHeight;
   }
 
