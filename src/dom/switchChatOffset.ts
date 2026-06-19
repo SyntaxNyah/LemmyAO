@@ -2,15 +2,15 @@
  * Chatbox offset control.
  *
  * In 16:9 mode the chatbox spans the full width; this lets the user inset it
- * by a percentage so it sits centred over the action. The value is a per-side
- * inset in %, adjustable two ways for QoL:
+ * by a percentage so it sits centred over the action. The value is the total
+ * inset in % (0 = full width, 100 = collapsed), adjustable two ways for QoL:
  *   - type a number directly (committed on Enter / blur / spinner -> `change`)
  *   - scroll the mouse wheel over the field (scroll up = wider inset)
  */
 
 const STORAGE_KEY = "chatOffset";
 const MIN = 0;
-const MAX = 40;
+const MAX = 100;
 const STEP = 1;
 
 const clamp = (n: number) => Math.min(MAX, Math.max(MIN, n));
@@ -27,10 +27,10 @@ export function getChatOffset(): number {
 }
 
 /**
- * Apply a per-side inset to the chat container and persist it.
+ * Apply the inset to the chat container and persist it.
  *
- * `pct` is the margin on each side, so the box stays centred:
- *   width = 100 - 2*pct,  left = pct      (pct = 10 reproduces the old 80%/10%)
+ * `pct` is the total horizontal inset, split evenly so the box stays centred:
+ *   width = 100 - pct,  left = pct / 2     (pct = 20 reproduces the old 80%/10%)
  *
  * To make this a signed left/right shift instead (like the pair_offset slider,
  * which runs -100..100), change only this function.
@@ -38,8 +38,8 @@ export function getChatOffset(): number {
 export function applyChatOffset(pct: number) {
   const p = clamp(pct);
   const container = document.getElementById("client_chatcontainer")!;
-  container.style.width = `${100 - 2 * p}%`;
-  container.style.left = `${p}%`;
+  container.style.width = `${100 - p}%`;
+  container.style.left = `${p / 2}%`;
   localStorage.setItem(STORAGE_KEY, String(p));
 }
 
