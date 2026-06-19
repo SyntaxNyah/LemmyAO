@@ -12,6 +12,7 @@ import { restoreThemeMaker, restoreBlipPitch } from "../dom/themeMaker";
 import { isHideDesksEnabled } from "../dom/switchHideDesks";
 import { isPanTiltEnabled, switchPanTilt } from "../dom/switchPanTilt";
 import { initChatOffset } from "../dom/switchChatOffset";
+import { initPairOffsets } from "../dom/pairOffset";
 import {
   isMusicMuted,
   isSfxMuted,
@@ -127,6 +128,9 @@ export function loadResources() {
 
   // Restore chatbox offset (defaults to 0%) and enable mouse-wheel adjustment
   initChatOffset();
+
+  // Enable type/scroll adjustment for the pairing offset fields
+  initPairOffsets();
 
   // Restore font setting
   const storedFont = localStorage.getItem("selectedFont") || "sans-serif";
