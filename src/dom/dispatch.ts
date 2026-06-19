@@ -43,6 +43,7 @@ import { onICEnter } from "./onICEnter";
 import { onOOCEnter } from "./onOOCEnter";
 import { onReplayGo } from "./onReplayGo";
 import { opusCheck } from "./opusCheck";
+import { resetPairOffsets } from "./pairOffset";
 import { pickChar } from "./pickChar";
 import { randomCharacterOOC } from "./randomCharacterOOC";
 import { ReconnectButton } from "./reconnectButton";
@@ -78,10 +79,7 @@ const actions: Record<string, (e: Event) => void> = {
   addHPD: () => client.server.send.HP({ bar: 1, value: client.hp[0] + 1 }),
   redHPP: () => client.server.send.HP({ bar: 2, value: client.hp[1] - 1 }),
   addHPP: () => client.server.send.HP({ bar: 2, value: client.hp[1] + 1 }),
-  resetOffset: () => {
-    (<HTMLInputElement>document.getElementById("pair_offset")).value = "0";
-    (<HTMLInputElement>document.getElementById("pair_y_offset")).value = "0";
-  },
+  resetOffset: () => resetPairOffsets(),
   preventDefault: (e) => e.preventDefault(),
 
   // No-arg actions.
