@@ -59,7 +59,7 @@
         color: white;
       }
     </style>
-  <link rel="stylesheet" crossorigin href="./chunk-zn5k4gg2.css"><script type="module" crossorigin src="./chunk-sdbfgj0g.js"></script></head>
+  <link rel="stylesheet" crossorigin href="./chunk-zn5k4gg2.css"><script type="module" crossorigin src="./chunk-1gnzpb2v.js"></script></head>
 
   <body>
     <div
@@ -389,6 +389,16 @@
                   </td>
                   <td>
                     <input
+                      type="range"
+                      id="pair_offset_slider"
+                      min="-100"
+                      max="100"
+                      step="1"
+                      value="0"
+                      aria-label="Horizontal pairing offset slider"
+                    />
+                    <br />
+                    <input
                       type="number"
                       name="pair_offset"
                       id="pair_offset"
@@ -396,7 +406,7 @@
                       max="100"
                       step="1"
                       value="0"
-                      title="Horizontal pairing offset in %. Scroll the wheel over this field or type a value."
+                      title="Horizontal pairing offset in %. Drag the slider, scroll the wheel, or type a value."
                     />
                   </td>
                 </tr>
@@ -406,6 +416,16 @@
                   </td>
                   <td>
                     <input
+                      type="range"
+                      id="pair_y_offset_slider"
+                      min="-100"
+                      max="100"
+                      step="1"
+                      value="0"
+                      aria-label="Vertical pairing offset slider"
+                    />
+                    <br />
+                    <input
                       type="number"
                       name="pair_y_offset"
                       id="pair_y_offset"
@@ -413,7 +433,7 @@
                       max="100"
                       step="1"
                       value="0"
-                      title="Vertical pairing offset in %. Scroll the wheel over this field or type a value."
+                      title="Vertical pairing offset in %. Drag the slider, scroll the wheel, or type a value."
                     />
                   </td>
                 </tr>
