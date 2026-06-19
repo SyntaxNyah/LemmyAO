@@ -27,6 +27,7 @@ const SETTINGS_KEYS = [
   "themeMakerConfig",
   "hideDesks",
   "panTilt",
+  "chatOffset",
   "musicMuted",
   "sfxMuted",
   "blipMuted",
@@ -139,7 +140,7 @@ export function resetSettings() {
     switchAspectRatio();
   }
   if (hdOffset) {
-    hdOffset.checked = false;
+    hdOffset.value = "0";
     switchChatOffset();
   }
 

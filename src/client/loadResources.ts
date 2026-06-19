@@ -11,6 +11,7 @@ import { setFont } from "../dom/setFont";
 import { restoreThemeMaker, restoreBlipPitch } from "../dom/themeMaker";
 import { isHideDesksEnabled } from "../dom/switchHideDesks";
 import { isPanTiltEnabled, switchPanTilt } from "../dom/switchPanTilt";
+import { initChatOffset } from "../dom/switchChatOffset";
 import {
   isMusicMuted,
   isSfxMuted,
@@ -123,6 +124,9 @@ export function loadResources() {
   if (hideDesksCheckbox) {
     hideDesksCheckbox.checked = isHideDesksEnabled();
   }
+
+  // Restore chatbox offset (defaults to 0%) and enable mouse-wheel adjustment
+  initChatOffset();
 
   // Restore font setting
   const storedFont = localStorage.getItem("selectedFont") || "sans-serif";

@@ -1015,12 +1015,18 @@
           data-action="switchAspectRatio"
         />
         <br />
-        <label for="client_hdviewport_offset">Offset chatbox:</label>
+        <label for="client_hdviewport_offset">Offset chatbox (%):</label>
         <input
-          type="checkbox"
+          type="number"
           id="client_hdviewport_offset"
-          id="client_hdviewport_offset"
+          name="client_hdviewport_offset"
+          min="0"
+          max="40"
+          step="1"
+          value="0"
+          title="Per-side inset for the chatbox. Scroll the wheel over this field or type a value."
           data-action="switchChatOffset"
+          data-event="change"
         />
         <br />
         <br />
