@@ -59,7 +59,7 @@
         color: white;
       }
     </style>
-  <link rel="stylesheet" crossorigin href="./chunk-zn5k4gg2.css"><script type="module" crossorigin src="./chunk-ksbann97.js"></script></head>
+  <link rel="stylesheet" crossorigin href="./chunk-zn5k4gg2.css"><script type="module" crossorigin src="./chunk-xy1hc31e.js"></script></head>
 
   <body>
     <div
@@ -1015,12 +1015,18 @@
           data-action="switchAspectRatio"
         />
         <br />
-        <label for="client_hdviewport_offset">Offset chatbox:</label>
+        <label for="client_hdviewport_offset">Offset chatbox (%):</label>
         <input
-          type="checkbox"
+          type="number"
           id="client_hdviewport_offset"
-          id="client_hdviewport_offset"
+          name="client_hdviewport_offset"
+          min="0"
+          max="40"
+          step="1"
+          value="0"
+          title="Per-side inset for the chatbox. Scroll the wheel over this field or type a value."
           data-action="switchChatOffset"
+          data-event="change"
         />
         <br />
         <br />
