@@ -22,6 +22,7 @@
 //     VS_SPEAK#<on_off>#%
 
 import { client } from "../client";
+import type { SampleRate as WasmOpusSampleRate } from "libopus-wasm";
 
 interface VoiceCaps {
   enabled: boolean;
@@ -49,11 +50,26 @@ let localStream: MediaStream | null = null;
 let captureSourceNode: MediaStreamAudioSourceNode | null = null;
 let captureNode: AudioWorkletNode | null = null;
 let captureSink: GainNode | null = null;
-let encoder: AudioEncoder | null = null;
-let encoderTimestampUs = 0;
+let frameEncoder: FrameEncoder | null = null;
+
+// Unifies the two available audio codec backends: the native WebCodecs
+// AudioEncoder/AudioDecoder (preferred where available) and a WASM libopus
+// fallback (`libopus-wasm`) for browsers that lack WebCodecs audio support —
+// notably Firefox on Android/iOS, which never shipped it. Both backends
+// speak the same raw-Opus-packet wire format, so peers on either backend
+// can talk to each other transparently.
+interface FrameEncoder {
+  encode(pcm: Float32Array): void;
+  close(): void;
+}
+
+interface FrameDecoder {
+  decode(bytes: Uint8Array): void;
+  close(): void;
+}
 
 interface RemotePeer {
-  decoder: AudioDecoder;
+  decoder: FrameDecoder;
   playbackNode: AudioWorkletNode;
   gain: GainNode;
 }
@@ -304,6 +320,106 @@ function buildAudioConstraints(): MediaTrackConstraints {
   return constraints;
 }
 
+function emitEncodedFrame(bytes: Uint8Array): void {
+  if (!isLocalTransmitting()) return;
+  const b64 = b64encode(bytes);
+  if (caps.maxFrameBytes > 0 && b64.length > caps.maxFrameBytes) {
+    // Server would drop oversize frames anyway
+    return;
+  }
+  client.server.send.VS_FRAME({ payload: b64 });
+}
+
+async function createWebCodecsFrameEncoder(): Promise<FrameEncoder> {
+  const encoderConfig: AudioEncoderConfig = {
+    codec: caps.codec,
+    sampleRate: caps.sampleRate,
+    numberOfChannels: 1,
+    bitrate: 24000,
+  };
+  const support = await AudioEncoder.isConfigSupported(encoderConfig);
+  if (!support.supported) {
+    throw new Error(
+      `AudioEncoder config not supported: codec=${caps.codec} sampleRate=${caps.sampleRate}`,
+    );
+  }
+
+  let timestampUs = 0;
+  const encoder = new AudioEncoder({
+    output: (chunk: EncodedAudioChunk) => {
+      const buf = new Uint8Array(chunk.byteLength);
+      chunk.copyTo(buf);
+      emitEncodedFrame(buf);
+    },
+    error: (e: DOMException) => {
+      console.error("voice: encoder error", e);
+    },
+  });
+  encoder.configure(encoderConfig);
+
+  return {
+    encode(pcm: Float32Array) {
+      if (encoder.state !== "configured") return;
+      const data = new AudioData({
+        format: "f32-planar",
+        sampleRate: caps.sampleRate,
+        numberOfFrames: pcm.length,
+        numberOfChannels: 1,
+        timestamp: timestampUs,
+        // Float32Array's generic ArrayBufferLike doesn't satisfy BufferSource in
+        // TS 5.9's stricter lib.dom; the runtime accepts it.
+        data: pcm as unknown as BufferSource,
+      });
+      timestampUs += Math.round((pcm.length / caps.sampleRate) * 1_000_000);
+      try {
+        encoder.encode(data);
+      } finally {
+        data.close();
+      }
+    },
+    close() {
+      try { encoder.close(); } catch (_e) { /* ignore */ }
+    },
+  };
+}
+
+async function createWasmFrameEncoder(frameSamples: number): Promise<FrameEncoder> {
+  const { createEncoder, Application } = await import("libopus-wasm");
+  const handle = await createEncoder({
+    channels: 1,
+    sampleRate: caps.sampleRate as WasmOpusSampleRate,
+    frameSize: frameSamples,
+    application: Application.Voip,
+  });
+  return {
+    encode(pcm: Float32Array) {
+      try {
+        emitEncodedFrame(handle.encodeFloat(pcm));
+      } catch (e) {
+        console.error("voice: wasm opus encode failed", e);
+      }
+    },
+    close() {
+      try { handle.free(); } catch (_e) { /* ignore */ }
+    },
+  };
+}
+
+// Prefers the native WebCodecs codec (hardware-accelerated on many
+// platforms); falls back to the WASM libopus build — used on Firefox
+// mobile, which never shipped WebCodecs' AudioEncoder/AudioDecoder — for
+// anything that fails or is missing outright.
+async function createFrameEncoder(frameSamples: number): Promise<FrameEncoder> {
+  if (webCodecsSupported()) {
+    try {
+      return await createWebCodecsFrameEncoder();
+    } catch (e) {
+      console.warn("voice: WebCodecs encoder unavailable, falling back to WASM opus", e);
+    }
+  }
+  return createWasmFrameEncoder(frameSamples);
+}
+
 async function startCapture(): Promise<void> {
   if (!localStream) return;
   const ctx = await ensureAudioContext();
@@ -339,68 +455,16 @@ async function startCapture(): Promise<void> {
   captureSink = ctx.createGain();
   captureSink.gain.value = 0;
 
-  const encoderConfig: AudioEncoderConfig = {
-    codec: caps.codec,
-    sampleRate: caps.sampleRate,
-    numberOfChannels: 1,
-    bitrate: 24000,
-  };
   try {
-    const support = await AudioEncoder.isConfigSupported(encoderConfig);
-    if (!support.supported) {
-      throw new Error(
-        `AudioEncoder config not supported: codec=${caps.codec} sampleRate=${caps.sampleRate}`,
-      );
-    }
+    frameEncoder = await createFrameEncoder(frameSamples);
   } catch (e) {
-    console.error("voice: encoder config check failed", e);
-    throw e;
-  }
-
-  encoderTimestampUs = 0;
-  encoder = new AudioEncoder({
-    output: (chunk: EncodedAudioChunk) => {
-      if (!isLocalTransmitting()) return;
-      const buf = new Uint8Array(chunk.byteLength);
-      chunk.copyTo(buf);
-      const b64 = b64encode(buf);
-      if (caps.maxFrameBytes > 0 && b64.length > caps.maxFrameBytes) {
-        // Server would drop oversize frames anyway
-        return;
-      }
-      client.server.send.VS_FRAME({ payload: b64 });
-    },
-    error: (e: DOMException) => {
-      console.error("voice: encoder error", e);
-    },
-  });
-  try {
-    encoder.configure(encoderConfig);
-  } catch (e) {
-    console.error("voice: encoder.configure threw", e);
+    console.error("voice: failed to create frame encoder", e);
     throw e;
   }
 
   captureNode.port.onmessage = (ev: MessageEvent) => {
-    if (!encoder || encoder.state !== "configured") return;
-    if (!isLocalTransmitting()) return;
-    const pcm = ev.data as Float32Array;
-    const data = new AudioData({
-      format: "f32-planar",
-      sampleRate: caps.sampleRate,
-      numberOfFrames: pcm.length,
-      numberOfChannels: 1,
-      timestamp: encoderTimestampUs,
-      // Float32Array's generic ArrayBufferLike doesn't satisfy BufferSource in
-      // TS 5.9's stricter lib.dom; the runtime accepts it.
-      data: pcm as unknown as BufferSource,
-    });
-    encoderTimestampUs += Math.round((pcm.length / caps.sampleRate) * 1_000_000);
-    try {
-      encoder.encode(data);
-    } finally {
-      data.close();
-    }
+    if (!frameEncoder || !isLocalTransmitting()) return;
+    frameEncoder.encode(ev.data as Float32Array);
   };
 
   captureSourceNode.connect(captureNode);
@@ -422,9 +486,9 @@ function stopCapture(): void {
     try { captureSink.disconnect(); } catch (_e) { /* ignore */ }
     captureSink = null;
   }
-  if (encoder) {
-    try { encoder.close(); } catch (_e) { /* ignore */ }
-    encoder = null;
+  if (frameEncoder) {
+    try { frameEncoder.close(); } catch (_e) { /* ignore */ }
+    frameEncoder = null;
   }
   if (localStream) {
     const tracks = localStream.getTracks();
@@ -435,19 +499,7 @@ function stopCapture(): void {
   }
 }
 
-async function createRemotePeer(uid: number): Promise<RemotePeer | null> {
-  if (!webCodecsSupported()) return null;
-  const ctx = await ensureAudioContext();
-  const playbackNode = new AudioWorkletNode(ctx, "playback-processor", {
-    numberOfInputs: 0,
-    numberOfOutputs: 1,
-    outputChannelCount: [1],
-    processorOptions: { targetQueueFrames: 3 },
-  });
-  const gain = ctx.createGain();
-  gain.gain.value = vcMuted ? 0 : outputVolume;
-  playbackNode.connect(gain).connect(ctx.destination);
-
+function createWebCodecsFrameDecoder(playbackNode: AudioWorkletNode, uid: number): FrameDecoder {
   const decoder = new AudioDecoder({
     output: (audioData: AudioData) => {
       const samples = audioData.numberOfFrames;
@@ -473,6 +525,85 @@ async function createRemotePeer(uid: number): Promise<RemotePeer | null> {
     sampleRate: caps.sampleRate,
     numberOfChannels: 1,
   });
+  return {
+    decode(bytes: Uint8Array) {
+      if (decoder.state !== "configured") return;
+      try {
+        const chunk = new EncodedAudioChunk({ type: "key", timestamp: 0, data: bytes });
+        decoder.decode(chunk);
+      } catch (e) {
+        console.warn("voice: decode failed", e);
+      }
+    },
+    close() {
+      try {
+        if (decoder.state !== "closed") decoder.close();
+      } catch (_e) { /* ignore */ }
+    },
+  };
+}
+
+async function createWasmFrameDecoder(playbackNode: AudioWorkletNode): Promise<FrameDecoder> {
+  const { createDecoder } = await import("libopus-wasm");
+  const handle = await createDecoder({
+    channels: 1,
+    sampleRate: caps.sampleRate as WasmOpusSampleRate,
+  });
+  return {
+    decode(bytes: Uint8Array) {
+      try {
+        const pcm = handle.decodeFloat(bytes);
+        playbackNode.port.postMessage(pcm, [pcm.buffer]);
+      } catch (e) {
+        console.warn("voice: wasm opus decode failed", e);
+      }
+    },
+    close() {
+      try { handle.free(); } catch (_e) { /* ignore */ }
+    },
+  };
+}
+
+async function createFrameDecoder(
+  playbackNode: AudioWorkletNode,
+  uid: number,
+): Promise<FrameDecoder | null> {
+  if (webCodecsSupported()) {
+    try {
+      return createWebCodecsFrameDecoder(playbackNode, uid);
+    } catch (e) {
+      console.warn(
+        `voice: WebCodecs decoder unavailable for peer ${uid}, falling back to WASM opus`,
+        e,
+      );
+    }
+  }
+  try {
+    return await createWasmFrameDecoder(playbackNode);
+  } catch (e) {
+    console.error(`voice: failed to create any decoder for peer ${uid}`, e);
+    return null;
+  }
+}
+
+async function createRemotePeer(uid: number): Promise<RemotePeer | null> {
+  const ctx = await ensureAudioContext();
+  const playbackNode = new AudioWorkletNode(ctx, "playback-processor", {
+    numberOfInputs: 0,
+    numberOfOutputs: 1,
+    outputChannelCount: [1],
+    processorOptions: { targetQueueFrames: 3 },
+  });
+  const gain = ctx.createGain();
+  gain.gain.value = vcMuted ? 0 : outputVolume;
+  playbackNode.connect(gain).connect(ctx.destination);
+
+  const decoder = await createFrameDecoder(playbackNode, uid);
+  if (!decoder) {
+    try { playbackNode.disconnect(); } catch (_e) { /* ignore */ }
+    try { gain.disconnect(); } catch (_e) { /* ignore */ }
+    return null;
+  }
 
   const peer: RemotePeer = { decoder, playbackNode, gain };
   remotePeers.set(uid, peer);
@@ -482,9 +613,7 @@ async function createRemotePeer(uid: number): Promise<RemotePeer | null> {
 function teardownPeer(uid: number): void {
   const peer = remotePeers.get(uid);
   if (!peer) return;
-  try {
-    if (peer.decoder.state !== "closed") peer.decoder.close();
-  } catch (_e) { /* ignore */ }
+  try { peer.decoder.close(); } catch (_e) { /* ignore */ }
   try { peer.playbackNode.port.postMessage("reset"); } catch (_e) { /* ignore */ }
   try { peer.playbackNode.disconnect(); } catch (_e) { /* ignore */ }
   try { peer.gain.disconnect(); } catch (_e) { /* ignore */ }
@@ -554,10 +683,6 @@ export function isListenOnly(): boolean {
 
 export async function joinVoiceListenOnly(): Promise<void> {
   if (!caps.enabled || inVoice) return;
-  if (!webCodecsSupported()) {
-    alert("Your browser does not support voice chat.");
-    return;
-  }
   try {
     await ensureAudioContext();
   } catch (e) {
@@ -573,10 +698,6 @@ export async function joinVoiceListenOnly(): Promise<void> {
 export async function joinVoice(): Promise<void> {
   if (!caps.enabled) return;
   if (inVoice && !listenOnly) return;
-  if (!webCodecsSupported()) {
-    alert("Your browser does not support voice chat.");
-    return;
-  }
 
   const wasListenOnly = listenOnly;
   // Resume the AudioContext before getUserMedia so the resume() call lands
@@ -687,17 +808,7 @@ function feedDecoder(peer: RemotePeer, b64: string): void {
     return;
   }
   if (bytes.byteLength === 0) return;
-  if (peer.decoder.state !== "configured") return;
-  try {
-    const chunk = new EncodedAudioChunk({
-      type: "key",
-      timestamp: 0,
-      data: bytes,
-    });
-    peer.decoder.decode(chunk);
-  } catch (e) {
-    console.warn("voice: decode failed", e);
-  }
+  peer.decoder.decode(bytes);
 }
 
 export function notifyRemoteSpeaking(uid: number, on: boolean): void {

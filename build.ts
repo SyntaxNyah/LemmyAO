@@ -14,6 +14,10 @@ const result = await Bun.build({
   target: "browser",
   minify: true,
   sourcemap: "linked",
+  // Keeps the WASM opus fallback (src/voice/voice.ts) out of the eagerly
+  // loaded bundle — it's only fetched when a browser lacks WebCodecs audio
+  // support (e.g. Firefox mobile).
+  splitting: true,
 });
 
 if (!result.success) {
