@@ -226,6 +226,30 @@
   background: #444;
 }
 
+#client_iniswapselect {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 150;
+}
+
+#client_iniswappanel {
+  display: block;
+  text-align: center;
+  background: #444;
+  width: 80vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 10px;
+  border-radius: 8px;
+}
+
 #client_icwrapper {
   position: relative;
   background: inherit;

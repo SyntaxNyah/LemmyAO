@@ -88,6 +88,21 @@
         <div id="client_chartable"></div>
       </div>
     </div>
+    <div id="client_iniswapselect" style="display: none">
+      <div id="client_iniswappanel">
+        <p>Choose your iniswap</p>
+        <button data-action="closeIniswapList">Close</button>
+        <br /><br />
+        <input
+          id="client_iniswapsearch"
+          placeholder="Search"
+          data-action="iniswaplist_filter" data-event="input"
+        />
+        <br /><br />
+        <p id="client_iniswapstatus"></p>
+        <div id="client_iniswaptable"></div>
+      </div>
+    </div>
     <div id="client_error_overlay" style="display: none">
       <div id="client_error">
         <div id="client_error_icon">&#x26A0;</div>
@@ -1024,6 +1039,9 @@
         ></select>
         <input id="client_ininame" name="client_ininame" />
         <button id="client_inichange" data-action="iniedit">Change</button>
+        <button id="client_iniswaplist" data-action="openIniswapList">
+          Iniswap list
+        </button>
         <br />
         <br />
         <p>Pan-tilt (experimental)</p>

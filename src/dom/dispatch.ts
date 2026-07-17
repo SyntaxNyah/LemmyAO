@@ -35,6 +35,12 @@ import { editEvidence } from "./editEvidence";
 import { exportLog } from "./exportLog";
 import { imgError } from "./imgError";
 import { iniedit } from "./iniEdit";
+import {
+  openIniswapList,
+  closeIniswapList,
+  pickIniswap,
+  iniswaplist_filter,
+} from "./iniswapList";
 import { modcall_test } from "./modCallTest";
 import { musiclist_click } from "./musicListClick";
 import { musiclist_filter } from "./musicListFilter";
@@ -98,6 +104,8 @@ const actions: Record<string, (e: Event) => void> = {
   DisconnectButton: () => DisconnectButton(),
   editEvidence: () => editEvidence(),
   iniedit: () => iniedit(),
+  openIniswapList: () => openIniswapList(),
+  closeIniswapList: () => closeIniswapList(),
   modcall_test: () => modcall_test(),
   openThemeMaker: () => openThemeMaker(),
   randomCharacterOOC: () => randomCharacterOOC(),
@@ -120,6 +128,7 @@ const actions: Record<string, (e: Event) => void> = {
 
   // Event-taking actions.
   chartable_filter: (e) => chartable_filter(e),
+  iniswaplist_filter: (e) => iniswaplist_filter(e),
   importCustomCSS: (e) => importCustomCSS(e),
   musiclist_click: (e) => musiclist_click(e),
   musiclist_filter: (e) => musiclist_filter(e),
@@ -135,6 +144,7 @@ const actions: Record<string, (e: Event) => void> = {
   toggleEffect: (e) => toggleEffect(e.currentTarget as HTMLElement),
   setChatbox: (e) => setChatbox((e.currentTarget as HTMLSelectElement).value),
   pickChar: (e) => pickChar(Number(datasetOf(e).char)),
+  pickIniswap: (e) => pickIniswap(datasetOf(e).iniswap!),
   toggleShout: (e) => toggleShout(Number(datasetOf(e).shout) as ShoutModifier),
   toggleMenu: (e) => toggleMenu(Number(datasetOf(e).menu)),
   toggleElement: (e) => toggleElement(datasetOf(e).element!),
