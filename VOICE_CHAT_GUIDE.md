@@ -250,7 +250,15 @@ LemmyAO uses three browser APIs:
 | `AudioWorklet` | Process audio in a background thread |
 | `AudioEncoder` / `AudioDecoder` (Web Codecs API) | Compress audio to Opus and decompress it back |
 
-These are all standard browser APIs, no libraries needed.
+These are all standard browser APIs, no libraries needed — except for the Opus codec itself.
+Web Codecs' `AudioEncoder`/`AudioDecoder` aren't implemented everywhere (notably, Firefox on
+Android/iOS never shipped them, even though Firefox desktop has supported them since v130).
+`voice.ts` detects this via `webCodecsSupported()` and, when it's missing, falls back to
+`libopus-wasm` — a small WASM build of libopus that does raw Opus packet encode/decode
+(`createFrameEncoder()` / `createFrameDecoder()`). Both backends produce/consume the exact same
+raw Opus packets over the wire, so a Firefox-mobile peer using the WASM path talks to a
+Chrome peer using native Web Codecs transparently. The WASM module is loaded via a dynamic
+`import()` so it's only downloaded by browsers that actually need it.
 
 ---
 

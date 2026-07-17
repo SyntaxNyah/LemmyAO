@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^3.4.2",
-    "golden-layout": "^2.6.0"
+    "golden-layout": "^2.6.0",
+    "libopus-wasm": "0.2.0"
   }
 }
