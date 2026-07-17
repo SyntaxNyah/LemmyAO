@@ -1,0 +1,5 @@
+function r(t){if(t)return t.replaceAll(">","＞").replaceAll("<","＜");return""}function p(t){return t.replace(/\\u([\d\w]{1,})/gi,(s,n)=>String.fromCharCode(parseInt(n,16)))}var e={name:"webao",version:"2.9.0",description:"Web-based Attorney Online client",main:"src/client.ts",scripts:{test:"bun test","test:coverage":"bun test --coverage",build:"bun build.ts",dev:"bun --hot dev.ts",lint:"bunx --bun eslint src",probe:"bun scripts/probe-load.ts","lint:fix":"bun run lint -- --fix"},repository:{type:"git",url:"git+https://github.com/AttorneyOnline/webAO.git"},author:"stonedDiscord",bugs:{url:"https://github.com/AttorneyOnline/webAO/issues"},homepage:"https://github.com/AttorneyOnline/webAO#readme",devDependencies:{"@eslint/js":"^9.18.0","@happy-dom/global-registrator":"^20.0.11","@types/bun":"latest",eslint:"^9.18.0",puppeteer:"^25.1.0",typescript:"^5.9.3","typescript-eslint":"^8.21.0"},dependencies:{"@fingerprintjs/fingerprintjs":"^3.4.2","golden-layout":"^2.6.0","libopus-wasm":"0.2.0"}};var u=e.version;
+export{r as a,p as b,u as c};
+
+//# debugId=048B31F545DD3B4664756E2164756E21
+//# sourceMappingURL=chunk-3hz1y0fx.js.map

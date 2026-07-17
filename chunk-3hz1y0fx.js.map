@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "sources": ["../src/escaping.ts", "../src/version.ts"],
+  "sourcesContent": [
+    "/**\n * Replace HTML angle brackets with full-width substitutes so a string\n * can be inserted into `innerHTML` without parsing as tags.\n *\n * XXX: unnecessary if callers used `createTextNode` instead.\n */\nexport function safeHtmlTags(unsafe: string): string {\n  if (unsafe) {\n    return unsafe.replaceAll(\">\", \"＞\").replaceAll(\"<\", \"＜\");\n  }\n  return \"\";\n}\n\n/**\n * Decode `\\uXXXX` Unicode escape sequences embedded in a string back\n * into their literal characters.\n */\nexport function unescapeUnicode(estring: string): string {\n  // Source: https://stackoverflow.com/questions/7885096/how-do-i-decode-a-string-with-escaped-unicode\n  return estring.replace(/\\\\u([\\d\\w]{1,})/gi, (match, group) =>\n    String.fromCharCode(parseInt(group, 16)),\n  );\n}\n",
+    "import pkg from \"../package.json\" with { type: \"json\" };\n\nexport const version: string = pkg.version;\n"
+  ],
+  "mappings": "AAMO,SAAS,CAAY,CAAC,EAAwB,CACnD,GAAI,EACF,OAAO,EAAO,WAAW,IAAK,GAAE,EAAE,WAAW,IAAK,GAAG,EAEvD,MAAO,GAOF,SAAS,CAAe,CAAC,EAAyB,CAEvD,OAAO,EAAQ,QAAQ,oBAAqB,CAAC,EAAO,IAClD,OAAO,aAAa,SAAS,EAAO,EAAE,CAAC,CACzC,4zBCnBK,IAAM,EAAkB,EAAI",
+  "debugId": "048B31F545DD3B4664756E2164756E21",
+  "names": []
+}
