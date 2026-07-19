@@ -18,6 +18,12 @@ import { client } from "../client";
 import { addEvidence } from "./addEvidence";
 import { applyCustomFont, setFont } from "./setFont";
 import { toggleMuteMusic, toggleMuteSfx, toggleMuteBlips } from "./audioMute";
+import {
+  openBackgroundList,
+  closeBackgroundList,
+  pickBackground,
+  backgroundlist_filter,
+} from "./backgroundList";
 import { callMod } from "./callMod";
 import { cancelEvidence } from "./cancelEvidence";
 import { changeBackgroundOOC } from "./changeBackgroundOOC";
@@ -91,6 +97,8 @@ const actions: Record<string, (e: Event) => void> = {
   // No-arg actions.
   addEvidence: () => addEvidence(),
   applyCustomFont: () => applyCustomFont(),
+  openBackgroundList: () => openBackgroundList(),
+  closeBackgroundList: () => closeBackgroundList(),
   callMod: () => callMod(),
   cancelEvidence: () => cancelEvidence(),
   changeBackgroundOOC: () => changeBackgroundOOC(),
@@ -129,6 +137,7 @@ const actions: Record<string, (e: Event) => void> = {
   // Event-taking actions.
   chartable_filter: (e) => chartable_filter(e),
   iniswaplist_filter: (e) => iniswaplist_filter(e),
+  backgroundlist_filter: (e) => backgroundlist_filter(e),
   importCustomCSS: (e) => importCustomCSS(e),
   musiclist_click: (e) => musiclist_click(e),
   musiclist_filter: (e) => musiclist_filter(e),
@@ -145,6 +154,7 @@ const actions: Record<string, (e: Event) => void> = {
   setChatbox: (e) => setChatbox((e.currentTarget as HTMLSelectElement).value),
   pickChar: (e) => pickChar(Number(datasetOf(e).char)),
   pickIniswap: (e) => pickIniswap(datasetOf(e).iniswap!),
+  pickBackground: (e) => pickBackground(datasetOf(e).background!),
   toggleShout: (e) => toggleShout(Number(datasetOf(e).shout) as ShoutModifier),
   toggleMenu: (e) => toggleMenu(Number(datasetOf(e).menu)),
   toggleElement: (e) => toggleElement(datasetOf(e).element!),
