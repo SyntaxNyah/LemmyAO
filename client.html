@@ -59,7 +59,7 @@
         color: white;
       }
     </style>
-  <link rel="stylesheet" crossorigin href="./chunk-vz1r1w44.css"><script type="module" crossorigin src="./chunk-wrfm96gt.js"></script></head>
+  <link rel="stylesheet" crossorigin href="./chunk-s2sbv2qf.css"><script type="module" crossorigin src="./chunk-xm4bxyr4.js"></script></head>
 
   <body>
     <div
@@ -101,6 +101,21 @@
         <br /><br />
         <p id="client_iniswapstatus"></p>
         <div id="client_iniswaptable"></div>
+      </div>
+    </div>
+    <div id="client_backgroundselect" style="display: none">
+      <div id="client_backgroundpanel">
+        <p>Choose a background</p>
+        <button data-action="closeBackgroundList">Close</button>
+        <br /><br />
+        <input
+          id="client_backgroundsearch"
+          placeholder="Search"
+          data-action="backgroundlist_filter" data-event="input"
+        />
+        <br /><br />
+        <p id="client_backgroundstatus"></p>
+        <div id="client_backgroundtable"></div>
       </div>
     </div>
     <div id="client_error_overlay" style="display: none">
@@ -378,6 +393,15 @@
             data-action="randomCharacterOOC"
           >
             Random Character
+          </button>
+          <button
+            id="background_list_button"
+            alt="Backgrounds"
+            title="Browse and swap the area background"
+            class="client_button hover_button small_button"
+            data-action="openBackgroundList"
+          >
+            🖼️ Backgrounds
           </button>
           <br />
           <br />
