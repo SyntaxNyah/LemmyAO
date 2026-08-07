@@ -265,6 +265,24 @@ function adjustSplitter(): void {
 
   icOptionsItem.element.style.height = `calc(100% - ${totalHeight}px)`;
   fillPaneBelowHeader(icOptionsItem.element, paneChrome(icOptionsItem.element).header);
+  syncIcOptionsHeader();
+}
+
+/**
+ * A tab strip paints no background of its own, so it shows the layout backdrop
+ * through. goldenlayout.css pins this one to the panel colour so it stops
+ * reading as a bar under the health bars, but themes repaint the panel without
+ * knowing the strip exists — the theme maker, the shipped themes, a saved theme
+ * from an older build, an imported .css — so take the colour from the panel
+ * itself rather than naming it twice.
+ */
+function syncIcOptionsHeader(): void {
+  if (isMobileDevice) return;
+  const stack = document.querySelector('.client_icoptions_stack');
+  const header = stack?.children[0] as HTMLElement | undefined;
+  const content = stack?.querySelector('.lm_content') as HTMLElement | null;
+  if (!header || !content) return;
+  header.style.background = getComputedStyle(content).backgroundColor;
 }
 
 window.addEventListener('resize', () => setTimeout(adjustSplitter, 100));
@@ -278,4 +296,21 @@ golden.root.contentItems[0].contentItems[0].contentItems[0].on("resize", () => s
 const icWrapper = document.getElementById('client_icwrapper');
 if (icWrapper && typeof ResizeObserver !== 'undefined') {
   new ResizeObserver(() => adjustSplitter()).observe(icWrapper);
+}
+
+// Themes are applied by swapping the theme <link>'s href or by injecting a
+// <style> — both repaint the panel and neither resizes anything, so watch the
+// head for them. The delayed pass is for a <link>, which only takes effect once
+// the stylesheet it points at has loaded.
+if (!isMobileDevice && typeof MutationObserver !== 'undefined') {
+  new MutationObserver(() => {
+    syncIcOptionsHeader();
+    setTimeout(syncIcOptionsHeader, 200);
+  }).observe(document.head, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ['href', 'disabled'],
+  });
 }
