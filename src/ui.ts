@@ -200,30 +200,66 @@ if (isMobileDevice) {
   golden.loadLayout(config as LayoutConfig);
 }
 
+/**
+ * Height of the chrome GoldenLayout wraps around a pane's content: its tab
+ * header plus the 1px border `.lm_content` draws top and bottom.
+ */
+function paneChrome(stackElement: HTMLElement): { header: number; border: number } {
+  const header = stackElement.children[0] as HTMLElement | undefined;
+  const content = stackElement.querySelector('.lm_content') as HTMLElement | null;
+  return {
+    header: header ? header.offsetHeight : 0,
+    border: content ? content.offsetHeight - content.clientHeight : 0,
+  };
+}
+
+/** Stretch a pane's content boxes over everything below its tab header. */
+function fillPaneBelowHeader(stackElement: HTMLElement, headerHeight: number): void {
+  const items = stackElement.children[1] as HTMLElement;
+  items.style.height = `calc(100% - ${headerHeight}px)`;
+  (items.children[0] as HTMLElement).style.height = `100%`;
+  (items.children[0].children[0] as HTMLElement).style.height = `100%`;
+}
+
 function adjustSplitter(): void {
   if (isMobileDevice) return;
   const column: any = golden.root.contentItems[0].contentItems[0];
   const icItem: any = column.contentItems[0];
   const icOptionsItem: any = column.contentItems[1];
-  const paneWidth = icItem.element.clientWidth;
-  const gamewindowHeight = 0.75 * paneWidth;
-  const inputEl = document.getElementById('client_inputbox');
-  const barsEl = document.getElementById('client_bars');
-  const inputHeight = inputEl ? inputEl.offsetHeight : 30;
-  const barsHeight = barsEl ? barsEl.offsetHeight : 20;
-  const totalHeight = Math.ceil(gamewindowHeight + inputHeight + barsHeight + 45);
   const columnHeight = column.element.clientHeight;
   if (columnHeight === 0) return;
 
+  const paneWidth = icItem.element.clientWidth;
+  const gamewindowHeight = 0.75 * paneWidth; // #client_gamewindow is padding-bottom: 75%
+  const inputEl = document.getElementById('client_inputbox');
+  const barsEl = document.getElementById('client_bars');
+  // Theme stylesheets land after the layout does, so a 0 here means "not styled
+  // yet" rather than "needs no room"; the observer below re-fits once they load.
+  const inputHeight = inputEl?.offsetHeight || 30;
+  const barsHeight = barsEl?.offsetHeight || 20;
+  const { header: headerHeight, border: borderHeight } = paneChrome(icItem.element);
+  // The game window is aspect-locked, so the pane gets exactly its content plus
+  // its own chrome. Slack here would sit under the health bars as a dead strip
+  // of pane background above the IC Options tab.
+  const totalHeight = Math.ceil(
+    gamewindowHeight + inputHeight + barsHeight + headerHeight + borderHeight,
+  );
+
   icItem.element.style.height = `${totalHeight}px`;
-  (icItem.element.children[1] as HTMLElement).style.height = `100%`;
-  (icItem.element.children[1].children[0] as HTMLElement).style.height = `100%`;
-  (icItem.element.children[1].children[0].children[0] as HTMLElement).style.height = `100%`;
+  fillPaneBelowHeader(icItem.element, headerHeight);
+
+  // Collapse the splitter between the two panes so the IC Options tab sits flush
+  // against the health bars. Dragging it never held anyway — this function
+  // reasserts both heights on every resize.
+  const splitter = icItem.element.nextElementSibling as HTMLElement | null;
+  if (splitter?.classList.contains('lm_splitter')) {
+    splitter.style.height = `0px`;
+    const dragHandle = splitter.firstElementChild as HTMLElement | null;
+    if (dragHandle) dragHandle.style.height = `0px`;
+  }
 
   icOptionsItem.element.style.height = `calc(100% - ${totalHeight}px)`;
-  (icOptionsItem.element.children[1] as HTMLElement).style.height = `100%`;
-  (icOptionsItem.element.children[1].children[0] as HTMLElement).style.height = `100%`;
-  (icOptionsItem.element.children[1].children[0].children[0] as HTMLElement).style.height = `100%`;
+  fillPaneBelowHeader(icOptionsItem.element, paneChrome(icOptionsItem.element).header);
 }
 
 window.addEventListener('resize', () => setTimeout(adjustSplitter, 100));
@@ -231,3 +267,10 @@ setTimeout(adjustSplitter, 100); // Initial call
 
 // Also adjust on item resize
 golden.root.contentItems[0].contentItems[0].contentItems[0].on("resize", () => setTimeout(adjustSplitter, 50));
+
+// The IC content changes height on its own when a theme stylesheet or font
+// finishes loading, which is what gives the health bars their height.
+const icWrapper = document.getElementById('client_icwrapper');
+if (icWrapper && typeof ResizeObserver !== 'undefined') {
+  new ResizeObserver(() => adjustSplitter()).observe(icWrapper);
+}
