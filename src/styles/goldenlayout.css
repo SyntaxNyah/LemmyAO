@@ -464,6 +464,20 @@ body {
 .lm_stack.lm_bottom .lm_header .lm_tab.lm_active {
   box-shadow: 0 2px 2px #000000;
 }
+/* A tab strip paints no background of its own, so .lm_goldenlayout's black
+   shows through it. Directly under the IC pane that reads as a bar between the
+   health bars and the IC Options panel, so give this one strip the panel's own
+   colour, and drop the tab shadows that only exist to lift a tab off black.
+   Kept above .lm_selected so dragging still highlights the header.
+   This colour is only the stock default — themes repaint the panel without
+   knowing the strip exists, so ui.ts re-reads it from the panel and restates
+   it inline whenever the page's stylesheets change. */
+.client_icoptions_stack > .lm_header {
+  background: #222222;
+}
+.client_icoptions_stack > .lm_header .lm_tab {
+  box-shadow: none;
+}
 .lm_selected .lm_header {
   background-color: #452500;
 }
