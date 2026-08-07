@@ -198,6 +198,11 @@ if (isMobileDevice) {
   golden.loadLayout(configMobile as LayoutConfig);
 } else {
   golden.loadLayout(config as LayoutConfig);
+  // Tag the pane sitting under the IC pane so its tab strip can take the panel
+  // colour instead of showing the black layout backdrop through.
+  golden.root.contentItems[0].contentItems[0].contentItems[1].element.classList.add(
+    "client_icoptions_stack",
+  );
 }
 
 /**
