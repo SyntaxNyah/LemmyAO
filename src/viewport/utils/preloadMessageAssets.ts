@@ -121,7 +121,11 @@ export default async function preloadMessageAssets(
       chatmsg.shout_modifier === ShoutModifier.OBJECTION ||
       chatmsg.shout_modifier === ShoutModifier.TAKE_THAT;
     const isCustomShout = chatmsg.shout_modifier === ShoutModifier.CUSTOM;
-    const shoutSfxPath = isStandardShout && shoutName
+    // Custom shouts use the same per-character path (custom.opus). Resolving
+    // it here means a character without one yields null from the cached HEAD
+    // check, so the caller can skip the channel entirely instead of pointing
+    // it at a URL that will 404.
+    const shoutSfxPath = (isStandardShout || isCustomShout) && shoutName
       ? `${AO_HOST}characters/${encodeURI(charName)}/${shoutName}.opus`
       : null;
 
