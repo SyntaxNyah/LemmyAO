@@ -226,8 +226,16 @@ const applyShout = (chatmsg: ChatMsg, chatContainerBox: HTMLElement) => {
   };
   shoutSprite.style.display = "block";
 
-  client.viewport.shoutaudio.src = preloaded.shoutSfxUrl ?? client.resources[shout].sfx;
-  client.viewport.shoutaudio.play().catch(() => {});
+  // Custom shouts have no default sfx (resources.custom.sfx is ""), so this
+  // can legitimately resolve to nothing. Leave the channel alone in that
+  // case: assigning "" makes the element resolve src against the document
+  // and try to load client.html as audio, which fails forever.
+  const shoutSfx = preloaded.shoutSfxUrl || client.resources[shout].sfx;
+  client.viewport.shoutaudio.pause(); // interrupt the previous shout either way
+  if (shoutSfx) {
+    client.viewport.shoutaudio.src = shoutSfx;
+    client.viewport.shoutaudio.play().catch(() => {});
+  }
   client.viewport.setShoutTimer(client.resources[shout].duration);
 };
 

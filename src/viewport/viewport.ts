@@ -102,6 +102,9 @@ const viewport = (): Viewport => {
   const getTestimonyUpdater = () => testimonyUpdater;
   const playSFX = async (sfxname: string, looping: boolean) => {
     sfxAudio.pause();
+    // An empty name would resolve against the document and make the element
+    // try to load client.html as audio, erroring forever. Nothing to play.
+    if (!sfxname) return;
     sfxAudio.loop = looping;
     sfxAudio.src = sfxname;
     sfxAudio.play().catch(() => {});

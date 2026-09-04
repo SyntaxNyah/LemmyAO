@@ -7,13 +7,19 @@ import type * as aolib from "../../aolib";
 export function playMusicChange(packet: aolib.MCBroadcast) {
   const music = client.viewport.music[packet.channel];
   music.pause();
-  if (packet.name.startsWith("http")) {
-    music.src = packet.name;
+  // An empty track name is a stop, not a track: building a URL from it would
+  // point the channel at the music directory and error on every attempt.
+  if (packet.name) {
+    if (packet.name.startsWith("http")) {
+      music.src = packet.name;
+    } else {
+      music.src = `${AO_HOST}sounds/music/${encodeURI(packet.name.toLowerCase())}`;
+    }
+    music.loop = packet.looping;
+    music.play().catch(() => {});
   } else {
-    music.src = `${AO_HOST}sounds/music/${encodeURI(packet.name.toLowerCase())}`;
+    music.removeAttribute("src");
   }
-  music.loop = packet.looping;
-  music.play().catch(() => {});
 
   const musicname: string | undefined = client.chars[packet.char_id]?.name;
   const looptext = packet.looping ? "(looping)" : "";
