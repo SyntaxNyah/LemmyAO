@@ -22,6 +22,9 @@ function buildIdleUrls(charactername: string, emotename: string): string[] {
       urls.push(`${characterFolder}${encodeURI(charactername)}/${encodeURI(emotename)}.webp`);
     } else {
       urls.push(`${characterFolder}${encodeURI(charactername)}/(a)${encodeURI(emotename)}${extension}`);
+      // Some character packs nest idle frames in a "(a)" folder instead of
+      // prefixing the filename. Try that layout too.
+      urls.push(`${characterFolder}${encodeURI(charactername)}/(a)/${encodeURI(emotename)}${extension}`);
     }
   }
   return urls;
