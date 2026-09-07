@@ -34,6 +34,11 @@ function buildEmoteUrls(
       url = `${characterFolder}${encodeURI(charactername)}/${encodeURI(prefix)}${encodeURI(emotename)}${extension}`;
     }
     urls.push(url);
+    // Some character packs nest idle/talking frames in a "(a)"/"(b)" folder
+    // instead of prefixing the filename. Try that layout too.
+    if (prefix && extension !== ".png" && extension !== ".webp.static") {
+      urls.push(`${characterFolder}${encodeURI(charactername)}/${encodeURI(prefix)}/${encodeURI(emotename)}${extension}`);
+    }
   }
 
   return urls;

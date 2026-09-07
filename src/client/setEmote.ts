@@ -54,6 +54,18 @@ const setEmote = async (
       emoteSelector.src = url;
       break;
     }
+    // Some character packs nest idle/talking frames in a "(a)"/"(b)" folder
+    // instead of prefixing the filename. Try that layout too.
+    if (prefix && extension !== ".png" && extension !== ".webp.static") {
+      const folderUrl = `${characterFolder}${encodeURI(charactername)}/${encodeURI(
+        prefix,
+      )}/${encodeURI(emotename)}${extension}`;
+      const folderExists = await fileExists(folderUrl);
+      if (folderExists) {
+        emoteSelector.src = folderUrl;
+        break;
+      }
+    }
   }
 };
 export default setEmote;
