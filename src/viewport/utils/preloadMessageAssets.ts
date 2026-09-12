@@ -59,6 +59,10 @@ const DEFAULT_ASSETS: PreloadedAssets = {
 
 const SHOUT_BUBBLE_EXTENSIONS = [".webp", ".gif", ".apng", ".png"];
 
+// Extensions getAnimLength's calculatorHandler can measure a frame count for.
+// .png and .webp.static have no animation, so they're never candidates here.
+const ANIMATABLE_EXTENSIONS = [".gif", ".webp", ".apng"];
+
 /**
  * Builds candidate URLs for a shout bubble, trying the per-character
  * override first (in multiple extensions) then the default in misc/default/.
@@ -108,6 +112,10 @@ export default async function preloadMessageAssets(
       chatmsg.preanim &&
       chatmsg.preanim !== "-" &&
       chatmsg.preanim !== "";
+
+    const preanimAnimExtensions = emoteExtensions.filter((ext) =>
+      ANIMATABLE_EXTENSIONS.includes(ext),
+    );
 
     const preanimUrls = hasPreanim
       ? buildEmoteUrls(AO_HOST, emoteExtensions, charName, chatmsg.preanim!.toLowerCase(), "")
@@ -164,7 +172,10 @@ export default async function preloadMessageAssets(
       resolveAndPreloadImage(talkingUrls),
       preanimUrls ? resolveAndPreloadImage(preanimUrls) : Promise.resolve(transparentPng),
       hasPreanim
-        ? getAnimDuration(`${AO_HOST}characters/${encodeURI(charName)}/${encodeURI(chatmsg.preanim!.toLowerCase())}`)
+        ? getAnimDuration(
+          `${AO_HOST}characters/${encodeURI(charName)}/${encodeURI(chatmsg.preanim!.toLowerCase())}`,
+          preanimAnimExtensions.length ? preanimAnimExtensions : undefined,
+        )
         : Promise.resolve(0),
       pairIdleUrls ? resolveAndPreloadImage(pairIdleUrls) : Promise.resolve(transparentPng),
       shoutSfxPath ? resolveAndPreloadAudio(shoutSfxPath) : Promise.resolve(null),
