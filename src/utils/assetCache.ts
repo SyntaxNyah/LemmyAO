@@ -79,12 +79,13 @@ export function preloadKnownAudio(url: string): Promise<string> {
 }
 
 /**
- * Gets the animation duration for a base URL (tries .gif, .webp, .apng).
+ * Gets the animation duration for a base URL (tries .gif, .webp, .apng
+ * by default, or `extensions` in the given priority order when provided).
  * Downloads the file to count frames, which also primes the browser cache.
  */
-export function getAnimDuration(baseUrl: string): Promise<number> {
-  const key = `animdur:${baseUrl}`;
-  return cached(key, () => getAnimLength(baseUrl));
+export function getAnimDuration(baseUrl: string, extensions?: string[]): Promise<number> {
+  const key = `animdur:${extensions ? extensions.join(",") : "default"}:${baseUrl}`;
+  return cached(key, () => getAnimLength(baseUrl, extensions));
 }
 
 // ── Internal preloaders ─────────────────────────────────────────────
