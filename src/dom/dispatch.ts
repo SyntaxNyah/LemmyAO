@@ -25,6 +25,7 @@ import {
   backgroundlist_filter,
 } from "./backgroundList";
 import { callMod } from "./callMod";
+import { cancelCharacterSelect } from "./cancelCharacterSelect";
 import { cancelEvidence } from "./cancelEvidence";
 import { changeBackgroundOOC } from "./changeBackgroundOOC";
 import { changeBlipVolume } from "./changeBlipVolume";
@@ -100,6 +101,7 @@ const actions: Record<string, (e: Event) => void> = {
   openBackgroundList: () => openBackgroundList(),
   closeBackgroundList: () => closeBackgroundList(),
   callMod: () => callMod(),
+  cancelCharacterSelect: () => cancelCharacterSelect(),
   cancelEvidence: () => cancelEvidence(),
   changeBackgroundOOC: () => changeBackgroundOOC(),
   changeBlipVolume: () => changeBlipVolume(),
