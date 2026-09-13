@@ -229,9 +229,16 @@
 
 #client_charselect {
   display: block;
+  position: relative;
   text-align: center;
   margin: 0 auto;
   background: #444;
+}
+
+#charselect_close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
 }
 
 #client_iniswapselect {
