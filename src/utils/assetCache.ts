@@ -6,13 +6,14 @@
  * - Subsequent calls return instantly from cache
  * - Results are cached for the entire session (CDN assets don't change mid-session)
  *
- * fileExists.ts handles HEAD-request caching independently (same pattern).
+ * fileExists.ts and audioExists.ts handle existence-probe caching
+ * independently (same pattern, using no-cors media elements).
  * This module handles everything above that: URL resolution, image/audio
  * preloading, and animation duration calculation.
  */
 
 import findImgSrc from "./findImgSrc";
-import fileExists from "./fileExists";
+import audioExists from "./audioExists";
 import getAnimLength from "./getAnimLength";
 import transparentPng from "../constants/transparentPng";
 
@@ -59,7 +60,7 @@ export function resolveAndPreloadImage(urls: string[]): Promise<string> {
 export function resolveAndPreloadAudio(url: string): Promise<string | null> {
   const key = `audio:${url}`;
   return cached(key, async () => {
-    const exists = await fileExists(url);
+    const exists = await audioExists(url);
     if (!exists) return null;
     await doPreloadAudio(url);
     return url;
