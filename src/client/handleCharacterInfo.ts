@@ -1,6 +1,6 @@
 import { client } from "../client";
 import { safeHtmlTags } from "../escaping";
-import iniParse from "../iniParse";
+import { parseCharIni } from "aolib-ts";
 import { Side } from "../aolib";
 import request from "../services/request";
 import { AO_HOST } from "./aoHost";
@@ -70,38 +70,28 @@ export async function ensureCharIni(charid: number): Promise<any> {
     const cinidata = await request(
       `${AO_HOST}characters/${encodeURI(char.name.toLowerCase())}/char.ini`,
     );
-    cini = iniParse(cinidata);
+    cini = parseCharIni(cinidata);
   } catch (err) {
-    cini = {};
+    // Empty-but-valid CharIni so downstream shape access stays safe.
+    cini = parseCharIni("");
     if (img) img.classList.add("noini");
     console.warn(`character ${char.name} is missing from webAO`);
   }
 
-  const default_options = {
-    name: char.name,
-    showname: char.name,
-    side: Side.DEFENSE,
-    blips: "male",
-    chat: "",
-    category: "",
-  };
-  cini.options = Object.assign(default_options, cini.options);
-
-  const default_emotions = {
-    number: 0,
-  };
-  cini.emotions = Object.assign(default_emotions, cini.emotions);
-
-  // Replace defaults with actual ini values
-  char.showname = safeHtmlTags(cini.options.showname);
-  char.blips = safeHtmlTags(cini.options.blips).toLowerCase();
-  char.gender = safeHtmlTags(cini.options.gender).toLowerCase();
-  char.side = safeHtmlTags(cini.options.side).toLowerCase();
+  // parseCharIni preserves value case and fills missing options with "",
+  // so apply webAO's richer defaults and lowercase at the point of use.
+  const opt = cini.options;
+  char.showname = safeHtmlTags(opt.showname || char.name);
+  char.blips = safeHtmlTags(opt.blips || "male").toLowerCase();
+  char.gender = safeHtmlTags(opt.gender).toLowerCase();
+  char.side = safeHtmlTags(opt.side || Side.DEFENSE).toLowerCase();
   char.chat =
-    cini.options.chat === ""
-      ? safeHtmlTags(cini.options.category).toLowerCase()
-      : safeHtmlTags(cini.options.chat).toLowerCase();
+    opt.chat === ""
+      ? safeHtmlTags(opt.category).toLowerCase()
+      : safeHtmlTags(opt.chat).toLowerCase();
   char.icon = img ? img.src : "";
+  // A `model = foo.pmx` key marks the character as 3D (MMD .pmx + .vmd).
+  char.model = safeHtmlTags(opt.model ?? "").toLowerCase();
   char.inifile = cini;
 
   if (

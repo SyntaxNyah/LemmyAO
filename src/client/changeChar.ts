@@ -32,9 +32,9 @@ export async function changeChar(char_id: number) {
   emotesList.style.display = "";
   emotesList.innerHTML = ""; // Clear emote box
   const ini = await ensureCharIni(client.charID);
-  me.side = ini.options.side;
+  me.side = (ini.options.side || "def").toLowerCase();
   updateActionCommands(me.side);
-  if (ini.emotions.number === 0) {
+  if (ini.emotes.length === 0) {
     emotesList.innerHTML = `<span
 						id="emo_0"
 						alt="unavailable"
@@ -50,29 +50,24 @@ export async function changeChar(char_id: number) {
       }
     }
 
-    for (let i = 1; i <= ini.emotions.number; i++) {
+    for (const emote of ini.emotes) {
+      const i = emote.id;
       try {
-        const emoteinfo = ini.emotions[i].split("#");
-        let esfx;
-        let esfxd;
-        try {
-          esfx = ini.soundn?.[i] || "0";
-          esfxd = ini.soundt?.[i] ? Number(ini.soundt[i]) : 0;
-        } catch (e) {
-          esfx = "0";
-          esfxd = 0;
-        }
-
         const url = `${charPath}button${i}_off${emoteExtension}`;
 
+        // preanim is verbatim from char.ini: "-"/"" mean none (and a future
+        // parser may use null); all normalize to lowercase for asset lookup.
         emotes[i] = {
-          desc: emoteinfo[0].toLowerCase(),
-          preanim: emoteinfo[1].toLowerCase(),
-          emote: emoteinfo[2].toLowerCase(),
-          zoom: Number(emoteinfo[3]) || 0,
-          desk_modifier: Number(emoteinfo[4]) || 1,
-          sfx: esfx.toLowerCase(),
-          sfxdelay: esfxd,
+          desc: (emote.name ?? "").toLowerCase(),
+          preanim: (emote.preanim ?? "-").toLowerCase(),
+          emote: (emote.anim ?? "").toLowerCase(),
+          zoom: emote.modifier ?? 0,
+          desk_modifier: emote.deskMod ?? 1,
+          sfx: (emote.sound ?? "0").toLowerCase(),
+          // soundDelayMs is [soundt] ticks already converted to ms (aolib-ts
+          // TICK_MS == UPDATE_INTERVAL), matching the tickTimer comparison in
+          // the chat loop.
+          sfxdelay: emote.soundDelayMs ?? 0,
           frame_screenshake: "",
           frame_realization: "",
           frame_sfx: "",

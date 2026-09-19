@@ -23,6 +23,9 @@ import {
 } from "../../aolib";
 import preloadMessageAssets from "./preloadMessageAssets";
 import { setBlipUrl } from "./blipAudio";
+import { getMmdController } from "../mmd";
+import { setupCharacterSlot } from "../mmd/applyEmote";
+import type { Model3dInfo } from "../mmd/types";
 
 const SOUND_SENTINELS = new Set(["", "0", "1"]);
 const BAD_EFFECTS = new Set(["", "-", "none"]);
@@ -152,6 +155,33 @@ const parseContent = async (chatmsg: ChatMsg): Promise<HTMLSpanElement[]> => {
 };
 
 /**
+ * Detects whether the speaking character is a 3D (MMD) model and, if so,
+ * loads its model + motions and measures the preanim length. Returns null
+ * for ordinary sprite characters (leaving the 2D path untouched).
+ */
+const prepare3dModel = async (
+  packet: aolib.MSBroadcast,
+  chatmsg: ChatMsg,
+  hasPreanim: boolean,
+): Promise<Model3dInfo | null> => {
+  const char = client.chars[packet.char_id];
+  if (!char) return null;
+  if (!char.inifile) await ensureCharIniForChat(packet.char_id);
+  if (!char.model) return null;
+
+  const controller = await getMmdController();
+  if (!controller) return null;
+
+  return controller.preload(
+    AO_HOST,
+    chatmsg.name,
+    char.model,
+    chatmsg.sprite,
+    hasPreanim ? chatmsg.preanim : null,
+  );
+};
+
+/**
  * Finishes preparing the chatmsg: resolves all async work (asset
  * preload, markdown parsing) and computes derived render-loop flags.
  * No DOM mutation here -- only state on the chatmsg object itself.
@@ -174,6 +204,14 @@ const prepareICMessage = async (packet: aolib.MSBroadcast): Promise<ChatMsg> => 
     chatmsg.preanim !== "";
   chatmsg.startpreanim = true;
   chatmsg.startspeaking = !hasPreanim;
+
+  // 3D character detection + model/motion preload. When present, the VMD's
+  // measured preanim length drives the same timeline the sprites use.
+  chatmsg.model3d = await prepare3dModel(packet, chatmsg, hasPreanim);
+  if (chatmsg.model3d) {
+    chatmsg.preanimdelay = chatmsg.model3d.preanimDurationMs;
+    chatmsg.startspeaking = chatmsg.model3d.preanimDurationMs <= 0;
+  }
 
   // `~~prefix` centers the chat text; strip the marker from content.
   if (chatmsg.content.startsWith("~~")) {
@@ -344,7 +382,13 @@ const renderICMessage = (chatmsg: ChatMsg) => {
   checkCallword(chatmsg.content, client.viewport.getSfxAudio());
 
   const preloaded = chatmsg.preloadedAssets!;
-  setEmoteFromUrl(preloaded.idleUrl, false, chatmsg.side);
+  // 3D characters render into a Babylon canvas placed in this slot; 2D ones
+  // keep the sprite <img>. setupCharacterSlot tears down the 3D canvas when
+  // the speaker is 2D.
+  setupCharacterSlot(chatmsg.side, chatmsg.model3d);
+  if (!chatmsg.model3d) {
+    setEmoteFromUrl(preloaded.idleUrl, false, chatmsg.side);
+  }
   if (chatmsg.paired_name) {
     setEmoteFromUrl(preloaded.pairIdleUrl, true, chatmsg.side);
   }
