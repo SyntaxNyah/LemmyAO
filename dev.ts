@@ -1,6 +1,5 @@
 import index from "./public/index.html";
 import client from "./public/client.html";
-import vmdviewer from "./public/vmdviewer.html";
 
 const server = Bun.serve({
   port: Number(process.env.PORT ?? 8080),
@@ -8,8 +7,6 @@ const server = Bun.serve({
     "/": index,
     "/index.html": index,
     "/client.html": client,
-    "/vmdviewer": vmdviewer,
-    "/vmdviewer.html": vmdviewer,
   },
   // Fallback for runtime-loaded assets (theme CSS, audio, fonts, etc.).
   // `dev-assets/` is a gitignored local mirror for testing characters/

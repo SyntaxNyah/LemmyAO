@@ -9,7 +9,7 @@ await rm("./dist", { recursive: true, force: true });
 await cp("./public", "./dist", { recursive: true });
 
 const result = await Bun.build({
-  entrypoints: ["./public/index.html", "./public/client.html", "./public/vmdviewer.html"],
+  entrypoints: ["./public/index.html", "./public/client.html"],
   outdir: "./dist",
   target: "browser",
   minify: true,
