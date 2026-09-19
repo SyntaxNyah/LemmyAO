@@ -2,6 +2,9 @@
 dist/
 coverage/
 
+# Local-only assets for testing against the dev server (e.g. 3D characters)
+dev-assets/
+
 # Editors
 .idea/
 .claude/

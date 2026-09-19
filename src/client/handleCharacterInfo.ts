@@ -84,6 +84,7 @@ export async function ensureCharIni(charid: number): Promise<any> {
     blips: "male",
     chat: "",
     category: "",
+    model: "",
   };
   cini.options = Object.assign(default_options, cini.options);
 
@@ -102,6 +103,8 @@ export async function ensureCharIni(charid: number): Promise<any> {
       ? safeHtmlTags(cini.options.category).toLowerCase()
       : safeHtmlTags(cini.options.chat).toLowerCase();
   char.icon = img ? img.src : "";
+  // A `model = foo.pmx` key marks the character as 3D (MMD .pmx + .vmd).
+  char.model = safeHtmlTags(cini.options.model).toLowerCase();
   char.inifile = cini;
 
   if (

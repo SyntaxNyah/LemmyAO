@@ -17,5 +17,5 @@
     "verbatimModuleSyntax": false,
     "jsx": "preserve"
   },
-  "include": ["src/**/*", "build.ts", "dev.ts"]
+  "include": ["src/**/*", "build.ts", "dev.ts", "server.ts"]
 }

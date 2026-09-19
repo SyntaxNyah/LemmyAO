@@ -1,5 +1,6 @@
 import type * as aolib from "../../aolib";
 import { PreloadedAssets } from "./PreloadedAssets";
+import type { Model3dInfo } from "../mmd/types";
 
 /**
  * The viewport's in-character message state. Composed as the incoming
@@ -28,6 +29,8 @@ export type ChatMsg = aolib.MSBroadcast & {
   // Chat-tick render-loop state.
   parsed?: HTMLSpanElement[];
   preloadedAssets?: PreloadedAssets;
+  /** Resolved 3D render data when the speaking character is an MMD model. */
+  model3d?: Model3dInfo | null;
   startpreanim?: boolean;
   startspeaking?: boolean;
   preanimdelay?: number;
