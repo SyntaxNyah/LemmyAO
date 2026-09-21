@@ -187,4 +187,10 @@ export function registerProtocol(
   clientSession.on.RC(onCharacterListRequest);
   clientSession.on.RD(onReady);
   clientSession.on.RM(onMusicListRequest);
+
+  // Relay the player's own chat / OOC / music back to them, so acting-as-server
+  // modes (replay, server) render what you send with no real server involved.
+  clientSession.on.MS((packet) => clientSession.send.MS(packet as never));
+  clientSession.on.CT((packet) => clientSession.send.CT(packet as never));
+  clientSession.on.MC((packet) => clientSession.send.MC(packet as never));
 }

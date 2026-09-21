@@ -32,9 +32,9 @@ export async function changeChar(char_id: number) {
   emotesList.style.display = "";
   emotesList.innerHTML = ""; // Clear emote box
   const ini = await ensureCharIni(client.charID);
-  me.side = ini.options.side;
+  me.side = (ini.options.side || "def").toLowerCase();
   updateActionCommands(me.side);
-  if (ini.emotions.number === 0) {
+  if (ini.emotes.length === 0) {
     emotesList.innerHTML = `<span
 						id="emo_0"
 						alt="unavailable"
@@ -50,29 +50,24 @@ export async function changeChar(char_id: number) {
       }
     }
 
-    for (let i = 1; i <= ini.emotions.number; i++) {
+    // aolib-ts emotes carry no numeric id; button files are 1-based by order.
+    ini.emotes.forEach((emote: any, idx: number) => {
+      const i = idx + 1;
       try {
-        const emoteinfo = ini.emotions[i].split("#");
-        let esfx;
-        let esfxd;
-        try {
-          esfx = ini.soundn?.[i] || "0";
-          esfxd = ini.soundt?.[i] ? Number(ini.soundt[i]) : 0;
-        } catch (e) {
-          esfx = "0";
-          esfxd = 0;
-        }
-
         const url = `${charPath}button${i}_off${emoteExtension}`;
 
+        // `anim`/`preanim` are a legacy stem or (block format) a full filename
+        // with extension; null preanim means none. Lowercased for asset lookup.
         emotes[i] = {
-          desc: emoteinfo[0].toLowerCase(),
-          preanim: emoteinfo[1].toLowerCase(),
-          emote: emoteinfo[2].toLowerCase(),
-          zoom: Number(emoteinfo[3]) || 0,
-          desk_modifier: Number(emoteinfo[4]) || 1,
-          sfx: esfx.toLowerCase(),
-          sfxdelay: esfxd,
+          desc: (emote.name ?? "").toLowerCase(),
+          preanim: (emote.preanim ?? "-").toLowerCase(),
+          emote: (emote.anim ?? "").toLowerCase(),
+          zoom: emote.modifier ?? 0,
+          desk_modifier: emote.deskmod ?? 1,
+          sfx: (emote.sound ?? "0").toLowerCase(),
+          // sounddelayms is [soundt] ticks already converted to ms (aolib-ts
+          // TICK_MS == UPDATE_INTERVAL), matching the tickTimer comparison.
+          sfxdelay: emote.sounddelayms ?? 0,
           frame_screenshake: "",
           frame_realization: "",
           frame_sfx: "",
@@ -85,7 +80,7 @@ export async function changeChar(char_id: number) {
       } catch (e) {
         console.error(`missing emote ${i}`);
       }
-    }
+    });
   }
 
   const customCharPath = `${AO_HOST}characters/${encodeURI(me.name.toLowerCase())}/custom`;

@@ -434,6 +434,17 @@
   transform: translate(-50%, -50%);
 }
 
+.client_char > canvas.client_char_3d {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  pointer-events: none;
+  outline: none;
+}
+
 #client_bench_classic {
   left: 0;
 }

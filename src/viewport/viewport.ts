@@ -4,6 +4,7 @@ import { client, delay } from "../client";
 import { UPDATE_INTERVAL } from "../client";
 import setEmote from "../client/setEmote";
 import setEmoteFromUrl from "../client/setEmoteFromUrl";
+import { applyCharacterEmote } from "./mmd/applyEmote";
 import { AO_HOST } from "../client/aoHost";
 import { Viewport } from "./interfaces/Viewport";
 import { playBlip } from "./utils/blipAudio";
@@ -253,7 +254,7 @@ const viewport = (): Viewport => {
     if (textnow === chatmsg.content) {
       animating = false;
       if (chatmsg.preloadedAssets) {
-        setEmoteFromUrl(chatmsg.preloadedAssets.idleUrl, false, chatmsg.side);
+        applyCharacterEmote("idle", chatmsg.preloadedAssets.idleUrl, false, chatmsg.side);
       } else {
         setEmote(AO_HOST, client, charName, charEmote, "(a)", false, chatmsg.side);
       }
@@ -352,7 +353,7 @@ const viewport = (): Viewport => {
         shoutSprite.style.display = "none";
         shoutSprite.style.animation = "";
         if (chatmsg.preloadedAssets) {
-          setEmoteFromUrl(chatmsg.preloadedAssets.preanimUrl, false, chatmsg.side);
+          applyCharacterEmote("preanim", chatmsg.preloadedAssets.preanimUrl, false, chatmsg.side);
         } else {
           const preanim = chatmsg.preanim.toLowerCase();
           setEmote(AO_HOST, client, charName, preanim, "", false, chatmsg.side);
@@ -453,7 +454,7 @@ const viewport = (): Viewport => {
         }
 
         if (chatmsg.preloadedAssets) {
-          setEmoteFromUrl(chatmsg.preloadedAssets.talkingUrl, false, chatmsg.side);
+          applyCharacterEmote("talking", chatmsg.preloadedAssets.talkingUrl, false, chatmsg.side);
         } else {
           setEmote(AO_HOST, client, charName, charEmote, "(b)", false, chatmsg.side);
         }
@@ -461,7 +462,7 @@ const viewport = (): Viewport => {
 
         if (textnow === chatmsg.content) {
           if (chatmsg.preloadedAssets) {
-            setEmoteFromUrl(chatmsg.preloadedAssets.idleUrl, false, chatmsg.side);
+            applyCharacterEmote("idle", chatmsg.preloadedAssets.idleUrl, false, chatmsg.side);
           } else {
             setEmote(AO_HOST, client, charName, charEmote, "(a)", false, chatmsg.side);
           }
