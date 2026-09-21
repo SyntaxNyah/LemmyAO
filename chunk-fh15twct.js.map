@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "sources": ["../node_modules/babylon-mmd/esm/Loader/ShadersWGSL/textureAlphaChecker.fragment.js"],
+  "sourcesContent": [
+    "import { ShaderStore } from \"@babylonjs/core/Engines/shaderStore\";\nconst Name = \"textureAlphaCheckerPixelShader\";\nconst Shader = /* wgsl */ \"\\nvar textureSamplerSampler: sampler;var textureSampler: texture_2d<f32>;varying vUv: vec2f;@fragment\\nfn main(input: FragmentInputs)->FragmentOutputs {fragmentOutputs.color=vec4f(\\nvec3f(1.0)-vec3f(textureSample(textureSampler,textureSamplerSampler,fragmentInputs.vUv).a),\\n1.0\\n);}\\n\";\n// Sideeffect\nShaderStore.ShadersStoreWGSL[Name] = Shader;\n/** @internal */\nexport const TextureAlphaCheckerPixelShader = { name: Name, shader: Shader };\n"
+  ],
+  "mappings": "2EACA,FAAM,EAAO,iCACP,EAAoB;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,EAE1B,EAAY,iBAAiB,GAAQ,EAE9B,IAAM,EAAiC,CAAE,KAAM,EAAM,OAAQ,CAAO",
+  "debugId": "3555FDEF8E1709DF64756E2164756E21",
+  "names": []
+}
