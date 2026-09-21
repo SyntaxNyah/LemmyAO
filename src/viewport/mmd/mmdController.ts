@@ -229,18 +229,26 @@ export class MmdController {
     if (!model) return null;
 
     const folder = this.characterFolder(charName);
-    const [, preanimAnim] = await Promise.all([
+    // The clips that play before the loop (see playEmote's gate) must finish
+    // before talking starts, so the mouth and text line up with the loop. Report
+    // their combined length as the delay; 0 means no transition, talk at once.
+    const prev = this.playingEmote;
+    const leavingPostanim =
+      prev && prev.charName === charName && prev.emote !== emote ? prev.postanim : null;
+    const playTransition = playPreanim || (!!leavingPostanim && !!preanim);
+
+    const [, preanimAnim, postanimAnim] = await Promise.all([
       this.resolveMotion(vmdCandidates(folder, emote)), // warm the base loop
-      preanim ? this.resolveMotion(vmdCandidates(folder, preanim)) : Promise.resolve(null),
+      playTransition && preanim
+        ? this.resolveMotion(vmdCandidates(folder, preanim))
+        : Promise.resolve(null),
+      playTransition && leavingPostanim
+        ? this.resolveMotion(vmdCandidates(folder, leavingPostanim))
+        : Promise.resolve(null),
     ]);
 
-    // Report the intro's length as a delay only when the checkbox is ticked, so
-    // the timeline waits (chatbox hidden) for an interrupting preanim. The
-    // same-character continuation override (see playEmote) still chains the body
-    // smoothly, but keeps talking immediately without hiding the chatbox.
-    const willPlayPreanim = !!preanim && playPreanim;
-    const preanimDurationMs =
-      willPlayPreanim && preanimAnim ? (preanimAnim.endFrame / 30) * 1000 : 0;
+    const clipMs = (a: MmdAnimation | null) => (a ? (a.endFrame / 30) * 1000 : 0);
+    const preanimDurationMs = clipMs(postanimAnim) + clipMs(preanimAnim);
     return { charName, modelFile, emote, preanim, postanim, camera, playPreanim, preanimDurationMs };
   }
 
