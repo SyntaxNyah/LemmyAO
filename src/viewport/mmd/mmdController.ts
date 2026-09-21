@@ -128,6 +128,8 @@ export class MmdController {
   private pendingAdvance = false;
   /** The emote currently playing, to skip re-chaining and to find its outro. */
   private playingEmote: Model3dInfo | null = null;
+  /** Camera track currently on mmdCamera, so a shared VMD isn't re-set per clip. */
+  private currentCameraAnim: MmdRuntimeAnimationHandle | null = null;
 
   private talking = false;
   private talkTime = 0;
@@ -199,6 +201,12 @@ export class MmdController {
 
     this.engine.runRenderLoop(() => this.scene.render());
     window.addEventListener("resize", () => this.engine.resize());
+    // The canvas starts detached at the default 300x150; resize once it is
+    // attached and laid out (and on any later slot resize) so it isn't blurry.
+    // engine.resize() can resize the canvas we observe, so defer to the next
+    // frame to avoid a "ResizeObserver loop completed with undelivered
+    // notifications" error.
+    new ResizeObserver(() => requestAnimationFrame(() => this.engine.resize())).observe(this.canvas);
   }
 
   /**
@@ -214,6 +222,7 @@ export class MmdController {
     preanim: string | null,
     postanim: string | null,
     camera: string | null,
+    playPreanim: boolean,
   ): Promise<Model3dInfo | null> {
     this.host = host;
     const model = await this.loadModel(charName, modelFile);
@@ -225,8 +234,15 @@ export class MmdController {
       preanim ? this.resolveMotion(vmdCandidates(folder, preanim)) : Promise.resolve(null),
     ]);
 
-    const preanimDurationMs = preanimAnim ? (preanimAnim.endFrame / 30) * 1000 : 0;
-    return { charName, modelFile, emote, preanim, postanim, camera, preanimDurationMs };
+    // The intro only plays on a fresh emote or an explicit checkbox replay (see
+    // playEmote). Report a delay only then, so a repeated emote keeps talking
+    // immediately instead of waiting the intro's length with the chatbox hidden.
+    const prev = this.playingEmote;
+    const sameEmote = !!prev && prev.charName === charName && prev.emote === emote;
+    const willPlayPreanim = !!preanim && (!sameEmote || playPreanim);
+    const preanimDurationMs =
+      willPlayPreanim && preanimAnim ? (preanimAnim.endFrame / 30) * 1000 : 0;
+    return { charName, modelFile, emote, preanim, postanim, camera, playPreanim, preanimDurationMs };
   }
 
   /** Reparents the render canvas into the active character slot. */
@@ -253,9 +269,12 @@ export class MmdController {
     }
     model.mesh.setEnabled(true);
     this.active = model;
+    // Frame the default camera (used only by emotes with no VMD camera) but
+    // don't force it active here: playEmote owns the active camera, and leaving
+    // the running mmdCamera in place avoids a blip to the default view during
+    // the async gap before the next emote's camera clip starts.
     this.camera.setTarget(model.target);
     this.camera.radius = model.radius;
-    this.scene.activeCamera = this.camera;
     this.engine.resize();
   }
 
@@ -270,15 +289,23 @@ export class MmdController {
     if (!model) return;
 
     const prev = this.playingEmote;
-    if (prev && prev.charName === info.charName && prev.emote === info.emote) return;
+    const sameEmote = !!prev && prev.charName === info.charName && prev.emote === info.emote;
+    // Repeating the same emote keeps the running loop and its camera untouched
+    // unless the sender ticked the preanim checkbox, which replays the intro.
+    if (sameEmote && !info.playPreanim) return;
 
+    // Carry the emote's camera on every step so the shot is set from the first
+    // rendered frame (the preanim/transition), not only once the loop starts.
     const specs: ClipSpec[] = [];
-    // Outro of the emote we leave (same character only).
-    if (prev && prev.charName === info.charName && prev.postanim) {
-      specs.push({ name: prev.postanim, camera: null });
+    // Outro of the emote we leave (never on a repeat).
+    if (!sameEmote && prev && prev.charName === info.charName && prev.postanim) {
+      specs.push({ name: prev.postanim, camera: info.camera });
     }
-    if (info.preanim) specs.push({ name: info.preanim, camera: null }); // intro
-    specs.push({ name: info.emote, camera: info.camera }); // loop, with its camera
+    // Intro on a fresh emote, or on a repeat only when explicitly requested.
+    if (info.preanim && (!sameEmote || info.playPreanim)) {
+      specs.push({ name: info.preanim, camera: info.camera });
+    }
+    specs.push({ name: info.emote, camera: info.camera }); // loop
 
     const folder = this.characterFolder(info.charName);
     const steps = await this.resolveSteps(model, folder, specs);
@@ -307,6 +334,7 @@ export class MmdController {
       this.active = null;
     }
     this.mmdCamera.setRuntimeAnimation(null);
+    this.currentCameraAnim = null;
     this.scene.activeCamera = this.camera;
     this.canvas.style.display = "none";
     if (this.canvas.parentElement) this.canvas.remove();
@@ -345,12 +373,17 @@ export class MmdController {
 
   private playStep(model: LoadedModel): void {
     const step = this.steps[this.stepIndex];
+    // Rig the camera before starting playback. Only swap the track when it
+    // actually changes so a camera shared across clips isn't re-set each time.
+    if (step.camera !== this.currentCameraAnim) {
+      this.mmdCamera.setRuntimeAnimation(step.camera); // null clears any camera anim
+      this.currentCameraAnim = step.camera;
+    }
+    this.updateActiveCamera(step.camera !== null);
     model.mmdModel.setRuntimeAnimation(step.model);
     model.playing = step.model;
-    this.mmdCamera.setRuntimeAnimation(step.camera); // null clears any camera anim
     this.runtime.seekAnimation(0, true);
     void this.runtime.playAnimation();
-    this.updateActiveCamera(step.camera !== null);
   }
 
   /** Use the MMD camera while the current clip carries a camera track. */

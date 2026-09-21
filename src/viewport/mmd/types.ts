@@ -18,5 +18,7 @@ export interface Model3dInfo {
   postanim: string | null;
   /** Camera-track VMD framing this emote, or null for the default camera. */
   camera: string | null;
+  /** The sender ticked the preanim checkbox: replay the intro even on a repeat. */
+  playPreanim: boolean;
   preanimDurationMs: number;
 }

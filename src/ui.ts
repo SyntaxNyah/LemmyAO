@@ -295,7 +295,10 @@ golden.root.contentItems[0].contentItems[0].contentItems[0].on("resize", () => s
 // finishes loading, which is what gives the health bars their height.
 const icWrapper = document.getElementById('client_icwrapper');
 if (icWrapper && typeof ResizeObserver !== 'undefined') {
-  new ResizeObserver(() => adjustSplitter()).observe(icWrapper);
+  // adjustSplitter resizes elements inside icWrapper, so run it in the next
+  // frame rather than during delivery, or the browser reports a "ResizeObserver
+  // loop completed with undelivered notifications" error.
+  new ResizeObserver(() => requestAnimationFrame(adjustSplitter)).observe(icWrapper);
 }
 
 // Themes are applied by swapping the theme <link>'s href or by injecting a

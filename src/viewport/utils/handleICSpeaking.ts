@@ -193,6 +193,7 @@ const prepare3dModel = async (
     preanim,
     postanim,
     camera,
+    hasPreanim,
   );
 };
 

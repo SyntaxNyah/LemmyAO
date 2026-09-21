@@ -85,10 +85,9 @@ export async function ensureCharIni(charid: number): Promise<any> {
   char.blips = safeHtmlTags(opt.blips || "male").toLowerCase();
   char.gender = safeHtmlTags(opt.gender).toLowerCase();
   char.side = safeHtmlTags(opt.side || Side.DEFENSE).toLowerCase();
-  char.chat =
-    opt.chat === ""
-      ? safeHtmlTags(opt.category).toLowerCase()
-      : safeHtmlTags(opt.chat).toLowerCase();
+  // Fall back chat -> category -> "default"; an empty value would otherwise be
+  // read as a blankpost and hide the chatbox on every message.
+  char.chat = safeHtmlTags(opt.chat || opt.category).toLowerCase() || "default";
   char.icon = img ? img.src : "";
   // A `model = foo.pmx` key marks the character as 3D (MMD .pmx + .vmd).
   char.model = safeHtmlTags(opt.model ?? "").toLowerCase();

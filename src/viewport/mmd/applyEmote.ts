@@ -46,7 +46,7 @@ export function setupCharacterSlot(
     existingMmdController()?.hide();
     return;
   }
-  getMmdController().then((controller) => {
+  getMmdController().then(async (controller) => {
     if (!controller) return;
     const slotId = isFullView(side) ? `client_${side}_char` : "client_char";
     const container = document.getElementById(slotId);
@@ -57,7 +57,9 @@ export function setupCharacterSlot(
     // Blank the sprite so it doesn't show behind the model.
     if (img) img.src = transparentPng;
     controller.place(container);
-    controller.show(model3d);
+    // Await show() first: it resets the active camera to the default, so
+    // playEmote (which sets the emote's camera) must run after it, not race it.
+    await controller.show(model3d);
     controller.playEmote(model3d);
   });
 }
