@@ -83,17 +83,16 @@ import type * as aolib from "../aolib";
  * with placeholder slots (filled in by SC / CI) and start the download
  * sequence by sending RC.
  */
-export function applyServerCounts(packet: aolib.SI) {
-  client.char_list_length = packet.char_count;
-  client.evidence_list_length = packet.evi_count;
-  client.music_list_length = packet.mus_count;
+/**
+ * Builds the char-select grid: one clickable `demo_<i>` slot per character.
+ * The character loader fills icons in afterwards. Exported so tooling (the
+ * dev demo) can rebuild the grid from a locally-discovered roster.
+ */
+export function buildCharGrid(count: number): void {
+  const table = document.getElementById("client_chartable")!;
+  table.innerHTML = "";
 
-  fetchExtensions();
-
-  // Build the char-select grid; the character loader will fill icons in.
-  document.getElementById("client_chartable")!.innerHTML = "";
-
-  for (let i = 0; i < client.char_list_length; i++) {
+  for (let i = 0; i < count; i++) {
     const slot = document.createElement("div");
     slot.className = "char-slot";
     slot.dataset.charid = String(i);
@@ -113,9 +112,18 @@ export function applyServerCounts(packet: aolib.SI) {
 
     slot.appendChild(demothing);
     slot.appendChild(favBtn);
-    document.getElementById("client_chartable")!.appendChild(slot);
+    table.appendChild(slot);
   }
+}
 
+export function applyServerCounts(packet: aolib.SI) {
+  client.char_list_length = packet.char_count;
+  client.evidence_list_length = packet.evi_count;
+  client.music_list_length = packet.mus_count;
+
+  fetchExtensions();
+
+  buildCharGrid(client.char_list_length);
   applyFavourites();
 
   client.server.send.RC({});

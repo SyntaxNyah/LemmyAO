@@ -27,6 +27,11 @@ import {
 const { ip: serverIP, connect, mode, theme, serverName, char: autoChar, area: autoArea } = queryParser();
 export { autoChar, autoArea };
 
+// Modes that run the client as its own local server (no socket): `replay`
+// plays a recorded log, `server` acts as a live one-area server for local
+// character testing (see src/dom/serverMode.ts). Both loop send -> receive.
+const isLocalMode = mode === "replay" || mode === "server";
+
 document.title = serverName;
 
 export let CHATBOX: string;
@@ -67,7 +72,7 @@ fpPromise
 
     let connectionString = connect;
 
-    if (!connectionString && mode !== "replay") {
+    if (!connectionString && !isLocalMode) {
       if (serverIP) {
         // if connectionString is not set, try IP
         // and just guess ws, though it could be wss
@@ -180,7 +185,7 @@ class Client {
   emotions_extensions: string[];
   background_extensions: string[];
   constructor(connectionString: string) {
-    this.acting_as_server = mode === "replay";
+    this.acting_as_server = isLocalMode;
     this.state = clientState.NotConnected;
     this.connect = () => {
       // Detach the previous attempt's socket listeners + watchdog.
@@ -231,7 +236,7 @@ class Client {
       });
       registerProtocol(this.server, this.clientSession);
 
-      if (mode !== "replay") {
+      if (!isLocalMode) {
         this.socket = new WebSocket(connectionString);
         const opts = { signal: abort.signal };
         this.socket.addEventListener("open", this.onOpen.bind(this), opts);
@@ -309,7 +314,7 @@ class Client {
    */
   joinServer() {
     this.server.send.HI({ hdid });
-    if (mode !== "replay") {
+    if (!isLocalMode) {
       this.checkUpdater = setInterval(
         () => this.server.send.CH({ char_id: this.charID }),
         5000,

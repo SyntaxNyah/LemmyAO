@@ -30,4 +30,4 @@ import "./client";
 import "./ui";
 import "./dom/dispatch";
 import "./components/audioChannels";
-import "./dom/demo3d";
+import "./dom/serverMode";
