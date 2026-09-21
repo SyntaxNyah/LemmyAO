@@ -234,12 +234,11 @@ export class MmdController {
       preanim ? this.resolveMotion(vmdCandidates(folder, preanim)) : Promise.resolve(null),
     ]);
 
-    // The intro only plays on a fresh emote or an explicit checkbox replay (see
-    // playEmote). Report a delay only then, so a repeated emote keeps talking
-    // immediately instead of waiting the intro's length with the chatbox hidden.
-    const prev = this.playingEmote;
-    const sameEmote = !!prev && prev.charName === charName && prev.emote === emote;
-    const willPlayPreanim = !!preanim && (!sameEmote || playPreanim);
+    // Report the intro's length as a delay only when the checkbox is ticked, so
+    // the timeline waits (chatbox hidden) for an interrupting preanim. The
+    // same-character continuation override (see playEmote) still chains the body
+    // smoothly, but keeps talking immediately without hiding the chatbox.
+    const willPlayPreanim = !!preanim && playPreanim;
     const preanimDurationMs =
       willPlayPreanim && preanimAnim ? (preanimAnim.endFrame / 30) * 1000 : 0;
     return { charName, modelFile, emote, preanim, postanim, camera, playPreanim, preanimDurationMs };
@@ -289,7 +288,17 @@ export class MmdController {
     if (!model) return;
 
     const prev = this.playingEmote;
-    const sameEmote = !!prev && prev.charName === info.charName && prev.emote === info.emote;
+    const sameChar = !!prev && prev.charName === info.charName;
+    const sameEmote = !!prev && sameChar && prev.emote === info.emote;
+    // The leaving emote's outro, on a same-character emote change.
+    const leavingPostanim =
+      prev && sameChar && prev.emote !== info.emote ? prev.postanim : null;
+    // The transition (postanim -> preanim -> loop) plays when the preanim
+    // checkbox is ticked, or -- even unticked -- when a same-character emote
+    // change has both an authored outro and intro, so the pair chains smoothly
+    // (aolib-meta SEQUENCING: same-character continuation override).
+    const playTransition = info.playPreanim || (!!leavingPostanim && !!info.preanim);
+
     // Repeating the same emote keeps the running loop and its camera untouched
     // unless the sender ticked the preanim checkbox, which replays the intro.
     if (sameEmote && !info.playPreanim) return;
@@ -297,13 +306,9 @@ export class MmdController {
     // Carry the emote's camera on every step so the shot is set from the first
     // rendered frame (the preanim/transition), not only once the loop starts.
     const specs: ClipSpec[] = [];
-    // Outro of the emote we leave (never on a repeat).
-    if (!sameEmote && prev && prev.charName === info.charName && prev.postanim) {
-      specs.push({ name: prev.postanim, camera: info.camera });
-    }
-    // Intro on a fresh emote, or on a repeat only when explicitly requested.
-    if (info.preanim && (!sameEmote || info.playPreanim)) {
-      specs.push({ name: info.preanim, camera: info.camera });
+    if (playTransition) {
+      if (leavingPostanim) specs.push({ name: leavingPostanim, camera: info.camera }); // outro
+      if (info.preanim) specs.push({ name: info.preanim, camera: info.camera }); // intro
     }
     specs.push({ name: info.emote, camera: info.camera }); // loop
 
