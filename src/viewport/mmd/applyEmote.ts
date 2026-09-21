@@ -7,8 +7,10 @@ import { MmdState, Model3dInfo } from "./types";
 
 /**
  * Applies one emote phase to the main (non-pair) character slot. For a 3D
- * character it drives the MMD controller; otherwise it falls back to the
- * sprite <img>. Pair characters always use sprites.
+ * character the emote's animation (preanim -> loop, camera) is started once by
+ * setupCharacterSlot, so here the phases just toggle talking: the mouth moves
+ * while speaking and stops on idle. Otherwise it falls back to the sprite <img>.
+ * Pair characters always use sprites.
  *
  * `spriteUrl` is the pre-resolved sprite for the 2D path and is ignored for
  * 3D characters.
@@ -21,9 +23,9 @@ export function applyCharacterEmote(
 ): void {
   const chatmsg = client.viewport.getChatmsg();
   if (!pair && chatmsg?.model3d) {
-    getMmdController().then((controller) => {
-      controller?.playState(state, chatmsg.model3d!);
-    });
+    // preanim is part of the emote clip chain (setupCharacterSlot); ignore here.
+    if (state === "preanim") return;
+    getMmdController().then((controller) => controller?.setTalking(state === "talking"));
     return;
   }
   setEmoteFromUrl(spriteUrl, pair, side);
@@ -56,6 +58,6 @@ export function setupCharacterSlot(
     if (img) img.src = transparentPng;
     controller.place(container);
     controller.show(model3d);
-    controller.playState("idle", model3d);
+    controller.playEmote(model3d);
   });
 }

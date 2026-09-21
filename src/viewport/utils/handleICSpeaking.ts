@@ -172,12 +172,27 @@ const prepare3dModel = async (
   const controller = await getMmdController();
   if (!controller) return null;
 
+  // postanim / camera aren't on the wire — read them from the emote's char.ini
+  // block (matched by its anim, which is chatmsg.sprite).
+  const emoteDef = char.inifile?.emotes?.find(
+    (e: { anim?: string }) => (e.anim ?? "").toLowerCase() === chatmsg.sprite,
+  );
+  const preanim = emoteDef?.preanim
+    ? String(emoteDef.preanim).toLowerCase()
+    : hasPreanim
+      ? chatmsg.preanim
+      : null;
+  const postanim = emoteDef?.postanim ? String(emoteDef.postanim).toLowerCase() : null;
+  const camera = emoteDef?.camera ? String(emoteDef.camera).toLowerCase() : null;
+
   return controller.preload(
     AO_HOST,
     chatmsg.name,
     char.model,
     chatmsg.sprite,
-    hasPreanim ? chatmsg.preanim : null,
+    preanim,
+    postanim,
+    camera,
   );
 };
 

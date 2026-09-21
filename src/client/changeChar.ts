@@ -50,24 +50,24 @@ export async function changeChar(char_id: number) {
       }
     }
 
-    for (const emote of ini.emotes) {
-      const i = emote.id;
+    // aolib-ts emotes carry no numeric id; button files are 1-based by order.
+    ini.emotes.forEach((emote: any, idx: number) => {
+      const i = idx + 1;
       try {
         const url = `${charPath}button${i}_off${emoteExtension}`;
 
-        // preanim is verbatim from char.ini: "-"/"" mean none (and a future
-        // parser may use null); all normalize to lowercase for asset lookup.
+        // `anim`/`preanim` are a legacy stem or (block format) a full filename
+        // with extension; null preanim means none. Lowercased for asset lookup.
         emotes[i] = {
           desc: (emote.name ?? "").toLowerCase(),
           preanim: (emote.preanim ?? "-").toLowerCase(),
           emote: (emote.anim ?? "").toLowerCase(),
           zoom: emote.modifier ?? 0,
-          desk_modifier: emote.deskMod ?? 1,
+          desk_modifier: emote.deskmod ?? 1,
           sfx: (emote.sound ?? "0").toLowerCase(),
-          // soundDelayMs is [soundt] ticks already converted to ms (aolib-ts
-          // TICK_MS == UPDATE_INTERVAL), matching the tickTimer comparison in
-          // the chat loop.
-          sfxdelay: emote.soundDelayMs ?? 0,
+          // sounddelayms is [soundt] ticks already converted to ms (aolib-ts
+          // TICK_MS == UPDATE_INTERVAL), matching the tickTimer comparison.
+          sfxdelay: emote.sounddelayms ?? 0,
           frame_screenshake: "",
           frame_realization: "",
           frame_sfx: "",
@@ -80,7 +80,7 @@ export async function changeChar(char_id: number) {
       } catch (e) {
         console.error(`missing emote ${i}`);
       }
-    }
+    });
   }
 
   const customCharPath = `${AO_HOST}characters/${encodeURI(me.name.toLowerCase())}/custom`;
