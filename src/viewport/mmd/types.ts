@@ -20,5 +20,9 @@ export interface Model3dInfo {
   camera: string | null;
   /** The sender ticked the preanim checkbox: replay the intro even on a repeat. */
   playPreanim: boolean;
+  /**
+   * Combined length of the clips that play before the loop (leaving postanim +
+   * intro), or 0 when none. Talking waits this long so it starts on the loop.
+   */
   preanimDurationMs: number;
 }
