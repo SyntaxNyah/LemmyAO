@@ -1,8 +1,0 @@
-import{_a as k}from"./chunk-ps5tjgy2.js";import{Oc as b}from"./chunk-cf2anp2z.js";import"./chunk-9cv6hrcp.js";var g="rgbdEncodePixelShader",q=`varying vec2 vUV;uniform sampler2D textureSampler;
-#include<helperFunctions>
-#define CUSTOM_FRAGMENT_DEFINITIONS
-void main(void) 
-{gl_FragColor=toRGBD(texture2D(textureSampler,vUV).rgb);}`;if(!b.ShadersStore[g])b.ShadersStore[g]=q;var v=[k];for(let f of v)if(!b.IncludesShadersStore[f.name])b.IncludesShadersStore[f.name]=f.shader;var y={name:g,shader:q};export{y as rgbdEncodePixelShader};
-
-//# debugId=881A9B74F596BEFF64756E2164756E21
-//# sourceMappingURL=chunk-ya4nbrt4.js.map
