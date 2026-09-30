@@ -7,7 +7,7 @@
       "dependencies": {
         "@babylonjs/core": "^9.27.1",
         "@fingerprintjs/fingerprintjs": "^3.4.2",
-        "aolib-ts": "^2.1.0",
+        "aolib-ts": "^2.2.0",
         "babylon-mmd": "^1.3.0",
         "golden-layout": "^2.6.0",
         "libopus-wasm": "0.2.0",
@@ -102,7 +102,7 @@
 
     "ansi-styles": ["ansi-styles@4.3.0", "", { "dependencies": { "color-convert": "^2.0.1" } }, "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg=="],
 
-    "aolib-ts": ["aolib-ts@2.1.0", "", { "dependencies": { "ajv": "^8.20.0", "js-ini": "^1.6.0" } }, "sha512-M4zf/kVCdPDMmD6wZ1Tu9Id7yOFRfpz09VC9CmFihLbRuG42mPUEcZ+lvYTWz5i9+CBQ0J9KwozRf4p7aZGl9A=="],
+    "aolib-ts": ["aolib-ts@2.2.0", "", { "dependencies": { "ajv": "^8.20.0", "js-ini": "^1.6.0" } }, "sha512-CqpNIfrNPLmhhVFUEiv7RFPw/G36C6iND2ppI/oRbR24KVxCDhnslgKvJ3uTjxyPoYB77xhshBSeEIOKFttfew=="],
 
     "argparse": ["argparse@2.0.1", "", {}, "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="],
 

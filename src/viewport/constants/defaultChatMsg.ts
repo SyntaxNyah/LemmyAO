@@ -13,6 +13,7 @@ import { ChatMsg } from "../interfaces/ChatMsg";
 const UPDATE_INTERVAL = 60;
 
 const defaultPacket: aolib.packets.MSToClient = {
+  $header: "MS",
   desk_modifier: DeskModifier.shown,
   preanim: "",
   character: "",
