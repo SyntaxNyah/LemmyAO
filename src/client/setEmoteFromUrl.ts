@@ -1,10 +1,10 @@
-import { Side } from "../aolib";
+import { Side } from "aolib-ts";
 import transparentPng from "../constants/transparentPng";
 
 // Function rather than module-level array: enum members are accessed only
 // at call time, avoiding "Side is undefined" during circular-import init.
 const isFullView = (s: Side): boolean =>
-  s === Side.DEFENSE || s === Side.PROSECUTION || s === Side.WITNESS;
+  s === Side.def || s === Side.pro || s === Side.wit;
 
 /**
  * Sets a pre-resolved emote URL on the correct DOM <img> element.

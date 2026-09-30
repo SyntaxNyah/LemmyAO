@@ -10,7 +10,7 @@ import { AO_HOST } from "../client/aoHost";
 import { unescapeUnicode, safeHtmlTags } from "../escaping";
 import queryParser from "../utils/queryParser";
 import { flashPairActivity } from "./pairNotification";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 const { mode } = queryParser();
 
@@ -23,7 +23,7 @@ function addLinks(message: string): string {
 }
 
 /** CT: server broadcast of an OOC chat message; append to the log. */
-export function appendOOCMessage(packet: aolib.CTBroadcast) {
+export function appendOOCMessage(packet: aolib.packets.CTToClient) {
   if (mode === "replay") return;
 
   const oocLog = document.getElementById("client_ooclog")!;
@@ -43,7 +43,7 @@ export function appendOOCMessage(packet: aolib.CTBroadcast) {
 }
 
 /** ZZ: server modcall broadcast; show a `$Alert:` notice and play the gallery sfx. */
-export function showModcallNotice(packet: aolib.ZZ) {
+export function showModcallNotice(packet: aolib.packets.ZZToClient) {
   const oocLog = document.getElementById("client_ooclog")!;
   const message = safeHtmlTags(unescapeUnicode(packet.reason)).replace(/\n/g, "<br>");
   const wasAtBottom = oocLog.scrollTop > oocLog.scrollHeight - 60;

@@ -8,11 +8,10 @@ import { SHOUTS } from "../constants/shouts";
 import { setChatbox } from "../../dom/setChatbox";
 import { resizeChatbox } from "../../dom/resizeChatbox";
 import transparentPng from "../../constants/transparentPng";
-import { COLORS } from "../constants/colors";
 import mlConfig from "../../utils/aoml";
 import request from "../../services/request";
 import { unescapeUnicode, safeHtmlTags } from "../../escaping";
-import * as aolib from "../../aolib";
+import * as aolib from "aolib-ts";
 import {
   DeskModifier,
   EmoteModifier,
@@ -20,7 +19,7 @@ import {
   isFullView,
   ShoutModifier,
   Side,
-} from "../../aolib";
+} from "aolib-ts";
 import preloadMessageAssets from "./preloadMessageAssets";
 import { setBlipUrl } from "./blipAudio";
 import { getMmdController } from "../mmd";
@@ -74,9 +73,9 @@ export function setStartThirdTickCheck(val: boolean) {
 /** Per-axis mirroring CSS transform for a Flip value. */
 const flipTransform = (flip: Flip | undefined): string => {
   const x =
-    flip === Flip.HORIZONTAL || flip === Flip.HORIZONTAL_AND_VERTICAL ? -1 : 1;
+    flip === Flip.horizontal || flip === Flip.horizontal_and_vertical ? -1 : 1;
   const y =
-    flip === Flip.VERTICAL || flip === Flip.HORIZONTAL_AND_VERTICAL ? -1 : 1;
+    flip === Flip.vertical || flip === Flip.horizontal_and_vertical ? -1 : 1;
   return `scale(${x}, ${y})`;
 };
 
@@ -86,11 +85,11 @@ const flipTransform = (flip: Flip | undefined): string => {
 
 /**
  * Builds the viewport's render state from an incoming MS packet. The
- * `ChatMsg` type is `aolib.MSBroadcast & {render-state extras}`, so we just
+ * `ChatMsg` type is `aolib.packets.MSToClient & {render-state extras}`, so we just
  * spread the packet and add the display-transformed / char-derived /
  * render-loop fields on top.
  */
-const buildChatMsg = (packet: aolib.MSBroadcast): ChatMsg => {
+const buildChatMsg = (packet: aolib.packets.MSToClient): ChatMsg => {
   const char = client.chars[packet.char_id];
   const msg_nameplate = char?.showname ?? packet.character;
   const msg_blips = char?.blips ?? "male";
@@ -135,7 +134,7 @@ const buildChatMsg = (packet: aolib.MSBroadcast): ChatMsg => {
  * runs the AO attorney-markdown parser.
  */
 const parseContent = async (chatmsg: ChatMsg): Promise<HTMLSpanElement[]> => {
-  const colorName = COLORS[chatmsg.text_color];
+  const colorName = chatmsg.text_color;
   if (!markdownDisabled) {
     try {
       const markdown = await initAttorneyMarkdown();
@@ -160,7 +159,7 @@ const parseContent = async (chatmsg: ChatMsg): Promise<HTMLSpanElement[]> => {
  * for ordinary sprite characters (leaving the 2D path untouched).
  */
 const prepare3dModel = async (
-  packet: aolib.MSBroadcast,
+  packet: aolib.packets.MSToClient,
   chatmsg: ChatMsg,
   hasPreanim: boolean,
 ): Promise<Model3dInfo | null> => {
@@ -202,7 +201,7 @@ const prepare3dModel = async (
  * preload, markdown parsing) and computes derived render-loop flags.
  * No DOM mutation here -- only state on the chatmsg object itself.
  */
-const prepareICMessage = async (packet: aolib.MSBroadcast): Promise<ChatMsg> => {
+const prepareICMessage = async (packet: aolib.packets.MSToClient): Promise<ChatMsg> => {
   const chatmsg = buildChatMsg(packet);
 
   // Preload all assets in parallel; primes browser cache.
@@ -215,7 +214,7 @@ const prepareICMessage = async (packet: aolib.MSBroadcast): Promise<ChatMsg> => 
 
   // Animation gates (need to know hasPreanim ahead of rendering).
   const hasPreanim =
-    chatmsg.emote_modifier === EmoteModifier.PREANIM &&
+    chatmsg.emote_modifier === EmoteModifier.preanim &&
     chatmsg.preanim !== "-" &&
     chatmsg.preanim !== "";
   chatmsg.startpreanim = true;
@@ -267,7 +266,7 @@ const applyShout = (chatmsg: ChatMsg, chatContainerBox: HTMLElement) => {
   // URL otherwise. Custom shouts have no default -- use the legacy
   // character/<name>/custom.gif path which the onerror handler hides
   // if it's missing.
-  if (chatmsg.shout_modifier === ShoutModifier.CUSTOM) {
+  if (chatmsg.shout_modifier === ShoutModifier.custom) {
     shoutSprite.src =
       preloaded.shoutBubbleUrl ??
       `${AO_HOST}characters/${encodeURI(chatmsg.name.toLowerCase())}/custom.gif`;
@@ -424,16 +423,16 @@ const renderICMessage = (chatmsg: ChatMsg) => {
     showDesk: false,
   };
   let skipoffset = false;
-  if (chatmsg.emote_modifier === EmoteModifier.ZOOM) {
+  if (chatmsg.emote_modifier === EmoteModifier.zoom) {
     setAside.showSpeedLines = true;
     setAside.showDesk = false;
   } else {
     switch (chatmsg.desk_modifier) {
-      case DeskModifier.SHOWN:
-      case DeskModifier.SHOW_DURING_PREANIM_THEN_CENTER:
+      case DeskModifier.shown:
+      case DeskModifier.show_during_preanim_then_center:
         setAside.showDesk = true;
         break;
-      case DeskModifier.HIDE_AND_CENTER_DURING_PREANIM:
+      case DeskModifier.hide_and_center_during_preanim:
         skipoffset = true;
         break;
       // HIDDEN / HIDE_DURING_PREANIM / SHOW_DURING_PREANIM -> stays
@@ -455,9 +454,9 @@ const renderICMessage = (chatmsg: ChatMsg) => {
 
     // Shift by the horizontal offset.
     const baseLeft =
-      chatmsg.side === Side.WITNESS
+      chatmsg.side === Side.wit
         ? 200
-        : chatmsg.side === Side.PROSECUTION
+        : chatmsg.side === Side.pro
           ? 400
           : 0;
     pairLayers.style.left = `${baseLeft + (chatmsg.paired_offset?.x ?? 0)}%`;
@@ -496,7 +495,7 @@ const renderICMessage = (chatmsg: ChatMsg) => {
  *   prepareICMessage(packet)  // async: build chatmsg, preload, parse markdown
  *   renderICMessage(chatmsg)  // sync:  apply to DOM, start chat_tick
  */
-export async function handle_ic_speaking(packet: aolib.MSBroadcast) {
+export async function handle_ic_speaking(packet: aolib.packets.MSToClient) {
   const chatmsg = await prepareICMessage(packet);
   renderICMessage(chatmsg);
 }
@@ -508,7 +507,7 @@ import { resetICParams } from "../../client/resetICParams";
  * MS: in-character chat broadcast. Gatekeeps (duplicate / iniedit /
  * muted) and delegates rendering to `handle_ic_speaking`.
  */
-export function handleChatMessage(packet: aolib.MSBroadcast) {
+export function handleChatMessage(packet: aolib.packets.MSToClient) {
   // duplicate message
   if (packet.message === client.viewport.getChatmsg().content) return;
 

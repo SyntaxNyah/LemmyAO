@@ -9,7 +9,7 @@
 import { client, clientState, autoChar, autoArea } from "../client";
 import { area_click } from "../dom/areaClick";
 import queryParser from "../utils/queryParser";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 const { mode, json_mode: jsonModeEnabled } = queryParser();
 
@@ -24,7 +24,7 @@ const { mode, json_mode: jsonModeEnabled } = queryParser();
  * server-by-server while keeping the default path on the known-good
  * fanta wire.
  */
-export function applyEncryptionMode(packet: aolib.decryptor) {
+export function applyEncryptionMode(packet: aolib.packets.decryptor) {
   const useJson = jsonModeEnabled && packet.value === "JSON";
   client.server.setJsonMode(useJson);
   client.joinServer();
@@ -38,13 +38,13 @@ export function applyEncryptionMode(packet: aolib.decryptor) {
  * `onClientIdentified` in `./replay.ts`), which synthesises the
  * server's next packet (PN) so the UI keeps moving.
  */
-export function applyServerIdentity(packet: aolib.IDServer) {
+export function applyServerIdentity(packet: aolib.packets.IDToClient) {
   client.playerID = packet.player_id;
   client.server.send.ID({ software: client.software, version: client.version });
 }
 
 /** PN: server population. Triggers the character list request. */
-export function applyServerInfo(_packet: aolib.PN) {
+export function applyServerInfo(_packet: aolib.packets.PN) {
   client.server.send.askchaa({});
 }
 

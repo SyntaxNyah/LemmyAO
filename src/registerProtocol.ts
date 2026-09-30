@@ -14,7 +14,7 @@
  * encode/decode, defaults, and chat-escape are all owned by aolib.
  */
 
-import * as aolib from "./aolib";
+import * as aolib from "aolib-ts";
 
 // ---------------------------------------------------------------------
 // Server -> client handlers.

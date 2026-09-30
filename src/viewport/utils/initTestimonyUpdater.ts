@@ -32,14 +32,14 @@ export function initTestimonyUpdater() {
   );
 }
 
-import type * as aolib from "../../aolib";
+import type * as aolib from "aolib-ts";
 
 /**
  * RT: drive the testimony / judge-ruling state machine. `judgeId` is
  * meaningful only for `judgeruling`; `testimony1#1` (since 2.9) hides
  * the indicator instead of showing it.
  */
-export function applyTestimonyState(packet: aolib.RT) {
+export function applyTestimonyState(packet: aolib.packets.RTToClient) {
   const judgeid = packet.judgeId ?? 0;
   switch (packet.animation) {
     case "testimony1":

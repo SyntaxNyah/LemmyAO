@@ -23,13 +23,13 @@ export function setAOhost(val: string): string {
 }
 
 import { renderPlayerList } from "../dom/renderPlayerList";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 /**
  * ASS: server tells the client to fetch assets from a new origin.
  * `"None"` is a sentinel meaning "keep using the current host".
  */
-export function applyAssetOrigin(packet: aolib.ASS) {
+export function applyAssetOrigin(packet: aolib.packets.ASS) {
   if (packet.asset_url !== "None") setAOhost(packet.asset_url);
   renderPlayerList();
 }

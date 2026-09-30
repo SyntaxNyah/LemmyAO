@@ -1,7 +1,7 @@
 import { positions } from "../constants/positions";
 import { AO_HOST } from "../../client/aoHost";
 import { client } from "../../client";
-import { isFullView, Side } from "../../aolib";
+import { isFullView, Side } from "aolib-ts";
 import transparentPng from "../../constants/transparentPng";
 import fileExists from "../../utils/fileExists";
 import { isHideDesksEnabled } from "../../dom/switchHideDesks";
@@ -106,13 +106,13 @@ export async function set_side({
     view.style.display = "";
     document.getElementById("client_classicview")!.style.display = "none";
     switch (position) {
-      case Side.DEFENSE:
+      case Side.def:
         view.style.left = "0";
         break;
-      case Side.WITNESS:
+      case Side.wit:
         view.style.left = "-200%";
         break;
-      case Side.PROSECUTION:
+      case Side.pro:
         view.style.left = "-400%";
         break;
     }
@@ -126,10 +126,10 @@ import { getIndexFromSelect } from "../../dom/getIndexFromSelect";
 import { switchPanTilt } from "../../dom/switchPanTilt";
 import { updateBackgroundPreview } from "../../dom/updateBackgroundPreview";
 import { safeHtmlTags } from "../../escaping";
-import type * as aolib from "../../aolib";
+import type * as aolib from "aolib-ts";
 
 /** BN: background change broadcast — swap every viewport background slot. */
-export function applyBackgroundChange(packet: aolib.BN) {
+export function applyBackgroundChange(packet: aolib.packets.BN) {
   const bgFromArgs = safeHtmlTags(packet.background);
   client.viewport.setBackgroundName(bgFromArgs);
   const bg_index = getIndexFromSelect("bg_select", client.viewport.getBackgroundName());
@@ -157,7 +157,7 @@ export function applyBackgroundChange(packet: aolib.BN) {
   }
 
   if (client.charID === -1) {
-    client.viewport.set_side({ position: Side.JUDGE, showSpeedLines: false, showDesk: true });
+    client.viewport.set_side({ position: Side.jud, showSpeedLines: false, showDesk: true });
   } else {
     client.viewport.set_side({
       position: client.chars[client.charID].side,

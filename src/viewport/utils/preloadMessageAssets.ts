@@ -1,4 +1,5 @@
-import { EmoteModifier, ShoutModifier } from "../../aolib";
+import { EmoteModifier, ShoutModifier } from "aolib-ts";
+import { SHOUTS } from "../constants/shouts";
 import { ChatMsg } from "../interfaces/ChatMsg";
 import { PreloadedAssets } from "../interfaces/PreloadedAssets";
 import {
@@ -14,6 +15,8 @@ const GLOBAL_TIMEOUT_MS = 8000;
  * Builds the list of candidate URLs for a character emote across all extensions.
  * Replicates the URL construction logic from setEmote.ts.
  */
+const IMAGE_EXTENSIONS = [".gif", ".webp", ".apng", ".png"];
+
 function buildEmoteUrls(
   AO_HOST: string,
   extensions: string[],
@@ -22,8 +25,20 @@ function buildEmoteUrls(
   prefix: string,
 ): string[] {
   const characterFolder = `${AO_HOST}characters/`;
-  const urls: string[] = [];
+  const base = `${characterFolder}${encodeURI(charactername)}/`;
 
+  // A name that already carries an extension (char.ini block format) is a
+  // literal filename: never deduce. The path is fully determined (lowercase
+  // name, fixed (a)/(b) prefix, given extension), so it's the single candidate.
+  // A non-image extension (e.g. a 3D `.vmd`) has no sprite to load.
+  const dot = emotename.lastIndexOf(".");
+  if (dot !== -1) {
+    const ext = emotename.slice(dot).toLowerCase();
+    if (!IMAGE_EXTENSIONS.includes(ext)) return [];
+    return [`${base}${encodeURI(prefix)}${encodeURI(emotename)}`];
+  }
+
+  const urls: string[] = [];
   for (const extension of extensions) {
     let url: string;
     if (extension === ".png") {
@@ -108,7 +123,7 @@ export default async function preloadMessageAssets(
     const talkingUrls = buildEmoteUrls(AO_HOST, emoteExtensions, charName, charEmote, "(b)");
 
     const hasPreanim =
-      chatmsg.emote_modifier === EmoteModifier.PREANIM &&
+      chatmsg.emote_modifier === EmoteModifier.preanim &&
       chatmsg.preanim &&
       chatmsg.preanim !== "-" &&
       chatmsg.preanim !== "";
@@ -127,13 +142,12 @@ export default async function preloadMessageAssets(
       : null;
 
     // Shout SFX per-character path
-    const shoutNames = [undefined, "holdit", "objection", "takethat", "custom"];
-    const shoutName = shoutNames[chatmsg.shout_modifier];
+    const shoutName = SHOUTS[chatmsg.shout_modifier];
     const isStandardShout =
-      chatmsg.shout_modifier === ShoutModifier.HOLD_IT ||
-      chatmsg.shout_modifier === ShoutModifier.OBJECTION ||
-      chatmsg.shout_modifier === ShoutModifier.TAKE_THAT;
-    const isCustomShout = chatmsg.shout_modifier === ShoutModifier.CUSTOM;
+      chatmsg.shout_modifier === ShoutModifier.hold_it ||
+      chatmsg.shout_modifier === ShoutModifier.objection ||
+      chatmsg.shout_modifier === ShoutModifier.take_that;
+    const isCustomShout = chatmsg.shout_modifier === ShoutModifier.custom;
     // Custom shouts use the same per-character path (custom.opus). Resolving
     // it here means a character without one yields null from the cached HEAD
     // check, so the caller can skip the channel entirely instead of pointing
@@ -153,9 +167,9 @@ export default async function preloadMessageAssets(
     const invalidSounds = ["0", "1", "", undefined];
     const emoteSfxPath = (
       !invalidSounds.includes(chatmsg.sound) &&
-      (chatmsg.emote_modifier === EmoteModifier.PREANIM ||
-        chatmsg.emote_modifier === EmoteModifier.PREANIM_AND_OBJECTION ||
-        chatmsg.emote_modifier === EmoteModifier.OBJECTION_ZOOM)
+      (chatmsg.emote_modifier === EmoteModifier.preanim ||
+        chatmsg.emote_modifier === EmoteModifier.preanim_and_objection ||
+        chatmsg.emote_modifier === EmoteModifier.objection_zoom)
     ) ? `${AO_HOST}sounds/general/${encodeURI(chatmsg.sound.toLowerCase())}.opus`
       : null;
 

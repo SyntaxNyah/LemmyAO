@@ -1,4 +1,4 @@
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 /**
  * TI: timer state update. `command` selects the action:
@@ -6,7 +6,7 @@ import type * as aolib from "../aolib";
  *   2 = show the timer
  *   3 = hide the timer
  */
-export function applyTimerUpdate(packet: aolib.TI) {
+export function applyTimerUpdate(packet: aolib.packets.TI) {
   switch (packet.command) {
     case 0:
     case 1:

@@ -1,7 +1,6 @@
 import { client } from "../client";
 import { safeHtmlTags } from "../escaping";
-import { parseCharIni } from "aolib-ts";
-import { Side } from "../aolib";
+import { parseCharIni, Side } from "aolib-ts";
 import request from "../services/request";
 import { AO_HOST } from "./aoHost";
 import { observeCharIcon } from "./observeCharIcons";
@@ -41,8 +40,7 @@ export function setupCharacterBasic(chargs: string[], charid: number) {
       showname: safeHtmlTags(chargs[0]),
       desc: safeHtmlTags(chargs[1]),
       blips: "male",
-      gender: "",
-      side: Side.DEFENSE,
+      side: Side.def,
       chat: "",
       evidence: chargs[3],
       icon: "",
@@ -72,34 +70,29 @@ export async function ensureCharIni(charid: number): Promise<any> {
     );
     cini = parseCharIni(cinidata);
   } catch (err) {
-    // Empty-but-valid CharIni so downstream shape access stays safe.
-    cini = parseCharIni("");
+    // No char.ini (or unreadable): fall back to a minimal valid CharIni so
+    // downstream option access stays safe. parseCharIni rejects an empty string
+    // (it requires an [options] section with a name), so feed a bare stub; the
+    // roster name is used for display regardless.
+    cini = parseCharIni("[options]\nname = -\n");
     if (img) img.classList.add("noini");
     console.warn(`character ${char.name} is missing from webAO`);
   }
 
-  // parseCharIni preserves value case and fills missing options with "",
-  // so apply webAO's richer defaults and lowercase at the point of use.
+  // parseCharIni already applies AO defaults (side "wit", blips from the
+  // obsolete gender key then "male", model ""). Only LemmyAO-specific bits
+  // remain: fall showname back to the roster name, resolve chat -> category ->
+  // "default" (aolib leaves an absent chat null, which would read as a
+  // blankpost and hide the chatbox), and lowercase for asset lookups.
   const opt = cini.options;
   char.showname = safeHtmlTags(opt.showname || char.name);
-  char.blips = safeHtmlTags(opt.blips || "male").toLowerCase();
-  char.gender = safeHtmlTags(opt.gender).toLowerCase();
-  char.side = safeHtmlTags(opt.side || Side.DEFENSE).toLowerCase();
-  // Fall back chat -> category -> "default"; an empty value would otherwise be
-  // read as a blankpost and hide the chatbox on every message.
-  char.chat = safeHtmlTags(opt.chat || opt.category).toLowerCase() || "default";
+  char.blips = safeHtmlTags(opt.blips).toLowerCase();
+  char.side = safeHtmlTags(opt.side).toLowerCase();
+  char.chat = safeHtmlTags(opt.chat || opt.category || "").toLowerCase() || "default";
   char.icon = img ? img.src : "";
   // A `model = foo.pmx` key marks the character as 3D (MMD .pmx + .vmd).
-  char.model = safeHtmlTags(opt.model ?? "").toLowerCase();
+  char.model = safeHtmlTags(opt.model).toLowerCase();
   char.inifile = cini;
-
-  if (
-    char.blips === "male" &&
-    char.gender !== "male" &&
-    char.gender !== ""
-  ) {
-    char.blips = char.gender;
-  }
 
   return cini;
 }
@@ -139,7 +132,7 @@ export async function handleCharacterInfo(chargs: string[], charid: number) {
 // ---------------------------------------------------------------------
 
 import queryParser from "../utils/queryParser";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 const { mode: characterListMode } = queryParser();
 
@@ -150,7 +143,7 @@ const { mode: characterListMode } = queryParser();
  * empty blips slot at index 2). Once the roster is loaded we ask the
  * server for the music list.
  */
-export async function applyFullCharacterList(packet: aolib.SC) {
+export async function applyFullCharacterList(packet: aolib.packets.SC) {
   if (characterListMode === "watch") {
     // Spectators don't pick a character
     document.getElementById("client_charselect")!.style.display = "none";
@@ -169,12 +162,13 @@ export async function applyFullCharacterList(packet: aolib.SC) {
  * CI: server pushes one incremental character batch; we forward each
  * `&`-delimited entry and request the next batch.
  */
-export function applyCharacterBatch(packet: aolib.CI) {
+export function applyCharacterBatch(packet: aolib.packets.CI) {
   document.getElementById("client_loadingtext")!.innerHTML =
     `Loading Character ${packet.batchIndex}/${client.char_list_length}`;
   for (const { index, data } of packet.entries) {
     const chargs = data.split("&");
     setTimeout(() => handleCharacterInfo(chargs, index), 500);
   }
-  client.server.send.AN({ batch: packet.batchIndex / 10 + 1 });
+  // aolib 2.x dropped the AN pagination cursor; the character list streams
+  // without a per-batch ack.
 }

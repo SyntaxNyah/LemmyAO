@@ -16,10 +16,10 @@ import { client } from "../client";
 import vanilla_character_arr from "../constants/characters";
 import vanilla_music_arr from "../constants/music";
 import { version } from "../version";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 /** HI: synthesise ID + FL responses so the client thinks it's handshaken. */
-export function onClientIdentify(_packet: aolib.HI) {
+export function onClientIdentify(_packet: aolib.packets.HI) {
   client.server.receive(`ID#1#webAO#${version}#%`);
   client.server.receive(
     "FL#fastloading#yellowtext#cccc_ic_support#flipping#looping_sfx#effects#%",
@@ -31,17 +31,17 @@ export function onClientIdentify(_packet: aolib.HI) {
  * follow this with PN; here we synthesise an empty one so the client
  * advances to askchaa.
  */
-export function onClientIdentified(_packet: aolib.IDClient) {
+export function onClientIdentified(_packet: aolib.packets.IDToServer) {
   client.server.receive("PN#0#1#%");
 }
 
 /** askchaa: respond with the vanilla SI counts. */
-export function onAreaCharRequest(_packet: aolib.askchaa) {
+export function onAreaCharRequest(_packet: aolib.packets.askchaa) {
   client.server.receive(`SI#${vanilla_character_arr.length}#0#0#%`);
 }
 
 /** CC: synthesise a PV ack so the local UI confirms the character pick. */
-export function onCharacterChoose(packet: aolib.CC) {
+export function onCharacterChoose(packet: aolib.packets.CC) {
   client.clientSession.send.PV({ player_id: 1, char_id: packet.char_id });
 }
 

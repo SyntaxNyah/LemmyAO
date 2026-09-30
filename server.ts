@@ -13,7 +13,7 @@
 
 import index from "./public/index.html";
 import clientHtml from "./public/client.html";
-import { aolib, type ClientSession } from "./src/aolib";
+import { client as aoClient, type ClientSession } from "aolib-ts";
 
 const PORT = Number(process.env.PORT ?? 8081);
 
@@ -51,7 +51,7 @@ const broadcast = (fn: (s: ClientSession) => void): void => {
 };
 
 function setupSession(ws: { send(data: string): void }): ClientSession {
-  const session = aolib.client({
+  const session = aoClient({
     send: (wire) => ws.send(wire),
     onUnhandled: (header) => {
       // CH (keep-alive) and anything else we don't model: ignore quietly.

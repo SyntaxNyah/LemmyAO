@@ -1,7 +1,7 @@
 import { client } from "../../client";
 import setEmoteFromUrl from "../../client/setEmoteFromUrl";
 import transparentPng from "../../constants/transparentPng";
-import { isFullView, Side } from "../../aolib";
+import { isFullView, Side } from "aolib-ts";
 import { getMmdController, existingMmdController } from "./index";
 import { MmdState, Model3dInfo } from "./types";
 

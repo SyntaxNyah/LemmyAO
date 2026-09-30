@@ -31,10 +31,10 @@ export function createArea(id: number, aname: string) {
   document.getElementById("areas")!.appendChild(newarea);
 }
 
-import type * as aolib from "../aolib";
+import * as aolib from "aolib-ts";
 
 /** FA: server pushes the full area list (replaces local cache). */
-export function applyFullAreaList(packet: aolib.FA) {
+export function applyFullAreaList(packet: aolib.packets.FA) {
   client.resetAreaList();
   for (let i = 0; i < packet.areas.length; i++) {
     createArea(i, packet.areas[i]);
@@ -46,22 +46,22 @@ export function applyFullAreaList(packet: aolib.FA) {
  * column changes (player count / status / CM / lock state) and the
  * positional payload carries the new values per area index.
  */
-export function applyAreaStatus(packet: aolib.ARUP) {
+export function applyAreaStatus(packet: aolib.packets.ARUP) {
   const { update_type, update_data } = packet;
   for (let i = 0; i < update_data.length; i++) {
     if (!client.areas[i]) continue; // server may send ARUP before FA
     const thisarea = document.getElementById(`area${i}`)!;
     switch (update_type) {
-      case 0:
+      case aolib.AreaUpdateType.player_count:
         client.areas[i].players = Number(update_data[i]);
         break;
-      case 1:
+      case aolib.AreaUpdateType.status:
         client.areas[i].status = safeHtmlTags(String(update_data[i]));
         break;
-      case 2:
+      case aolib.AreaUpdateType.case_manager:
         client.areas[i].cm = safeHtmlTags(String(update_data[i]));
         break;
-      case 3:
+      case aolib.AreaUpdateType.locked:
         client.areas[i].locked = safeHtmlTags(String(update_data[i]));
         break;
     }

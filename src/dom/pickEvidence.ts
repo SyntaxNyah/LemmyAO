@@ -52,13 +52,13 @@ export function pickEvidence(evidence: number) {
 
 import { AO_HOST } from "../client/aoHost";
 import { safeHtmlTags } from "../escaping";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 /**
  * EI: server pushes one evidence item during the streaming download.
  * Acks by requesting the next item (`AE`).
  */
-export function applyEvidenceInfo(packet: aolib.EI) {
+export function applyEvidenceInfo(packet: aolib.packets.EI) {
   const d = packet.details;
   document.getElementById("client_loadingtext")!.innerHTML =
     `Loading Evidence ${packet.id}/${client.evidence_list_length}`;
@@ -68,11 +68,12 @@ export function applyEvidenceInfo(packet: aolib.EI) {
     filename: d.image,
     icon: `${AO_HOST}evidence/${encodeURI(d.image.toLowerCase())}`,
   };
-  client.server.send.AE({ id: packet.id + 1 });
+  // aolib 2.x dropped the AE pagination cursor; evidence streams without a
+  // per-item ack.
 }
 
 /** LE: server pushes the full evidence list (replaces local cache). */
-export function applyEvidenceList(packet: aolib.LE) {
+export function applyEvidenceList(packet: aolib.packets.LE) {
   client.evidences = [];
   for (let i = 0; i < packet.evidence.length; i++) {
     const ev = packet.evidence[i];

@@ -78,7 +78,6 @@ import { toggleVoice } from "./toggleVoice";
 import { updateBackgroundPreview } from "./updateBackgroundPreview";
 import { updateEvidenceIcon } from "./updateEvidenceIcon";
 import { updateIniswap } from "./updateIniswap";
-import { ShoutModifier } from "../aolib";
 
 const datasetOf = (e: Event) => (e.currentTarget as HTMLElement).dataset;
 
@@ -157,7 +156,7 @@ const actions: Record<string, (e: Event) => void> = {
   pickChar: (e) => pickChar(Number(datasetOf(e).char)),
   pickIniswap: (e) => pickIniswap(datasetOf(e).iniswap!),
   pickBackground: (e) => pickBackground(datasetOf(e).background!),
-  toggleShout: (e) => toggleShout(Number(datasetOf(e).shout) as ShoutModifier),
+  toggleShout: (e) => toggleShout(Number(datasetOf(e).shout)),
   toggleMenu: (e) => toggleMenu(Number(datasetOf(e).menu)),
   toggleElement: (e) => toggleElement(datasetOf(e).element!),
   exportLog: (e) => exportLog(datasetOf(e).format!),

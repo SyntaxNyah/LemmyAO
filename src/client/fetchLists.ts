@@ -76,7 +76,7 @@ export async function fetchExtensions() {
 }
 
 import { applyFavourites } from "../dom/toggleFavourite";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 /**
  * SI: server announces its asset counts. We seed the char-select grid
@@ -116,7 +116,7 @@ export function buildCharGrid(count: number): void {
   }
 }
 
-export function applyServerCounts(packet: aolib.SI) {
+export function applyServerCounts(packet: aolib.packets.SI) {
   client.char_list_length = packet.char_count;
   client.evidence_list_length = packet.evi_count;
   client.music_list_length = packet.mus_count;

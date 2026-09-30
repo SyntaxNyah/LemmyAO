@@ -1,5 +1,5 @@
 import { client } from "../client";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 /**
  * Requests to play as a character.
@@ -22,7 +22,7 @@ export function pickChar(ccharacter: number) {
 }
 
 /** CharsCheck: server reports which character slots are taken vs free. */
-export function applyCharacterAvailability(packet: aolib.CharsCheck) {
+export function applyCharacterAvailability(packet: aolib.packets.CharsCheck) {
   for (let i = 0; i < client.char_list_length; i++) {
     const img = document.getElementById(`demo_${i}`)!;
     if (packet.taken[i] === -1) {

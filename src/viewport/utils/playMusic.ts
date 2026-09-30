@@ -1,10 +1,10 @@
 import { client } from "../../client";
 import { AO_HOST } from "../../client/aoHost";
 import { appendICLog } from "../../client/appendICLog";
-import type * as aolib from "../../aolib";
+import type * as aolib from "aolib-ts";
 
 /** MC: server announces a music change; switch the channel and log it. */
-export function playMusicChange(packet: aolib.MCBroadcast) {
+export function playMusicChange(packet: aolib.packets.MCToClient) {
   const music = client.viewport.music[packet.channel];
   music.pause();
   // An empty track name is a stop, not a track: building a URL from it would
@@ -37,7 +37,7 @@ export function playMusicChange(packet: aolib.MCBroadcast) {
  * official Packet Reference. `toTime` is a seconds string the legacy
  * audio element parses with `parseFloat`.
  */
-export function applyMusicSeek(packet: aolib.RMC) {
+export function applyMusicSeek(packet: aolib.packets.RMC) {
   client.viewport.music.pause();
   const { music } = client.viewport;
   music.totime = packet.toTime;

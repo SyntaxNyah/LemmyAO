@@ -1,12 +1,12 @@
 import { updateActionCommands } from "./updateActionCommands";
 import { client } from "../client";
-import * as aolib from "../aolib";
+import * as aolib from "aolib-ts";
 
 const KNOWN_SIDES = new Set<string>(Object.values(aolib.Side));
 const parseSide = (s: string): aolib.Side =>
   KNOWN_SIDES.has(s.toLowerCase())
     ? (s.toLowerCase() as aolib.Side)
-    : aolib.Side.WITNESS;
+    : aolib.Side.wit;
 
 /** Change role via OOC slash command. */
 export function changeRoleOOC() {
