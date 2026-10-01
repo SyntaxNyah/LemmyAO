@@ -49,7 +49,7 @@ const initAttorneyMarkdown = async () => {
       attorneyMarkdown = mlConfig(iniContent);
       return attorneyMarkdown;
     } catch (error) {
-      console.warn("Failed to load chat_config.ini, disabling markdown system:", error);
+      console.debug("no chat_config.ini (optional); markdown disabled", error);
       markdownDisabled = true;
       return null;
     }
