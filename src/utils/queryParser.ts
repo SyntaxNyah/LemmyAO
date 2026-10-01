@@ -10,12 +10,11 @@ interface QueryParams {
   char: string;
   area: string;
   /**
-   * JSON wire format. Honored by default: when the server advertises JSON
-   * via `decryptor("JSON")` the client switches outbound to JSON envelopes.
-   * Pass `?json_mode=false` to force the client to stay on the fanta wire
-   * even when the server offers JSON.
+   * Force the fanta wire even when the server advertises JSON via
+   * `decryptor("JSON")`. Maps to aolib's `disableAutoJson` session option.
+   * JSON negotiation is on by default; pass `?disableJson=true` to opt out.
    */
-  json_mode: boolean;
+  disableJson: boolean;
 }
 
 const queryParser = (): QueryParams => {
@@ -30,7 +29,7 @@ const queryParser = (): QueryParams => {
     serverName: urlParams.get("serverName") || "Attorney Online session",
     char: urlParams.get("char") || "",
     area: urlParams.get("area") || "",
-    json_mode: urlParams.get("json_mode") !== "false",
+    disableJson: urlParams.get("disableJson") === "true",
   };
   return queryParams as QueryParams;
 };
