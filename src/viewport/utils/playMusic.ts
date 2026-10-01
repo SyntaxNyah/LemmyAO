@@ -1,6 +1,7 @@
 import { client } from "../../client";
 import { AO_HOST } from "../../client/aoHost";
 import { appendICLog } from "../../client/appendICLog";
+import { MusicChannel } from "aolib-ts";
 import type * as aolib from "aolib-ts";
 
 /** MC: server announces a music change; switch the channel and log it. */
@@ -38,18 +39,17 @@ export function playMusicChange(packet: aolib.packets.MCToClient) {
  * audio element parses with `parseFloat`.
  */
 export function applyMusicSeek(packet: aolib.packets.RMC) {
-  client.viewport.music.pause();
-  const { music } = client.viewport;
-  music.totime = packet.toTime;
-  music.offset = new Date().getTime() / 1000;
+  const music = client.viewport.music[MusicChannel.music];
+  music.pause();
+  const toTime = parseFloat(packet.toTime);
+  const requestedAt = Date.now() / 1000;
   music.addEventListener(
     "loadedmetadata",
     () => {
-      music.currentTime += parseFloat(
-        music.totime + (new Date().getTime() / 1000 - music.offset),
-      ).toFixed(3);
+      // Seek to the requested offset plus however long the track took to load.
+      music.currentTime = toTime + (Date.now() / 1000 - requestedAt);
       music.play().catch(() => {});
     },
-    false,
+    { once: true },
   );
 }
