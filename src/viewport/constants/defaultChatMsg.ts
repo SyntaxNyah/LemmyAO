@@ -43,7 +43,7 @@ const defaultPacket: aolib.packets.MSToClient = {
   frames_realization: "",
   frames_sfx: "",
   additive: false,
-  effect: "",
+  effect: { name: "", folder: "", sound: "" },
 };
 
 export const defaultChatMsg: ChatMsg = {

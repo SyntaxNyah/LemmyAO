@@ -301,7 +301,7 @@ function syncSpeakState(): void {
   if (want === lastEmittedSpeak) return;
   lastEmittedSpeak = want;
   if (inVoice) {
-    client.server.send.VS_SPEAK({ on: want });
+    client.server.sendCustom({ $header: "VS_SPEAK", on: want });
   }
   notifySpeakingListeners();
 }
@@ -327,7 +327,7 @@ function emitEncodedFrame(bytes: Uint8Array): void {
     // Server would drop oversize frames anyway
     return;
   }
-  client.server.send.VS_FRAME({ payload: b64 });
+  client.server.sendCustom({ $header: "VS_FRAME", payload: b64 });
 }
 
 async function createWebCodecsFrameEncoder(): Promise<FrameEncoder> {
@@ -691,7 +691,7 @@ export async function joinVoiceListenOnly(): Promise<void> {
   }
   inVoice = true;
   listenOnly = true;
-  client.server.send.VS_JOIN({});
+  client.server.sendCustom({ $header: "VS_JOIN" });
   syncSpeakState();
 }
 
@@ -727,7 +727,7 @@ export async function joinVoice(): Promise<void> {
   }
   if (!wasListenOnly) {
     inVoice = true;
-    client.server.send.VS_JOIN({});
+    client.server.sendCustom({ $header: "VS_JOIN" });
   }
   listenOnly = false;
   syncSpeakState();
@@ -737,9 +737,9 @@ export function leaveVoice(): void {
   if (!inVoice) return;
   if (lastEmittedSpeak) {
     lastEmittedSpeak = false;
-    client.server.send.VS_SPEAK({ on: false });
+    client.server.sendCustom({ $header: "VS_SPEAK", on: false });
   }
-  client.server.send.VS_LEAVE({});
+  client.server.sendCustom({ $header: "VS_LEAVE" });
   teardownAll();
   notifyCapsUpdated();
 }
@@ -921,10 +921,17 @@ export function setVCMuted(muted: boolean): void {
 // ---------------------------------------------------------------------
 
 import { installVoiceUI } from "./voiceUI";
-import type * as aolib from "aolib-ts";
+import type {
+  VS_CAPS,
+  VS_PEERS,
+  VS_JOINToClient,
+  VS_LEAVEToClient,
+  VS_SPEAKToClient,
+  VS_AUDIO,
+} from "./vsPackets";
 
 /** VS_CAPS: server announces voice subsystem capabilities (idempotent). */
-export function applyVoiceCapabilities(packet: aolib.packets.VS_CAPS) {
+export function applyVoiceCapabilities(packet: VS_CAPS) {
   console.debug(
     `voice: VS_CAPS received enabled=${packet.enabled} ptt=${packet.pttOnly} maxPeers=${packet.maxPeers} codec=${packet.codec} sr=${packet.sampleRate} frame=${packet.frameMs}ms maxBytes=${packet.maxFrameBytes}`,
   );
@@ -941,12 +948,12 @@ export function applyVoiceCapabilities(packet: aolib.packets.VS_CAPS) {
 }
 
 /** VS_PEERS: initial list of voice-active peer uids when we join. */
-export function applyVoicePeerList(packet: aolib.packets.VS_PEERS) {
+export function applyVoicePeerList(packet: VS_PEERS) {
   void handleInitialPeers(packet.uids);
 }
 
 /** VS_JOIN: a remote peer joined the voice mesh. */
-export function handleVoicePeerJoin(packet: aolib.packets.VS_JOINToClient) {
+export function handleVoicePeerJoin(packet: VS_JOINToClient) {
   if (!Number.isFinite(packet.uid)) return;
   void handlePeerJoined(packet.uid);
 }
@@ -956,7 +963,7 @@ export function handleVoicePeerJoin(packet: aolib.packets.VS_JOINToClient) {
  * (server auto-kicked us, e.g. on area change or `/voicearea off`),
  * we tear down locally instead.
  */
-export function handleVoicePeerLeave(packet: aolib.packets.VS_LEAVEToClient) {
+export function handleVoicePeerLeave(packet: VS_LEAVEToClient) {
   if (!Number.isFinite(packet.uid)) return;
   if (packet.uid === client.playerID) {
     leaveVoice();
@@ -966,13 +973,13 @@ export function handleVoicePeerLeave(packet: aolib.packets.VS_LEAVEToClient) {
 }
 
 /** VS_SPEAK: a remote peer toggled their speaking-state indicator. */
-export function applyVoicePeerSpeak(packet: aolib.packets.VS_SPEAKToClient) {
+export function applyVoicePeerSpeak(packet: VS_SPEAKToClient) {
   if (!Number.isFinite(packet.uid)) return;
   notifyRemoteSpeaking(packet.uid, packet.on);
 }
 
 /** VS_AUDIO: opus audio frame from a remote peer; play it. */
-export function handleVoiceAudio(packet: aolib.packets.VS_AUDIO) {
+export function handleVoiceAudio(packet: VS_AUDIO) {
   if (!Number.isFinite(packet.fromUid) || !packet.payload) return;
   handleRemoteAudio(packet.fromUid, packet.payload);
 }

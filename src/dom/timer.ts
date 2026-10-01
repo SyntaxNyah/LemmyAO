@@ -1,3 +1,4 @@
+import { TimerCommand } from "aolib-ts";
 import type * as aolib from "aolib-ts";
 
 /**
@@ -8,15 +9,15 @@ import type * as aolib from "aolib-ts";
  */
 export function applyTimerUpdate(packet: aolib.packets.TI) {
   switch (packet.command) {
-    case 0:
-    case 1:
+    case TimerCommand.start:
+    case TimerCommand.pause:
       document.getElementById(`client_timer${packet.timer_id}`)!.innerText =
         String(packet.time);
       break;
-    case 2:
+    case TimerCommand.show:
       document.getElementById(`client_timer${packet.timer_id}`)!.style.display = "";
       break;
-    case 3:
+    case TimerCommand.hide:
       document.getElementById(`client_timer${packet.timer_id}`)!.style.display = "none";
       break;
   }

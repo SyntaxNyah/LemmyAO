@@ -1,4 +1,4 @@
-import { Side } from "aolib-ts";
+import { JudgeState, Side } from "aolib-ts";
 import type * as aolib from "aolib-ts";
 
 /** Sync the judge-action UI and the role-select dropdown for a side. */
@@ -32,7 +32,7 @@ export function applyCharacterSide(packet: aolib.packets.SP) {
 
 /** JD: toggle the judge-action panel (`state === 1` shows, else hides). */
 export function toggleJudgePanel(packet: aolib.packets.JD) {
-  if (packet.state === 1) {
+  if (packet.state === JudgeState.shown) {
     document.getElementById("judge_action")!.style.display = "inline-table";
     document.getElementById("no_action")!.style.display = "none";
   } else {

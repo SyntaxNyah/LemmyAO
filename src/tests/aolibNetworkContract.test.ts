@@ -2,20 +2,28 @@ import { describe, it, expect } from "bun:test";
 import * as ao from "aolib-ts";
 import * as wire from "aolib-ts/wire";
 
-// Contract tests for the aolib-ts network layer (src/aolib is now a thin adapter
-// over it). These pin what LemmyAO relies on, so a future aolib-ts release that
-// breaks it fails here loudly. Targets the namespace-first 2.1.0 surface: packet
-// schemas under `ao.packets`, enums on the root, wire codecs under `aolib-ts/wire`.
+// Contract tests for the aolib-ts network layer LemmyAO consumes directly.
+// These pin what LemmyAO relies on, so a future aolib-ts release that breaks it
+// fails here loudly. Targets the namespace-first surface: packet schemas under
+// `ao.packets`, enums on the root, wire codecs under `aolib-ts/wire`.
 
-// Every packet header LemmyAO's client drives today (server.send / on and the
-// synthesised clientSession.send / on across replay + server modes).
+// Every standard AO header LemmyAO drives through the typed send/on API. aolib-ts
+// must cover all of these. AE/AM/AN (pagination cursors) were dropped from both
+// the spec and LemmyAO; VS_* are a LemmyAO transport extension that rides the
+// custom channel instead (see below), so neither group is listed here.
 const LEMMY_HEADERS = [
-  "AE", "AM", "AN", "ARUP", "ASS", "AUTH", "BB", "BD", "BN", "CC", "CH",
+  "ARUP", "ASS", "AUTH", "BB", "BD", "BN", "CC", "CH",
   "CHECK", "CI", "CT", "DE", "DONE", "EE", "EI", "EM", "FA", "FL", "FM",
   "HI", "HP", "ID", "JD", "KB", "KK", "LE", "MA", "MC", "MS", "PE", "PN",
   "PR", "PU", "PV", "RC", "RD", "RM", "RMC", "RT", "SC", "SI", "SM", "SP",
-  "TI", "VS_AUDIO", "VS_CAPS", "VS_FRAME", "VS_JOIN", "VS_LEAVE", "VS_PEERS",
-  "VS_SPEAK", "ZZ",
+  "TI", "ZZ",
+];
+
+// LemmyAO's voice extension. Not part of the AO meta spec, so aolib-ts must NOT
+// model these; LemmyAO carries them over sendCustom/onCustom with its own codecs
+// (src/voice/vsPackets.ts). If aolib-ts ever adopts them, this flags the move.
+const VS_HEADERS = [
+  "VS_AUDIO", "VS_CAPS", "VS_FRAME", "VS_JOIN", "VS_LEAVE", "VS_PEERS", "VS_SPEAK",
 ];
 
 describe("aolib-ts packet coverage", () => {
@@ -24,17 +32,49 @@ describe("aolib-ts packet coverage", () => {
     ...Object.keys(ao.packets.s2cSchemas),
   ]);
 
-  it("covers every header LemmyAO uses except the ones aolib-ts removed", () => {
+  it("covers every standard header LemmyAO uses", () => {
     const missing = LEMMY_HEADERS.filter((h) => !supported.has(h)).sort();
-    // AE/AM/AN were dropped. LemmyAO's src/aolib still defines them, so a
-    // network migration must stop sending them. Any other header going missing
-    // (or these coming back) breaks this and flags the compatibility change.
-    expect(missing).toEqual(["AE", "AM", "AN"]);
+    expect(missing).toEqual([]);
+  });
+
+  it("does not model LemmyAO's VS_* voice extension", () => {
+    const adopted = VS_HEADERS.filter((h) => supported.has(h)).sort();
+    expect(adopted).toEqual([]);
   });
 
   it("keeps MS available in both directions", () => {
     expect("MS" in ao.packets.c2sSchemas).toBe(true);
     expect("MS" in ao.packets.s2cSchemas).toBe(true);
+  });
+});
+
+describe("aolib-ts custom channel (carries VS_*)", () => {
+  it("exposes sendCustom/onCustom on both session roles", () => {
+    const srv = ao.server({ send: () => {} });
+    const cli = ao.client({ send: () => {} });
+    expect(typeof srv.sendCustom).toBe("function");
+    expect(typeof srv.onCustom).toBe("function");
+    expect(typeof cli.sendCustom).toBe("function");
+    expect(typeof cli.onCustom).toBe("function");
+  });
+
+  it("round-trips a registered custom packet through the fanta wire", () => {
+    wire.registerCodec("VS_SPEAK", {
+      encodeFanta: (p) => [p.on ? "1" : "0"],
+      decodeFanta: (a) => ({ uid: Number(a[0]), on: a[1] === "1" }),
+      encodeJson: (p) => JSON.stringify(p),
+      decodeJson: (raw) => JSON.parse(raw) as Record<string, unknown>,
+    });
+    const buf: string[] = [];
+    const srv = ao.server({ send: (w) => buf.push(w) });
+    srv.sendCustom({ $header: "VS_SPEAK", on: true });
+    expect(buf).toEqual(["VS_SPEAK#1#%"]);
+
+    let got: Record<string, unknown> | undefined;
+    const cli = ao.client({ send: () => {} });
+    cli.onCustom("VS_SPEAK", (p) => { got = p as Record<string, unknown>; });
+    cli.receive("VS_SPEAK#3#1#%");
+    expect(got).toMatchObject({ uid: 3, on: true });
   });
 });
 

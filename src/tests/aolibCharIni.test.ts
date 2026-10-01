@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { parseCharIni } from "aolib-ts";
+import { parseCharIni, EmoteModifier } from "aolib-ts";
 
 // Contract for the parseCharIni behaviour LemmyAO's handleCharacterInfo relies
 // on. aolib-ts 2.x rejects an empty string (it needs an [options] section with a
@@ -21,7 +21,7 @@ describe("aolib-ts parseCharIni", () => {
     expect(cini.options.chat).toBeNull();
   });
 
-  it("exposes emote fields LemmyAO consumes, with a numeric modifier", () => {
+  it("exposes emote fields LemmyAO consumes, with an enum modifier", () => {
     const cini = parseCharIni(
       [
         "[options]",
@@ -36,7 +36,7 @@ describe("aolib-ts parseCharIni", () => {
     const e = cini.emotes[0];
     expect(e.anim).toBe("wave.gif");
     expect(e.preanim).toBe("point.gif");
-    expect(typeof e.modifier).toBe("number");
-    expect(e.modifier).toBe(1); // `preanim` name resolves to the numeric AO modifier
+    expect(typeof e.modifier).toBe("string");
+    expect(e.modifier).toBe(EmoteModifier.preanim);
   });
 });

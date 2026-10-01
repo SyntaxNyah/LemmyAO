@@ -115,7 +115,7 @@ const buildChatMsg = (packet: aolib.packets.MSToClient): ChatMsg => {
     showname: safeHtmlTags(unescapeUnicode(packet.showname)),
     paired_name: safeHtmlTags(packet.paired_name),
     paired_emote: safeHtmlTags(packet.paired_emote),
-    effects: packet.effect.split("|"),
+    effects: [packet.effect.name, packet.effect.folder, packet.effect.sound],
     // Char-derived
     nameplate: msg_nameplate,
     chatbox,

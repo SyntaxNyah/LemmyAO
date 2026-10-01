@@ -110,6 +110,7 @@ import {
   handleVoicePeerJoin,
   handleVoicePeerLeave,
 } from "./voice/voice";
+import { registerVoiceCodecs } from "./voice/vsPackets";
 
 // ---------------------------------------------------------------------
 // Client -> server handlers (replay-mode synthesis only).
@@ -133,6 +134,8 @@ export function registerProtocol(
   server: aolib.ServerSession,
   clientSession: aolib.ClientSession,
 ): void {
+  registerVoiceCodecs();
+
   // ---- server -> client ----
   server.on.ARUP(applyAreaStatus);
   server.on.ASS(applyAssetOrigin);
@@ -170,12 +173,14 @@ export function registerProtocol(
   server.on.SM(applyMusicListBatch);
   server.on.SP(applyCharacterSide);
   server.on.TI(applyTimerUpdate);
-  server.on.VS_AUDIO(handleVoiceAudio);
-  server.on.VS_CAPS(applyVoiceCapabilities);
-  server.on.VS_JOIN(handleVoicePeerJoin);
-  server.on.VS_LEAVE(handleVoicePeerLeave);
-  server.on.VS_PEERS(applyVoicePeerList);
-  server.on.VS_SPEAK(applyVoicePeerSpeak);
+  // VS_* are a LemmyAO transport extension, not part of the meta spec, so they
+  // ride aolib-ts's custom channel (codecs in ./voice/vsPackets).
+  server.onCustom("VS_AUDIO", handleVoiceAudio);
+  server.onCustom("VS_CAPS", applyVoiceCapabilities);
+  server.onCustom("VS_JOIN", handleVoicePeerJoin);
+  server.onCustom("VS_LEAVE", handleVoicePeerLeave);
+  server.onCustom("VS_PEERS", applyVoicePeerList);
+  server.onCustom("VS_SPEAK", applyVoicePeerSpeak);
   server.on.ZZ(showModcallNotice);
 
   // ---- client -> server (replay-mode synthesis) ----

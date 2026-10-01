@@ -1,4 +1,5 @@
 import { client } from "../client";
+import { CharAvailability } from "aolib-ts";
 import type * as aolib from "aolib-ts";
 
 /**
@@ -25,9 +26,9 @@ export function pickChar(ccharacter: number) {
 export function applyCharacterAvailability(packet: aolib.packets.CharsCheck) {
   for (let i = 0; i < client.char_list_length; i++) {
     const img = document.getElementById(`demo_${i}`)!;
-    if (packet.taken[i] === -1) {
+    if (packet.taken[i] === CharAvailability.taken) {
       img.style.opacity = "0.25";
-    } else if (packet.taken[i] === 0) {
+    } else if (packet.taken[i] === CharAvailability.free) {
       img.style.opacity = "1";
     }
   }

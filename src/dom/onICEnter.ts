@@ -37,6 +37,8 @@ export function onICEnter(event: KeyboardEvent) {
       ? enumByNumber(aolib.TextColor, colorN)
       : aolib.TextColor.white;
 
+  const [effName, effFolder, effSound] = input("effect_select").value.split("|");
+
   client.server.send.MS({
     desk_modifier: enumByNumber(aolib.DeskModifier, Number(my_emote.desk_modifier)),
     preanim: my_emote.preanim,
@@ -66,7 +68,7 @@ export function onICEnter(event: KeyboardEvent) {
     frames_realization: "-",
     frames_sfx: "-",
     additive: input("check_additive").checked,
-    effect: input("effect_select").value,
+    effect: { name: effName ?? "", folder: effFolder ?? "", sound: effSound ?? "" },
   });
 
   return false;
