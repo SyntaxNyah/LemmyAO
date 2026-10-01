@@ -1,8 +1,8 @@
 /**
  * Server-side messages that write to the out-of-character log: regular
- * OOC chat (CT) and modcall alerts (ZZ). Both render through
- * `#client_ooclog`; sharing a file keeps the scroll/format conventions
- * in one place.
+ * OOC chat (CT), modcall alerts (ZZ), and case announcements (CASEA).
+ * All render through `#client_ooclog`; sharing a file keeps the
+ * scroll/format conventions in one place.
  */
 
 import { client } from "../client";
@@ -58,4 +58,23 @@ export function showModcallNotice(packet: aolib.packets.ZZToClient) {
   client.viewport.getSfxAudio().src = `${AO_HOST}sounds/general/sfx-gallery.opus`;
   client.viewport.getSfxAudio().play().catch(() => {});
   client.viewport.getSfxAudio().volume = oldvolume;
+}
+
+/** CASEA: server broadcast of a case announcement; show the alert plus roles needed. */
+export function showCaseAnnouncement(packet: aolib.packets.CASEAToClient) {
+  const oocLog = document.getElementById("client_ooclog")!;
+  const message = safeHtmlTags(unescapeUnicode(packet.message)).replace(/\n/g, "<br>");
+  const roles = [
+    packet.need_def && "Defense",
+    packet.need_pro && "Prosecution",
+    packet.need_judge && "Judge",
+    packet.need_jury && "Jury",
+    packet.need_steno && "Stenographer",
+  ].filter(Boolean);
+  const needed = roles.length ? ` (looking for: ${roles.join(", ")})` : "";
+  const wasAtBottom = oocLog.scrollTop > oocLog.scrollHeight - 60;
+  oocLog.innerHTML += `$Case Alert: ${message}${needed}<br>`;
+  if (wasAtBottom) {
+    oocLog.scrollTop = oocLog.scrollHeight;
+  }
 }

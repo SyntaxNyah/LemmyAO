@@ -10,13 +10,11 @@ interface QueryParams {
   char: string;
   area: string;
   /**
-   * Feature gate for the JSON wire format. While Athena/akashi JSON
-   * support is still being shaken out, the client only opts in when
-   * the caller explicitly passes `?json_mode=true`. Without the
-   * flag, the client stays on fanta even if the server advertises
-   * JSON via `decryptor("JSON")`.
+   * Force the fanta wire even when the server advertises JSON via
+   * `decryptor("JSON")`. Maps to aolib's `disableAutoJson` session option.
+   * JSON negotiation is on by default; pass `?disableJson=true` to opt out.
    */
-  json_mode: boolean;
+  disableJson: boolean;
 }
 
 const queryParser = (): QueryParams => {
@@ -31,7 +29,7 @@ const queryParser = (): QueryParams => {
     serverName: urlParams.get("serverName") || "Attorney Online session",
     char: urlParams.get("char") || "",
     area: urlParams.get("area") || "",
-    json_mode: urlParams.get("json_mode") === "true",
+    disableJson: urlParams.get("disableJson") === "true",
   };
   return queryParams as QueryParams;
 };

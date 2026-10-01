@@ -74,10 +74,10 @@ export async function ensureCharIni(charid: number): Promise<any> {
     cini = parseCharIni(cinidata);
   } catch (err) {
     // No char.ini (or unreadable): fall back to a minimal valid CharIni so
-    // downstream option access stays safe. parseCharIni rejects an empty string
-    // (it requires an [options] section with a name), so feed a bare stub; the
-    // roster name is used for display regardless.
-    cini = parseCharIni("[options]\nname = -\n");
+    // downstream option access stays safe. parseCharIni requires an [options]
+    // section with a name and (since 2.5) at least one emote block, so feed a
+    // one-emote stub; the roster name is used for display regardless.
+    cini = parseCharIni("[options]\nname = -\n[emote normal]\nanim = normal.png\n");
     if (img) img.classList.add("noini");
     console.warn(`character ${char.name} is missing from webAO`);
   }

@@ -50,7 +50,7 @@ import { applyCharacterPick } from "./client/changeChar";
 import { applyCharacterAvailability } from "./dom/pickChar";
 
 // Chat (OOC + modcall)
-import { appendOOCMessage, showModcallNotice } from "./dom/oocLog";
+import { appendOOCMessage, showModcallNotice, showCaseAnnouncement } from "./dom/oocLog";
 
 // Evidence
 import { applyEvidenceInfo, applyEvidenceList } from "./dom/pickEvidence";
@@ -143,6 +143,7 @@ export function registerProtocol(
   server.on.BB(showBlockingAlert);
   server.on.BD(showBanDialog);
   server.on.BN(applyBackgroundChange);
+  server.on.CASEA(showCaseAnnouncement);
   server.on.CHECK(() => {});
   server.on.CharsCheck(applyCharacterAvailability);
   server.on.CI(applyCharacterBatch);

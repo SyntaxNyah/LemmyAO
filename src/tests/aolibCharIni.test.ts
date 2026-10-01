@@ -11,9 +11,13 @@ describe("aolib-ts parseCharIni", () => {
     expect(() => parseCharIni("")).toThrow(/\[options\]/);
   });
 
-  it("parses the missing-ini fallback stub to a valid empty CharIni", () => {
-    const cini = parseCharIni("[options]\nname = -\n");
-    expect(cini.emotes).toEqual([]);
+  it("rejects an [options]-only stub (since 2.5 an emote block is required)", () => {
+    expect(() => parseCharIni("[options]\nname = -\n")).toThrow(/no emotes/);
+  });
+
+  it("parses the missing-ini fallback stub (one emote) with LemmyAO's defaults", () => {
+    const cini = parseCharIni("[options]\nname = -\n[emote normal]\nanim = normal.png\n");
+    expect(cini.emotes).toHaveLength(1);
     // aolib fills the defaults LemmyAO reads without extra guarding.
     expect(cini.options.side).toBe("wit");
     expect(cini.options.blips).toBe("male");

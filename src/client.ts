@@ -24,7 +24,7 @@ import {
   fetchEvidenceList,
   fetchCharacterList,
 } from "./client/fetchLists";
-const { ip: serverIP, connect, mode, theme, serverName, char: autoChar, area: autoArea } = queryParser();
+const { ip: serverIP, connect, mode, theme, serverName, char: autoChar, area: autoArea, disableJson } = queryParser();
 export { autoChar, autoArea };
 
 // Modes that run the client as its own local server (no socket): `replay`
@@ -202,6 +202,8 @@ class Client {
       // server -> client packets) — its output always loops to
       // server.receive.
       this.server = aolib.server({
+        // JSON negotiation is on by default; ?disableJson=true keeps fanta.
+        disableAutoJson: disableJson,
         send: (wire) => {
           console.debug(`C: ${wire}`);
           if (this.acting_as_server) {
@@ -221,6 +223,7 @@ class Client {
         },
       });
       this.clientSession = aolib.client({
+        disableAutoJson: disableJson,
         send: (wire) => {
           console.debug(`S: ${wire}`);
           this.server.receive(wire);

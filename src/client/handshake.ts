@@ -11,22 +11,19 @@ import { area_click } from "../dom/areaClick";
 import queryParser from "../utils/queryParser";
 import type * as aolib from "aolib-ts";
 
-const { mode, json_mode: jsonModeEnabled } = queryParser();
+const { mode } = queryParser();
 
 /**
  * decryptor: legacy FantaCrypt handshake marker. Modern servers
  * repurpose it as a wire-format negotiation signal — `value === "JSON"`
  * means "switch outbound to JSON envelopes from here on".
  *
- * Gated for now: we only honor the JSON advertisement when the URL
- * includes `?json_mode=true`. Without the flag we stay on fanta even
- * if the server says JSON. This lets us roll out JSON compatibility
- * server-by-server while keeping the default path on the known-good
- * fanta wire.
+ * aolib auto-switches the outbound wire to JSON here when the server
+ * advertises it (value "JSON"), unless `?disableJson=true` turned off
+ * auto-negotiation (disableAutoJson) on the session. So this handler just
+ * continues the handshake.
  */
-export function applyEncryptionMode(packet: aolib.packets.decryptor) {
-  const useJson = jsonModeEnabled && packet.value === "JSON";
-  client.server.setJsonMode(useJson);
+export function applyEncryptionMode(_packet: aolib.packets.decryptor) {
   client.joinServer();
 }
 

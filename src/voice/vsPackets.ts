@@ -1,7 +1,8 @@
 // Voice-sync (VS_*) packets. These are a LemmyAO transport extension, not part
 // of the AO meta spec, so aolib-ts carries them through its custom channel
-// (sendCustom/onCustom) rather than the typed send/on maps. Each header needs a
-// registered codec; registerVoiceCodecs() installs the fanta and JSON forms.
+// (sendCustom/onCustom) rather than the typed send/on maps. Each header must be
+// registered via registerPacket; registerVoiceCodecs() installs the fanta and
+// JSON forms.
 //
 // Wire protocol (`#` separator, `%` terminator; base64 needs no escaping):
 //   Server -> client
@@ -14,7 +15,7 @@
 //   Client -> server
 //     VS_JOIN#%   VS_LEAVE#%   VS_FRAME#<b64_opus>#%   VS_SPEAK#<on_off>#%
 
-import { registerCodec, type Codec } from "aolib-ts/wire";
+import { registerPacket, type FantaForm, type JsonForm } from "aolib-ts";
 
 // client -> server
 export interface VS_JOIN {
@@ -69,82 +70,59 @@ export interface VS_AUDIO {
 const bool = (s: string) => s === "1";
 const onoff = (b: unknown) => (b ? "1" : "0");
 
-// Every custom packet must define both wire forms; JSON is the object verbatim
-// (the library injects $header), fanta is positional. Headers VS_JOIN/VS_LEAVE/
-// VS_SPEAK are shared across directions, so each codec encodes the c2s shape and
+// Every custom packet defines both wire forms; JSON is the object verbatim (the
+// library puts $header first), fanta is positional. Headers VS_JOIN/VS_LEAVE/
+// VS_SPEAK are shared across directions, so each form encodes the c2s shape and
 // decodes the s2c shape.
-const json = (c: Omit<Codec, "encodeJson" | "decodeJson">): Codec => ({
-  ...c,
-  encodeJson: (p) => JSON.stringify(p),
-  decodeJson: (raw) => JSON.parse(raw) as Record<string, unknown>,
-});
+const jsonForm: JsonForm = {
+  encode: (p) => JSON.stringify(p),
+  decode: (raw) => JSON.parse(raw) as Record<string, unknown>,
+};
+const pkt = (fanta: FantaForm) => ({ fanta, json: jsonForm });
 
 export function registerVoiceCodecs(): void {
-  registerCodec(
-    "VS_JOIN",
-    json({
-      encodeFanta: () => [],
-      decodeFanta: (a) => ({ uid: Number(a[0]) }),
+  registerPacket("VS_JOIN", pkt({
+    encode: () => [],
+    decode: (a) => ({ uid: Number(a[0]) }),
+  }));
+  registerPacket("VS_LEAVE", pkt({
+    encode: () => [],
+    decode: (a) => ({ uid: Number(a[0]) }),
+  }));
+  registerPacket("VS_FRAME", pkt({
+    encode: (p) => [String(p.payload)],
+    decode: (a) => ({ payload: a[0] }),
+  }));
+  registerPacket("VS_SPEAK", pkt({
+    encode: (p) => [onoff(p.on)],
+    decode: (a) => ({ uid: Number(a[0]), on: bool(a[1]) }),
+  }));
+  registerPacket("VS_AUDIO", pkt({
+    encode: (p) => [String(p.fromUid), String(p.payload)],
+    decode: (a) => ({ fromUid: Number(a[0]), payload: a[1] }),
+  }));
+  registerPacket("VS_CAPS", pkt({
+    encode: (p) => [
+      onoff(p.enabled),
+      onoff(p.pttOnly),
+      String(p.maxPeers),
+      String(p.codec),
+      String(p.sampleRate),
+      String(p.frameMs),
+      String(p.maxFrameBytes),
+    ],
+    decode: (a) => ({
+      enabled: bool(a[0]),
+      pttOnly: bool(a[1]),
+      maxPeers: Number(a[2]),
+      codec: a[3],
+      sampleRate: Number(a[4]),
+      frameMs: Number(a[5]),
+      maxFrameBytes: Number(a[6]),
     }),
-  );
-  registerCodec(
-    "VS_LEAVE",
-    json({
-      encodeFanta: () => [],
-      decodeFanta: (a) => ({ uid: Number(a[0]) }),
-    }),
-  );
-  registerCodec(
-    "VS_FRAME",
-    json({
-      encodeFanta: (p) => [String(p.payload)],
-      decodeFanta: (a) => ({ payload: a[0] }),
-    }),
-  );
-  registerCodec(
-    "VS_SPEAK",
-    json({
-      encodeFanta: (p) => [onoff(p.on)],
-      decodeFanta: (a) => ({ uid: Number(a[0]), on: bool(a[1]) }),
-    }),
-  );
-  registerCodec(
-    "VS_AUDIO",
-    json({
-      encodeFanta: (p) => [String(p.fromUid), String(p.payload)],
-      decodeFanta: (a) => ({ fromUid: Number(a[0]), payload: a[1] }),
-    }),
-  );
-  registerCodec(
-    "VS_CAPS",
-    json({
-      encodeFanta: (p) => [
-        onoff(p.enabled),
-        onoff(p.pttOnly),
-        String(p.maxPeers),
-        String(p.codec),
-        String(p.sampleRate),
-        String(p.frameMs),
-        String(p.maxFrameBytes),
-      ],
-      decodeFanta: (a) => ({
-        enabled: bool(a[0]),
-        pttOnly: bool(a[1]),
-        maxPeers: Number(a[2]),
-        codec: a[3],
-        sampleRate: Number(a[4]),
-        frameMs: Number(a[5]),
-        maxFrameBytes: Number(a[6]),
-      }),
-    }),
-  );
-  registerCodec(
-    "VS_PEERS",
-    json({
-      encodeFanta: (p) => [(p.uids as number[]).join(",")],
-      decodeFanta: (a) => ({
-        uids: a[0] ? a[0].split(",").map(Number) : [],
-      }),
-    }),
-  );
+  }));
+  registerPacket("VS_PEERS", pkt({
+    encode: (p) => [(p.uids as number[]).join(",")],
+    decode: (a) => ({ uids: a[0] ? a[0].split(",").map(Number) : [] }),
+  }));
 }
