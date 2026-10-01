@@ -35,13 +35,13 @@ export function playMusicChange(packet: aolib.packets.MCToClient) {
 
 /**
  * RMC: music seek to a specific offset. Undocumented; not in the
- * official Packet Reference. `toTime` is a seconds string the legacy
- * audio element parses with `parseFloat`.
+ * official Packet Reference. `to_time` is a seconds string parsed with
+ * `parseFloat`.
  */
 export function applyMusicSeek(packet: aolib.packets.RMC) {
   const music = client.viewport.music[MusicChannel.music];
   music.pause();
-  const toTime = parseFloat(packet.toTime);
+  const toTime = parseFloat(packet.to_time);
   const requestedAt = Date.now() / 1000;
   music.addEventListener(
     "loadedmetadata",

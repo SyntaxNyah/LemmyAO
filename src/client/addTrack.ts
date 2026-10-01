@@ -66,7 +66,7 @@ export function applyFullMusicList(packet: aolib.packets.FM) {
  */
 export function applyEvidenceListBatch(packet: aolib.packets.EM) {
   document.getElementById("client_loadingtext")!.innerHTML = "Loading Music";
-  if (packet.batchIndex === 0) {
+  if (packet.batch_index === 0) {
     client.resetMusicList();
     client.resetAreaList();
     client.musics_time = false;

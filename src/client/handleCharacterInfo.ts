@@ -170,7 +170,7 @@ export async function applyFullCharacterList(packet: aolib.packets.SC) {
  */
 export function applyCharacterBatch(packet: aolib.packets.CI) {
   document.getElementById("client_loadingtext")!.innerHTML =
-    `Loading Character ${packet.batchIndex}/${client.char_list_length}`;
+    `Loading Character ${packet.batch_index}/${client.char_list_length}`;
   for (const { index, data } of packet.entries) {
     const chargs = data.split("&");
     setTimeout(() => handleCharacterInfo(chargs, index), 500);
