@@ -46,6 +46,7 @@ let caps: VoiceCaps = {
 
 let audioCtx: AudioContext | null = null;
 let workletReady = false;
+let workletReadyPromise: Promise<void> | null = null;
 let localStream: MediaStream | null = null;
 let captureSourceNode: MediaStreamAudioSourceNode | null = null;
 let captureNode: AudioWorkletNode | null = null;
@@ -263,22 +264,32 @@ async function ensureAudioContext(): Promise<AudioContext> {
     audioCtx = new Ctor({ sampleRate: caps.sampleRate });
     // A freshly-created context needs a fresh worklet registration.
     workletReady = false;
+    workletReadyPromise = null;
   }
-  // Worklet readiness is tied to the live AudioContext, not to "did we ever
-  // call addModule" — retry on every call until it actually succeeds, so a
-  // silent failure during the auto-join (non-gesture) path doesn't leave us
-  // with an unusable context after the user clicks.
+  // Worklet readiness is tied to the live AudioContext, not to "did we ever call
+  // addModule" — retry until it actually succeeds, so a silent failure during the
+  // auto-join (non-gesture) path doesn't leave an unusable context after the user
+  // clicks. ensureAudioContext runs from several paths, so serialize addModule
+  // through one shared promise: overlapping callers would otherwise both pass the
+  // readiness check and call addModule twice on the same context, and the
+  // worklet's registerProcessor throws "already registered" on the second eval.
   if (!workletReady) {
-    const blob = new Blob([WORKLET_CODE], { type: "application/javascript" });
-    const url = URL.createObjectURL(blob);
+    workletReadyPromise ??= (async () => {
+      const blob = new Blob([WORKLET_CODE], { type: "application/javascript" });
+      const url = URL.createObjectURL(blob);
+      try {
+        await audioCtx!.audioWorklet.addModule(url);
+        workletReady = true;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    })();
     try {
-      await audioCtx.audioWorklet.addModule(url);
-      workletReady = true;
+      await workletReadyPromise;
     } catch (e) {
+      workletReadyPromise = null; // allow a later call to retry
       console.error("voice: AudioWorklet addModule failed", e);
       throw e;
-    } finally {
-      URL.revokeObjectURL(url);
     }
   }
   if (audioCtx.state === "suspended") {
