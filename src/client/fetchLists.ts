@@ -66,10 +66,12 @@ export async function fetchExtensions() {
     client.emote_extensions = allextensions.emote_extensions || [".gif", ".png", ".apng", ".webp", ".webp.static"];
     client.emotions_extensions = allextensions.emotions_extensions || [".png", ".webp"];
     client.background_extensions = allextensions.background_extensions || [".png", ".gif", ".webp", ".apng"];
-    console.log("charicons "+client.charicon_extensions)
-    console.log("emotes "+client.emote_extensions)
-    console.log("emotions "+client.emotions_extensions)
-    console.log("backgrounds "+client.background_extensions)
+    console.debug("loaded asset file-extension preferences from extensions.json", {
+      charicons: client.charicon_extensions,
+      emotes: client.emote_extensions,
+      emotions: client.emotions_extensions,
+      backgrounds: client.background_extensions,
+    });
   } catch (err) {
     console.warn("there was no extensions.json file");
   }

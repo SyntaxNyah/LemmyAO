@@ -18,7 +18,7 @@ export function setAOhost(val: string): string {
   ) {
     AO_HOST = val;
   }
-  console.log("Asset URL ist now " + AO_HOST);
+  console.debug("Asset URL is now " + AO_HOST);
   return AO_HOST;
 }
 
