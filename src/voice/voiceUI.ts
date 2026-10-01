@@ -491,7 +491,6 @@ export function installVoiceUI(): void {
   }
 
   onCapsChange(onCapsUpdated);
-  window.addEventListener("voice-caps-updated", onCapsUpdated);
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
   window.addEventListener("blur", onWindowBlur);
