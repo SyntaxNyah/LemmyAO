@@ -17,7 +17,7 @@ export function addTrack(trackname: string) {
 import { createArea } from "./createArea";
 import { fix_last_area } from "./fixLastArea";
 import { isAudio } from "./isAudio";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 /**
  * SM: server pushes the full music + area list at once. Areas come
@@ -25,7 +25,7 @@ import type * as aolib from "../aolib";
  * then music. The fanta wire-format may leave a trailing empty-name
  * entry from the `#` split; we skip those.
  */
-export function applyMusicListBatch(packet: aolib.SM) {
+export function applyMusicListBatch(packet: aolib.packets.SM) {
   document.getElementById("client_loadingtext")!.innerHTML = "Loading Music";
   client.resetMusicList();
   client.resetAreaList();
@@ -51,7 +51,7 @@ export function applyMusicListBatch(packet: aolib.SM) {
 }
 
 /** FM: server pushes the full music list (refresh after edits). */
-export function applyFullMusicList(packet: aolib.FM) {
+export function applyFullMusicList(packet: aolib.packets.FM) {
   client.resetMusicList();
   for (const { name } of packet.music_list) {
     if (!name) continue;
@@ -64,9 +64,9 @@ export function applyFullMusicList(packet: aolib.FM) {
  * the first audio file are areas; everything after is music. Acks by
  * requesting the next batch.
  */
-export function applyEvidenceListBatch(packet: aolib.EM) {
+export function applyEvidenceListBatch(packet: aolib.packets.EM) {
   document.getElementById("client_loadingtext")!.innerHTML = "Loading Music";
-  if (packet.batchIndex === 0) {
+  if (packet.batch_index === 0) {
     client.resetMusicList();
     client.resetAreaList();
     client.musics_time = false;
@@ -83,5 +83,6 @@ export function applyEvidenceListBatch(packet: aolib.EM) {
       createArea(index, name);
     }
   }
-  client.server.send.AM({ batch: packet.batchIndex / 10 + 1 });
+  // aolib 2.x dropped the AM pagination cursor; the server streams the full
+  // music/area list without a per-batch ack.
 }

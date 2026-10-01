@@ -1,9 +1,9 @@
-import { Side } from "../aolib";
-import type * as aolib from "../aolib";
+import { JudgeState, Side } from "aolib-ts";
+import type * as aolib from "aolib-ts";
 
 /** Sync the judge-action UI and the role-select dropdown for a side. */
 export function updateActionCommands(side: Side) {
-  if (side === Side.JUDGE) {
+  if (side === Side.jud) {
     document.getElementById("judge_action")!.style.display = "inline-table";
     document.getElementById("no_action")!.style.display = "none";
   } else {
@@ -26,13 +26,13 @@ export function updateActionCommands(side: Side) {
 }
 
 /** SP: server confirms a position change for the local character. */
-export function applyCharacterSide(packet: aolib.SP) {
+export function applyCharacterSide(packet: aolib.packets.SP) {
   updateActionCommands(packet.side);
 }
 
 /** JD: toggle the judge-action panel (`state === 1` shows, else hides). */
-export function toggleJudgePanel(packet: aolib.JD) {
-  if (packet.state === 1) {
+export function toggleJudgePanel(packet: aolib.packets.JD) {
+  if (packet.state === JudgeState.shown) {
     document.getElementById("judge_action")!.style.display = "inline-table";
     document.getElementById("no_action")!.style.display = "none";
   } else {

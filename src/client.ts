@@ -13,7 +13,7 @@ import masterViewport from "./viewport/viewport";
 import { Viewport } from "./viewport/interfaces/Viewport";
 import { version } from "./version";
 import { onReplayGo } from "./dom/onReplayGo";
-import * as aolib from "./aolib";
+import * as aolib from "aolib-ts";
 import { registerProtocol } from "./registerProtocol";
 import { appendICNotice } from "./client/appendICNotice";
 import { loadResources } from "./client/loadResources";
@@ -50,9 +50,10 @@ export let selectedMenu = 1;
 export function setSelectedMenu(val: number) {
   selectedMenu = val;
 }
-import { ShoutModifier } from "./aolib";
-export let selectedShout: ShoutModifier = ShoutModifier.NONE;
-export function setSelectedShout(val: ShoutModifier) {
+// Numeric shout index from the DOM (button_N / data-shout); converted to the
+// aolib ShoutModifier enum only when an MS is built (see onICEnter).
+export let selectedShout = 0;
+export function setSelectedShout(val: number) {
   selectedShout = val;
 }
 export let extrafeatures: string[] = [];

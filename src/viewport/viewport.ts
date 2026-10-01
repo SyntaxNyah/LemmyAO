@@ -14,9 +14,8 @@ import { createSfxAudio } from "./utils/createSfxAudio";
 import { createShoutAudio } from "./utils/createShoutAudio";
 import { createTestimonyAudio } from "./utils/createTestimonyAudio";
 import { Testimony } from "./interfaces/Testimony";
-import { COLORS } from "./constants/colors";
 import { set_side } from "./utils/setSide";
-import { DeskModifier, EmoteModifier, Side } from "../aolib";
+import { DeskModifier, EmoteModifier, Side } from "aolib-ts";
 import { ChatMsg } from "./interfaces/ChatMsg";
 import {
   setStartFirstTickCheck,
@@ -311,7 +310,7 @@ const viewport = (): Viewport => {
     );
 
     // these are for the full view pan, the other positions use 'client_char'
-    const validSides: Side[] = [Side.DEFENSE, Side.PROSECUTION, Side.WITNESS];
+    const validSides: Side[] = [Side.def, Side.pro, Side.wit];
     if (validSides.includes(chatmsg.side)) {
       charLayers = <HTMLImageElement>(
         document.getElementById(`client_${chatmsg.side}_char`)
@@ -395,7 +394,7 @@ const viewport = (): Viewport => {
           testimonyAudio.src = `${AO_HOST}sounds/general/sfx-evidenceshoop.opus`;
           testimonyAudio.play().catch(() => {});
 
-          if (chatmsg.side === Side.DEFENSE) {
+          if (chatmsg.side === Side.def) {
             // Only def show evidence on right
             eviBox.style.right = "1em";
             eviBox.style.left = "initial";
@@ -404,7 +403,7 @@ const viewport = (): Viewport => {
             eviBox.style.left = "1em";
           }
         }
-        chatBoxInner.className = `text_${COLORS[chatmsg.text_color]}`;
+        chatBoxInner.className = `text_${chatmsg.text_color}`;
 
         if (chatmsg.preanimdelay === 0) {
           shoutSprite.style.display = "none";
@@ -412,28 +411,28 @@ const viewport = (): Viewport => {
         }
 
         switch (chatmsg.desk_modifier) {
-          case DeskModifier.HIDE_DURING_PREANIM:
+          case DeskModifier.hide_during_preanim:
             set_side({
               position: chatmsg.side,
               showSpeedLines: false,
               showDesk: true,
             });
             break;
-          case DeskModifier.SHOW_DURING_PREANIM:
+          case DeskModifier.show_during_preanim:
             set_side({
               position: chatmsg.side,
               showSpeedLines: false,
               showDesk: false,
             });
             break;
-          case DeskModifier.HIDE_AND_CENTER_DURING_PREANIM:
+          case DeskModifier.hide_and_center_during_preanim:
             set_side({
               position: chatmsg.side,
               showSpeedLines: false,
               showDesk: true,
             });
             break;
-          case DeskModifier.SHOW_DURING_PREANIM_THEN_CENTER:
+          case DeskModifier.show_during_preanim_then_center:
             set_side({
               position: chatmsg.side,
               showSpeedLines: false,
@@ -488,9 +487,9 @@ const viewport = (): Viewport => {
         chatmsg.sound !== "1" &&
         chatmsg.sound !== "" &&
         chatmsg.sound !== undefined &&
-        (chatmsg.emote_modifier === EmoteModifier.PREANIM ||
-          chatmsg.emote_modifier === EmoteModifier.PREANIM_AND_OBJECTION ||
-          chatmsg.emote_modifier === EmoteModifier.OBJECTION_ZOOM)
+        (chatmsg.emote_modifier === EmoteModifier.preanim ||
+          chatmsg.emote_modifier === EmoteModifier.preanim_and_objection ||
+          chatmsg.emote_modifier === EmoteModifier.objection_zoom)
       ) {
         const sfxUrl = chatmsg.preloadedAssets?.emoteSfxUrl
           ?? `${AO_HOST}sounds/general/${encodeURI(chatmsg.sound.toLowerCase())}.opus`;

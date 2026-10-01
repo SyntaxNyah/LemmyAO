@@ -8,7 +8,7 @@ export function banPlayer(id: number) {
   const reason = prompt("Please enter the reason", "Being annoying");
   const duration = Number(prompt("Please enter the ban duration in minutes", "60"));
 
-  client.server.send.MA({ id, duration, reason });
+  client.server.send.MA({ player_id: id, duration_minutes: duration, reason });
 }
 
 /**
@@ -18,5 +18,5 @@ export function banPlayer(id: number) {
 export function kickPlayer(id: number) {
   const reason = prompt("Please enter the reason", "Being annoying");
 
-  client.server.send.MA({ id, duration: 0, reason });
+  client.server.send.MA({ player_id: id, duration_minutes: 0, reason });
 }

@@ -46,6 +46,7 @@ let caps: VoiceCaps = {
 
 let audioCtx: AudioContext | null = null;
 let workletReady = false;
+let workletReadyPromise: Promise<void> | null = null;
 let localStream: MediaStream | null = null;
 let captureSourceNode: MediaStreamAudioSourceNode | null = null;
 let captureNode: AudioWorkletNode | null = null;
@@ -263,22 +264,32 @@ async function ensureAudioContext(): Promise<AudioContext> {
     audioCtx = new Ctor({ sampleRate: caps.sampleRate });
     // A freshly-created context needs a fresh worklet registration.
     workletReady = false;
+    workletReadyPromise = null;
   }
-  // Worklet readiness is tied to the live AudioContext, not to "did we ever
-  // call addModule" — retry on every call until it actually succeeds, so a
-  // silent failure during the auto-join (non-gesture) path doesn't leave us
-  // with an unusable context after the user clicks.
+  // Worklet readiness is tied to the live AudioContext, not to "did we ever call
+  // addModule" — retry until it actually succeeds, so a silent failure during the
+  // auto-join (non-gesture) path doesn't leave an unusable context after the user
+  // clicks. ensureAudioContext runs from several paths, so serialize addModule
+  // through one shared promise: overlapping callers would otherwise both pass the
+  // readiness check and call addModule twice on the same context, and the
+  // worklet's registerProcessor throws "already registered" on the second eval.
   if (!workletReady) {
-    const blob = new Blob([WORKLET_CODE], { type: "application/javascript" });
-    const url = URL.createObjectURL(blob);
+    workletReadyPromise ??= (async () => {
+      const blob = new Blob([WORKLET_CODE], { type: "application/javascript" });
+      const url = URL.createObjectURL(blob);
+      try {
+        await audioCtx!.audioWorklet.addModule(url);
+        workletReady = true;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    })();
     try {
-      await audioCtx.audioWorklet.addModule(url);
-      workletReady = true;
+      await workletReadyPromise;
     } catch (e) {
+      workletReadyPromise = null; // allow a later call to retry
       console.error("voice: AudioWorklet addModule failed", e);
       throw e;
-    } finally {
-      URL.revokeObjectURL(url);
     }
   }
   if (audioCtx.state === "suspended") {
@@ -301,7 +312,7 @@ function syncSpeakState(): void {
   if (want === lastEmittedSpeak) return;
   lastEmittedSpeak = want;
   if (inVoice) {
-    client.server.send.VS_SPEAK({ on: want });
+    client.server.sendCustom({ $header: "VS_SPEAK", on: want });
   }
   notifySpeakingListeners();
 }
@@ -327,7 +338,7 @@ function emitEncodedFrame(bytes: Uint8Array): void {
     // Server would drop oversize frames anyway
     return;
   }
-  client.server.send.VS_FRAME({ payload: b64 });
+  client.server.sendCustom({ $header: "VS_FRAME", payload: b64 });
 }
 
 async function createWebCodecsFrameEncoder(): Promise<FrameEncoder> {
@@ -691,7 +702,7 @@ export async function joinVoiceListenOnly(): Promise<void> {
   }
   inVoice = true;
   listenOnly = true;
-  client.server.send.VS_JOIN({});
+  client.server.sendCustom({ $header: "VS_JOIN" });
   syncSpeakState();
 }
 
@@ -727,7 +738,7 @@ export async function joinVoice(): Promise<void> {
   }
   if (!wasListenOnly) {
     inVoice = true;
-    client.server.send.VS_JOIN({});
+    client.server.sendCustom({ $header: "VS_JOIN" });
   }
   listenOnly = false;
   syncSpeakState();
@@ -737,9 +748,9 @@ export function leaveVoice(): void {
   if (!inVoice) return;
   if (lastEmittedSpeak) {
     lastEmittedSpeak = false;
-    client.server.send.VS_SPEAK({ on: false });
+    client.server.sendCustom({ $header: "VS_SPEAK", on: false });
   }
-  client.server.send.VS_LEAVE({});
+  client.server.sendCustom({ $header: "VS_LEAVE" });
   teardownAll();
   notifyCapsUpdated();
 }
@@ -921,10 +932,17 @@ export function setVCMuted(muted: boolean): void {
 // ---------------------------------------------------------------------
 
 import { installVoiceUI } from "./voiceUI";
-import type * as aolib from "../aolib";
+import type {
+  VS_CAPS,
+  VS_PEERS,
+  VS_JOINToClient,
+  VS_LEAVEToClient,
+  VS_SPEAKToClient,
+  VS_AUDIO,
+} from "./vsPackets";
 
 /** VS_CAPS: server announces voice subsystem capabilities (idempotent). */
-export function applyVoiceCapabilities(packet: aolib.VS_CAPS) {
+export function applyVoiceCapabilities(packet: VS_CAPS) {
   console.debug(
     `voice: VS_CAPS received enabled=${packet.enabled} ptt=${packet.pttOnly} maxPeers=${packet.maxPeers} codec=${packet.codec} sr=${packet.sampleRate} frame=${packet.frameMs}ms maxBytes=${packet.maxFrameBytes}`,
   );
@@ -941,12 +959,12 @@ export function applyVoiceCapabilities(packet: aolib.VS_CAPS) {
 }
 
 /** VS_PEERS: initial list of voice-active peer uids when we join. */
-export function applyVoicePeerList(packet: aolib.VS_PEERS) {
+export function applyVoicePeerList(packet: VS_PEERS) {
   void handleInitialPeers(packet.uids);
 }
 
 /** VS_JOIN: a remote peer joined the voice mesh. */
-export function handleVoicePeerJoin(packet: aolib.VS_JOINBroadcast) {
+export function handleVoicePeerJoin(packet: VS_JOINToClient) {
   if (!Number.isFinite(packet.uid)) return;
   void handlePeerJoined(packet.uid);
 }
@@ -956,7 +974,7 @@ export function handleVoicePeerJoin(packet: aolib.VS_JOINBroadcast) {
  * (server auto-kicked us, e.g. on area change or `/voicearea off`),
  * we tear down locally instead.
  */
-export function handleVoicePeerLeave(packet: aolib.VS_LEAVEBroadcast) {
+export function handleVoicePeerLeave(packet: VS_LEAVEToClient) {
   if (!Number.isFinite(packet.uid)) return;
   if (packet.uid === client.playerID) {
     leaveVoice();
@@ -966,13 +984,13 @@ export function handleVoicePeerLeave(packet: aolib.VS_LEAVEBroadcast) {
 }
 
 /** VS_SPEAK: a remote peer toggled their speaking-state indicator. */
-export function applyVoicePeerSpeak(packet: aolib.VS_SPEAKBroadcast) {
+export function applyVoicePeerSpeak(packet: VS_SPEAKToClient) {
   if (!Number.isFinite(packet.uid)) return;
   notifyRemoteSpeaking(packet.uid, packet.on);
 }
 
 /** VS_AUDIO: opus audio frame from a remote peer; play it. */
-export function handleVoiceAudio(packet: aolib.VS_AUDIO) {
+export function handleVoiceAudio(packet: VS_AUDIO) {
   if (!Number.isFinite(packet.fromUid) || !packet.payload) return;
   handleRemoteAudio(packet.fromUid, packet.payload);
 }

@@ -89,13 +89,14 @@ export function renderPlayerList() {
 }
 
 import { ensureCharIni } from "../client/handleCharacterInfo";
-import type * as aolib from "../aolib";
+import { PlayerDataType, PlayerListUpdate } from "aolib-ts";
+import type * as aolib from "aolib-ts";
 
 /** PR: a player joined (type 0) or left (type 1) the roster. */
-export function applyPlayerRosterChange(packet: aolib.PR) {
-  if (packet.type === 0) {
+export function applyPlayerRosterChange(packet: aolib.packets.PR) {
+  if (packet.type === PlayerListUpdate.add) {
     client.playerlist.set(packet.id, { charId: -1, charName: "", showName: "", name: "", area: 0 });
-  } else if (packet.type === 1) {
+  } else if (packet.type === PlayerListUpdate.remove) {
     client.playerlist.delete(packet.id);
   }
   renderPlayerList();
@@ -106,16 +107,16 @@ export function applyPlayerRosterChange(packet: aolib.PR) {
  * area). The `type` discriminator picks which field; the payload's
  * `data` carries the new value.
  */
-export function applyPlayerFieldUpdate(packet: aolib.PU) {
+export function applyPlayerFieldUpdate(packet: aolib.packets.PU) {
   const player = client.playerlist.get(packet.id);
   if (!player) return;
 
   const { data } = packet;
   switch (packet.type) {
-    case 0:
+    case PlayerDataType.ooc_name:
       player.name = data;
       break;
-    case 1: {
+    case PlayerDataType.char_name: {
       player.charName = data;
       const charId = client.chars.findIndex(
         (c: any) => c && c.name.toLowerCase() === data.toLowerCase(),
@@ -126,10 +127,10 @@ export function applyPlayerFieldUpdate(packet: aolib.PU) {
       }
       break;
     }
-    case 2:
+    case PlayerDataType.showname:
       player.showName = data;
       break;
-    case 3:
+    case PlayerDataType.area_id:
       player.area = Number(data);
       break;
     default:

@@ -5,8 +5,8 @@ export function changeMusicVolume(volume: number = -1) {
     (<HTMLInputElement>document.getElementById("client_mvolume")).value,
   );
   const musicVolume = volume === -1 ? clientVolume : volume;
-  client.viewport.music.forEach(
-    (channel: HTMLAudioElement) => (channel.volume = musicVolume),
-  );
+  for (const channel of Object.values(client.viewport.music)) {
+    channel.volume = musicVolume;
+  }
   localStorage.setItem("musicVolume", String(musicVolume));
 }

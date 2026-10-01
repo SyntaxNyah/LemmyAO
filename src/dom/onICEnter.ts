@@ -1,5 +1,6 @@
 import { client, selectedShout } from "../client";
-import * as aolib from "../aolib";
+import * as aolib from "aolib-ts";
+import { enumByNumber } from "../utils/aoEnum";
 
 const input = (id: string) =>
   document.getElementById(id) as HTMLInputElement;
@@ -17,29 +18,29 @@ export function onICEnter(event: KeyboardEvent) {
   const sendSfx = input("sendsfx").checked;
   const sendPreanim = input("sendpreanim").checked;
 
-  // sendpreanim toggle only flips between PREANIM and NO_PREANIM; don't
-  // clobber zoom/objection variants from the ini.
-  let emote_modifier: aolib.EmoteModifier = Number(my_emote.zoom);
-  if (!Number.isInteger(emote_modifier)) emote_modifier = aolib.EmoteModifier.NO_PREANIM;
-  if (sendPreanim && emote_modifier === aolib.EmoteModifier.NO_PREANIM) {
-    emote_modifier = aolib.EmoteModifier.PREANIM;
-  } else if (!sendPreanim && emote_modifier === aolib.EmoteModifier.PREANIM) {
-    emote_modifier = aolib.EmoteModifier.NO_PREANIM;
-  }
+  // char.ini modifier is numeric (0/1/5/6); the sendpreanim toggle only flips
+  // between no_preanim and preanim, leaving zoom/objection variants alone.
+  let modN = Number(my_emote.zoom);
+  if (!Number.isInteger(modN)) modN = 0;
+  if (sendPreanim && modN === 0) modN = 1;
+  else if (!sendPreanim && modN === 1) modN = 0;
+  const emote_modifier = enumByNumber(aolib.EmoteModifier, modN);
 
   const sideStr = input("role_select").value || my_char.side;
   const side: aolib.Side = (Object.values(aolib.Side) as string[]).includes(sideStr)
     ? (sideStr as aolib.Side)
-    : aolib.Side.WITNESS;
+    : aolib.Side.wit;
 
   const colorN = Number(input("textcolor").value);
-  const text_color: aolib.TextColor =
+  const text_color =
     Number.isInteger(colorN) && colorN >= 0 && colorN <= 9
-      ? (colorN as aolib.TextColor)
-      : aolib.TextColor.WHITE;
+      ? enumByNumber(aolib.TextColor, colorN)
+      : aolib.TextColor.white;
+
+  const [effName, effFolder, effSound] = input("effect_select").value.split("|");
 
   client.server.send.MS({
-    desk_modifier: my_emote.desk_modifier,
+    desk_modifier: enumByNumber(aolib.DeskModifier, Number(my_emote.desk_modifier)),
     preanim: my_emote.preanim,
     character: my_char.name,
     emote: my_emote.emote,
@@ -49,9 +50,9 @@ export function onICEnter(event: KeyboardEvent) {
     emote_modifier,
     char_id: client.charID,
     sfx_delay: sendSfx ? my_emote.sfxdelay : 0,
-    shout_modifier: selectedShout,
+    shout_modifier: enumByNumber(aolib.ShoutModifier, selectedShout),
     evidence_id: client.evidence + 1,
-    flip: isToggled("button_flip") ? aolib.Flip.HORIZONTAL : aolib.Flip.NONE,
+    flip: isToggled("button_flip") ? aolib.Flip.horizontal : aolib.Flip.none,
     realization: isToggled("button_flash"),
     text_color,
     showname: input("ic_chat_name").value,
@@ -67,7 +68,7 @@ export function onICEnter(event: KeyboardEvent) {
     frames_realization: "-",
     frames_sfx: "-",
     additive: input("check_additive").checked,
-    effect: input("effect_select").value,
+    effect: { name: effName ?? "", folder: effFolder ?? "", sound: effSound ?? "" },
   });
 
   return false;

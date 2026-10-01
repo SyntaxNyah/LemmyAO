@@ -1,10 +1,12 @@
 import Client from "../client";
-import { Side } from "../aolib";
+import { Side } from "aolib-ts";
 import transparentPng from "../constants/transparentPng";
 import fileExists from "../utils/fileExists";
 
 const isFullView = (s: Side): boolean =>
-  s === Side.DEFENSE || s === Side.PROSECUTION || s === Side.WITNESS;
+  s === Side.def || s === Side.pro || s === Side.wit;
+
+const IMAGE_EXTENSIONS = [".gif", ".webp", ".apng", ".png"];
 
 /**
  * Sets all the img tags to the right sources
@@ -26,6 +28,19 @@ const setEmote = async (
   const emoteSelector = document.getElementById(
     `client_${position}${pairID}_img`,
   ) as HTMLImageElement;
+
+  // A name with an extension (char.ini block format) is a literal filename:
+  // never deduce. The path is fully determined (lowercase name, fixed (a)/(b)
+  // prefix, given extension), so set it directly. A non-image extension
+  // (e.g. a 3D `.vmd`) has no sprite.
+  const dot = emotename.lastIndexOf(".");
+  if (dot !== -1) {
+    const ext = emotename.slice(dot).toLowerCase();
+    emoteSelector.src = IMAGE_EXTENSIONS.includes(ext)
+      ? `${characterFolder}${encodeURI(charactername)}/${encodeURI(prefix)}${encodeURI(emotename)}`
+      : transparentPng;
+    return;
+  }
 
   for (const extension of client.emote_extensions) {
     // Hides all sprites before creating a new sprite

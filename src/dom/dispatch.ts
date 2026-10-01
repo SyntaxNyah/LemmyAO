@@ -14,6 +14,7 @@
  * non-bubbling events (`error`, `volumechange`) work the same way.
  */
 import { client } from "../client";
+import { PenaltyBar, RTAnimation } from "aolib-ts";
 
 import { addEvidence } from "./addEvidence";
 import { applyCustomFont, setFont } from "./setFont";
@@ -78,20 +79,19 @@ import { toggleVoice } from "./toggleVoice";
 import { updateBackgroundPreview } from "./updateBackgroundPreview";
 import { updateEvidenceIcon } from "./updateEvidenceIcon";
 import { updateIniswap } from "./updateIniswap";
-import { ShoutModifier } from "../aolib";
 
 const datasetOf = (e: Event) => (e.currentTarget as HTMLElement).dataset;
 
 const actions: Record<string, (e: Event) => void> = {
   // Trivial inline handlers.
-  guilty: () => client.server.send.RT({ animation: "judgeruling", judgeId: 1 }),
-  notguilty: () => client.server.send.RT({ animation: "judgeruling", judgeId: 0 }),
-  initCE: () => client.server.send.RT({ animation: "testimony2" }),
-  initWT: () => client.server.send.RT({ animation: "testimony1" }),
-  redHPD: () => client.server.send.HP({ bar: 1, value: client.hp[0] - 1 }),
-  addHPD: () => client.server.send.HP({ bar: 1, value: client.hp[0] + 1 }),
-  redHPP: () => client.server.send.HP({ bar: 2, value: client.hp[1] - 1 }),
-  addHPP: () => client.server.send.HP({ bar: 2, value: client.hp[1] + 1 }),
+  guilty: () => client.server.send.RT({ animation: RTAnimation.guilty }),
+  notguilty: () => client.server.send.RT({ animation: RTAnimation.not_guilty }),
+  initCE: () => client.server.send.RT({ animation: RTAnimation.cross_examination }),
+  initWT: () => client.server.send.RT({ animation: RTAnimation.witness_testimony }),
+  redHPD: () => client.server.send.HP({ bar: PenaltyBar.defense, value: client.hp[0] - 1 }),
+  addHPD: () => client.server.send.HP({ bar: PenaltyBar.defense, value: client.hp[0] + 1 }),
+  redHPP: () => client.server.send.HP({ bar: PenaltyBar.prosecution, value: client.hp[1] - 1 }),
+  addHPP: () => client.server.send.HP({ bar: PenaltyBar.prosecution, value: client.hp[1] + 1 }),
   resetOffset: () => resetPairOffsets(),
   preventDefault: (e) => e.preventDefault(),
 
@@ -157,7 +157,7 @@ const actions: Record<string, (e: Event) => void> = {
   pickChar: (e) => pickChar(Number(datasetOf(e).char)),
   pickIniswap: (e) => pickIniswap(datasetOf(e).iniswap!),
   pickBackground: (e) => pickBackground(datasetOf(e).background!),
-  toggleShout: (e) => toggleShout(Number(datasetOf(e).shout) as ShoutModifier),
+  toggleShout: (e) => toggleShout(Number(datasetOf(e).shout)),
   toggleMenu: (e) => toggleMenu(Number(datasetOf(e).menu)),
   toggleElement: (e) => toggleElement(datasetOf(e).element!),
   exportLog: (e) => exportLog(datasetOf(e).format!),

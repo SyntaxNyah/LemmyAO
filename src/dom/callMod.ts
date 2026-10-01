@@ -11,6 +11,6 @@ export function callMod() {
   if (modcall == null || modcall === "") {
     // cancel
   } else {
-    client.server.send.ZZ({ reason: modcall, target: -1 });
+    client.server.send.ZZ({ reason: modcall });
   }
 }

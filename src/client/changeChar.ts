@@ -5,10 +5,10 @@ import { pickEmotion } from "../dom/pickEmotion";
 import { attachSpritePreview } from "../dom/spritePreview";
 import { updateActionCommands } from "../dom/updateActionCommands";
 import fileExists from "../utils/fileExists";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 /** PV: server assigns a character to this player. */
-export function applyCharacterPick(packet: aolib.PV) {
+export function applyCharacterPick(packet: aolib.packets.PV) {
   changeChar(packet.char_id);
 }
 

@@ -1,4 +1,5 @@
-import { EmoteModifier, ShoutModifier } from "../../aolib";
+import { EmoteModifier, ShoutModifier } from "aolib-ts";
+import { SHOUTS } from "../constants/shouts";
 import { ChatMsg } from "../interfaces/ChatMsg";
 import { PreloadedAssets } from "../interfaces/PreloadedAssets";
 import {
@@ -14,6 +15,8 @@ const GLOBAL_TIMEOUT_MS = 8000;
  * Builds the list of candidate URLs for a character emote across all extensions.
  * Replicates the URL construction logic from setEmote.ts.
  */
+const IMAGE_EXTENSIONS = [".gif", ".webp", ".apng", ".png"];
+
 function buildEmoteUrls(
   AO_HOST: string,
   extensions: string[],
@@ -22,8 +25,20 @@ function buildEmoteUrls(
   prefix: string,
 ): string[] {
   const characterFolder = `${AO_HOST}characters/`;
-  const urls: string[] = [];
+  const base = `${characterFolder}${encodeURI(charactername)}/`;
 
+  // A name that already carries an extension (char.ini block format) is a
+  // literal filename: never deduce. The path is fully determined (lowercase
+  // name, fixed (a)/(b) prefix, given extension), so it's the single candidate.
+  // A non-image extension (e.g. a 3D `.vmd`) has no sprite to load.
+  const dot = emotename.lastIndexOf(".");
+  if (dot !== -1) {
+    const ext = emotename.slice(dot).toLowerCase();
+    if (!IMAGE_EXTENSIONS.includes(ext)) return [];
+    return [`${base}${encodeURI(prefix)}${encodeURI(emotename)}`];
+  }
+
+  const urls: string[] = [];
   for (const extension of extensions) {
     let url: string;
     if (extension === ".png") {
@@ -102,13 +117,22 @@ export default async function preloadMessageAssets(
   const charName = chatmsg.name!.toLowerCase();
   const charEmote = chatmsg.sprite!.toLowerCase();
 
+  // Track each in-flight fetch so the global timeout can report which assets
+  // were still outstanding instead of a bare "timed out". Maps a label to the
+  // asset's candidate URL(s).
+  const pending = new Map<string, unknown>();
+  const track = <T>(label: string, detail: unknown, p: Promise<T>): Promise<T> => {
+    pending.set(label, detail);
+    return p.finally(() => pending.delete(label));
+  };
+
   const doPreload = async (): Promise<PreloadedAssets> => {
     // Build candidate URL lists for each emote
     const idleUrls = buildEmoteUrls(AO_HOST, emoteExtensions, charName, charEmote, "(a)");
     const talkingUrls = buildEmoteUrls(AO_HOST, emoteExtensions, charName, charEmote, "(b)");
 
     const hasPreanim =
-      chatmsg.emote_modifier === EmoteModifier.PREANIM &&
+      chatmsg.emote_modifier === EmoteModifier.preanim &&
       chatmsg.preanim &&
       chatmsg.preanim !== "-" &&
       chatmsg.preanim !== "";
@@ -127,13 +151,12 @@ export default async function preloadMessageAssets(
       : null;
 
     // Shout SFX per-character path
-    const shoutNames = [undefined, "holdit", "objection", "takethat", "custom"];
-    const shoutName = shoutNames[chatmsg.shout_modifier];
+    const shoutName = SHOUTS[chatmsg.shout_modifier];
     const isStandardShout =
-      chatmsg.shout_modifier === ShoutModifier.HOLD_IT ||
-      chatmsg.shout_modifier === ShoutModifier.OBJECTION ||
-      chatmsg.shout_modifier === ShoutModifier.TAKE_THAT;
-    const isCustomShout = chatmsg.shout_modifier === ShoutModifier.CUSTOM;
+      chatmsg.shout_modifier === ShoutModifier.hold_it ||
+      chatmsg.shout_modifier === ShoutModifier.objection ||
+      chatmsg.shout_modifier === ShoutModifier.take_that;
+    const isCustomShout = chatmsg.shout_modifier === ShoutModifier.custom;
     // Custom shouts use the same per-character path (custom.opus). Resolving
     // it here means a character without one yields null from the cached HEAD
     // check, so the caller can skip the channel entirely instead of pointing
@@ -153,9 +176,9 @@ export default async function preloadMessageAssets(
     const invalidSounds = ["0", "1", "", undefined];
     const emoteSfxPath = (
       !invalidSounds.includes(chatmsg.sound) &&
-      (chatmsg.emote_modifier === EmoteModifier.PREANIM ||
-        chatmsg.emote_modifier === EmoteModifier.PREANIM_AND_OBJECTION ||
-        chatmsg.emote_modifier === EmoteModifier.OBJECTION_ZOOM)
+      (chatmsg.emote_modifier === EmoteModifier.preanim ||
+        chatmsg.emote_modifier === EmoteModifier.preanim_and_objection ||
+        chatmsg.emote_modifier === EmoteModifier.objection_zoom)
     ) ? `${AO_HOST}sounds/general/${encodeURI(chatmsg.sound.toLowerCase())}.opus`
       : null;
 
@@ -168,21 +191,27 @@ export default async function preloadMessageAssets(
       idleUrl, talkingUrl, preanimUrl, preanimDuration, pairIdleUrl,
       shoutSfxUrl, shoutBubbleResolved, emoteSfxUrl, realizationSfxUrl, stabSfxUrl,
     ] = await Promise.all([
-      resolveAndPreloadImage(idleUrls),
-      resolveAndPreloadImage(talkingUrls),
-      preanimUrls ? resolveAndPreloadImage(preanimUrls) : Promise.resolve(transparentPng),
-      hasPreanim
-        ? getAnimDuration(
-          `${AO_HOST}characters/${encodeURI(charName)}/${encodeURI(chatmsg.preanim!.toLowerCase())}`,
-          preanimAnimExtensions.length ? preanimAnimExtensions : undefined,
-        )
-        : Promise.resolve(0),
-      pairIdleUrls ? resolveAndPreloadImage(pairIdleUrls) : Promise.resolve(transparentPng),
-      shoutSfxPath ? resolveAndPreloadAudio(shoutSfxPath) : Promise.resolve(null),
-      shoutBubbleUrls ? resolveAndPreloadImage(shoutBubbleUrls) : Promise.resolve(null),
-      emoteSfxPath ? resolveAndPreloadAudio(emoteSfxPath) : Promise.resolve(null),
-      resolveAndPreloadAudio(realizationPath),
-      resolveAndPreloadAudio(stabPath),
+      track("idle sprite", idleUrls, resolveAndPreloadImage(idleUrls)),
+      track("talking sprite", talkingUrls, resolveAndPreloadImage(talkingUrls)),
+      track("preanim sprite", preanimUrls,
+        preanimUrls ? resolveAndPreloadImage(preanimUrls) : Promise.resolve(transparentPng)),
+      track("preanim duration", preanimUrls,
+        hasPreanim
+          ? getAnimDuration(
+            `${AO_HOST}characters/${encodeURI(charName)}/${encodeURI(chatmsg.preanim!.toLowerCase())}`,
+            preanimAnimExtensions.length ? preanimAnimExtensions : undefined,
+          )
+          : Promise.resolve(0)),
+      track("pair idle sprite", pairIdleUrls,
+        pairIdleUrls ? resolveAndPreloadImage(pairIdleUrls) : Promise.resolve(transparentPng)),
+      track("shout sfx", shoutSfxPath,
+        shoutSfxPath ? resolveAndPreloadAudio(shoutSfxPath) : Promise.resolve(null)),
+      track("shout bubble", shoutBubbleUrls,
+        shoutBubbleUrls ? resolveAndPreloadImage(shoutBubbleUrls) : Promise.resolve(null)),
+      track("emote sfx", emoteSfxPath,
+        emoteSfxPath ? resolveAndPreloadAudio(emoteSfxPath) : Promise.resolve(null)),
+      track("realization sfx", realizationPath, resolveAndPreloadAudio(realizationPath)),
+      track("stab sfx", stabPath, resolveAndPreloadAudio(stabPath)),
     ]);
 
     // resolveAndPreloadImage falls back to transparentPng when nothing exists;
@@ -205,10 +234,21 @@ export default async function preloadMessageAssets(
     };
   };
 
-  // Race against global timeout for graceful degradation
+  // Race against global timeout for graceful degradation. Clear the timer once
+  // the race settles: otherwise it fires GLOBAL_TIMEOUT_MS after every message,
+  // logging a spurious "timed out" even when preloading already succeeded.
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<PreloadedAssets>((resolve) => {
-    setTimeout(() => {
-      console.warn("Asset preloading timed out, using defaults");
+    timeoutHandle = setTimeout(() => {
+      const outstanding = [...pending.entries()].map(([label, detail]) => {
+        const url = Array.isArray(detail) ? detail[0] : detail;
+        return url ? `${label} (${url})` : label;
+      });
+      console.warn(
+        `Asset preloading for ${charName}/${charEmote} timed out after ` +
+          `${GLOBAL_TIMEOUT_MS}ms; using defaults. Still pending: ` +
+          (outstanding.join(", ") || "(none)"),
+      );
       resolve({ ...DEFAULT_ASSETS });
     }, GLOBAL_TIMEOUT_MS);
   });
@@ -218,5 +258,7 @@ export default async function preloadMessageAssets(
   } catch (error) {
     console.error("Asset preloading failed:", error);
     return { ...DEFAULT_ASSETS };
+  } finally {
+    clearTimeout(timeoutHandle);
   }
 }

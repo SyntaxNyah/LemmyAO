@@ -1,15 +1,16 @@
 import { client } from "../client";
-import type * as aolib from "../aolib";
+import { PenaltyBar } from "aolib-ts";
+import type * as aolib from "aolib-ts";
 
 /**
  * HP: defense or prosecution health bar update. `bar === 1` is defense;
  * any other value is prosecution. `value` is 0..10; we paint that as a
  * width percentage on the `.health-bar` child.
  */
-export function applyHealthBar(packet: aolib.HP) {
+export function applyHealthBar(packet: aolib.packets.HPToClient) {
   const percent_hp = packet.value * 10;
   let healthbox;
-  if (packet.bar === 1) {
+  if (packet.bar === PenaltyBar.defense) {
     client.hp[0] = packet.value;
     healthbox = document.getElementById("client_defense_hp");
   } else {

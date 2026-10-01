@@ -16,7 +16,7 @@ export async function fetchBackgroundList() {
       bg_select.add(new Option(background));
     });
   } catch (err) {
-    console.warn("there was no backgrounds.json file");
+    console.debug("no backgrounds.json file (optional)");
   }
 }
 
@@ -37,7 +37,7 @@ export async function fetchCharacterList() {
       char_select.add(new Option(character));
     });
   } catch (err) {
-    console.warn("there was no characters.json file");
+    console.debug("no characters.json file (optional)");
   }
 }
 
@@ -54,7 +54,7 @@ export async function fetchEvidenceList() {
       evi_select.add(new Option(evi));
     });
   } catch (err) {
-    console.warn("there was no evidence.json file");
+    console.debug("no evidence.json file (optional)");
   }
 }
 
@@ -66,17 +66,19 @@ export async function fetchExtensions() {
     client.emote_extensions = allextensions.emote_extensions || [".gif", ".png", ".apng", ".webp", ".webp.static"];
     client.emotions_extensions = allextensions.emotions_extensions || [".png", ".webp"];
     client.background_extensions = allextensions.background_extensions || [".png", ".gif", ".webp", ".apng"];
-    console.log("charicons "+client.charicon_extensions)
-    console.log("emotes "+client.emote_extensions)
-    console.log("emotions "+client.emotions_extensions)
-    console.log("backgrounds "+client.background_extensions)
+    console.debug("loaded asset file-extension preferences from extensions.json", {
+      charicons: client.charicon_extensions,
+      emotes: client.emote_extensions,
+      emotions: client.emotions_extensions,
+      backgrounds: client.background_extensions,
+    });
   } catch (err) {
-    console.warn("there was no extensions.json file");
+    console.debug("no extensions.json file (optional)");
   }
 }
 
 import { applyFavourites } from "../dom/toggleFavourite";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 /**
  * SI: server announces its asset counts. We seed the char-select grid
@@ -116,7 +118,7 @@ export function buildCharGrid(count: number): void {
   }
 }
 
-export function applyServerCounts(packet: aolib.SI) {
+export function applyServerCounts(packet: aolib.packets.SI) {
   client.char_list_length = packet.char_count;
   client.evidence_list_length = packet.evi_count;
   client.music_list_length = packet.mus_count;

@@ -1,12 +1,12 @@
 import { setExtraFeatures } from "../client";
-import type * as aolib from "../aolib";
+import type * as aolib from "aolib-ts";
 
 /**
  * FL: server advertises its supported features. Each known flag turns
  * on a piece of UI (yellowtext = expanded color palette, cccc_ic_support
  * = pairing UI, flipping = mirror button, etc.).
  */
-export function applyFeatureFlags(packet: aolib.FL) {
+export function applyFeatureFlags(packet: aolib.packets.FL) {
   const { features } = packet;
   setExtraFeatures(features);
 
