@@ -234,9 +234,12 @@ export default async function preloadMessageAssets(
     };
   };
 
-  // Race against global timeout for graceful degradation
+  // Race against global timeout for graceful degradation. Clear the timer once
+  // the race settles: otherwise it fires GLOBAL_TIMEOUT_MS after every message,
+  // logging a spurious "timed out" even when preloading already succeeded.
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<PreloadedAssets>((resolve) => {
-    setTimeout(() => {
+    timeoutHandle = setTimeout(() => {
       const outstanding = [...pending.entries()].map(([label, detail]) => {
         const url = Array.isArray(detail) ? detail[0] : detail;
         return url ? `${label} (${url})` : label;
@@ -255,5 +258,7 @@ export default async function preloadMessageAssets(
   } catch (error) {
     console.error("Asset preloading failed:", error);
     return { ...DEFAULT_ASSETS };
+  } finally {
+    clearTimeout(timeoutHandle);
   }
 }
