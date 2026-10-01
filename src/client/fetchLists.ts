@@ -16,7 +16,7 @@ export async function fetchBackgroundList() {
       bg_select.add(new Option(background));
     });
   } catch (err) {
-    console.warn("there was no backgrounds.json file");
+    console.debug("no backgrounds.json file (optional)");
   }
 }
 
@@ -37,7 +37,7 @@ export async function fetchCharacterList() {
       char_select.add(new Option(character));
     });
   } catch (err) {
-    console.warn("there was no characters.json file");
+    console.debug("no characters.json file (optional)");
   }
 }
 
@@ -54,7 +54,7 @@ export async function fetchEvidenceList() {
       evi_select.add(new Option(evi));
     });
   } catch (err) {
-    console.warn("there was no evidence.json file");
+    console.debug("no evidence.json file (optional)");
   }
 }
 
@@ -73,7 +73,7 @@ export async function fetchExtensions() {
       backgrounds: client.background_extensions,
     });
   } catch (err) {
-    console.warn("there was no extensions.json file");
+    console.debug("no extensions.json file (optional)");
   }
 }
 
