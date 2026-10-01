@@ -10,11 +10,10 @@ interface QueryParams {
   char: string;
   area: string;
   /**
-   * Feature gate for the JSON wire format. While Athena/akashi JSON
-   * support is still being shaken out, the client only opts in when
-   * the caller explicitly passes `?json_mode=true`. Without the
-   * flag, the client stays on fanta even if the server advertises
-   * JSON via `decryptor("JSON")`.
+   * JSON wire format. Honored by default: when the server advertises JSON
+   * via `decryptor("JSON")` the client switches outbound to JSON envelopes.
+   * Pass `?json_mode=false` to force the client to stay on the fanta wire
+   * even when the server offers JSON.
    */
   json_mode: boolean;
 }
@@ -31,7 +30,7 @@ const queryParser = (): QueryParams => {
     serverName: urlParams.get("serverName") || "Attorney Online session",
     char: urlParams.get("char") || "",
     area: urlParams.get("area") || "",
-    json_mode: urlParams.get("json_mode") === "true",
+    json_mode: urlParams.get("json_mode") !== "false",
   };
   return queryParams as QueryParams;
 };

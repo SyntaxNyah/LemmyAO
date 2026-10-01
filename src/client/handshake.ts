@@ -18,11 +18,9 @@ const { mode, json_mode: jsonModeEnabled } = queryParser();
  * repurpose it as a wire-format negotiation signal — `value === "JSON"`
  * means "switch outbound to JSON envelopes from here on".
  *
- * Gated for now: we only honor the JSON advertisement when the URL
- * includes `?json_mode=true`. Without the flag we stay on fanta even
- * if the server says JSON. This lets us roll out JSON compatibility
- * server-by-server while keeping the default path on the known-good
- * fanta wire.
+ * Honored by default: when the server advertises JSON we switch outbound
+ * to JSON envelopes. Pass `?json_mode=false` to force the client to stay on
+ * the fanta wire even if the server says JSON.
  */
 export function applyEncryptionMode(packet: aolib.packets.decryptor) {
   const useJson = jsonModeEnabled && packet.value === "JSON";
