@@ -47,7 +47,10 @@ export function setupCharacterBasic(chargs: string[], charid: number) {
       muted: false,
     };
   } else {
-    console.warn(`missing charid ${charid}`);
+    console.warn(
+      `character slot ${charid} has no usable name in the server character list ` +
+        `(got ${JSON.stringify(chargs[0])}); hiding its roster icon`,
+    );
     img.style.display = "none";
   }
 }
@@ -121,7 +124,10 @@ export async function handleCharacterInfo(chargs: string[], charid: number) {
 
     await ensureCharIni(charid);
   } else {
-    console.warn(`missing charid ${charid}`);
+    console.warn(
+      `character slot ${charid} has no usable name in the server character list ` +
+        `(got ${JSON.stringify(chargs[0])}); hiding its roster icon`,
+    );
     img.style.display = "none";
   }
 }
