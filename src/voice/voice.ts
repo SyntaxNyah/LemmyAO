@@ -113,13 +113,6 @@ function notifyCapsUpdated() {
       console.error(e);
     }
   }
-  try {
-    if (typeof window !== "undefined" && typeof CustomEvent === "function") {
-      window.dispatchEvent(new CustomEvent("voice-caps-updated"));
-    }
-  } catch (_e) {
-    // CustomEvent may be unavailable in unusual environments
-  }
 }
 
 export function onCapsChange(listener: () => void): () => void {
@@ -694,14 +687,18 @@ export function isListenOnly(): boolean {
 
 export async function joinVoiceListenOnly(): Promise<void> {
   if (!caps.enabled || inVoice) return;
+  // Claim the slot synchronously (before the await) so concurrent calls don't
+  // each pass the inVoice guard and send a duplicate VS_JOIN.
+  inVoice = true;
+  listenOnly = true;
   try {
     await ensureAudioContext();
   } catch (e) {
+    inVoice = false;
+    listenOnly = false;
     console.error("voice: failed to create AudioContext", e);
     return;
   }
-  inVoice = true;
-  listenOnly = true;
   client.server.sendCustom({ $header: "VS_JOIN" });
   syncSpeakState();
 }
