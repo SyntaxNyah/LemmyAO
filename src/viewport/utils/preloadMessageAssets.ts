@@ -117,6 +117,15 @@ export default async function preloadMessageAssets(
   const charName = chatmsg.name!.toLowerCase();
   const charEmote = chatmsg.sprite!.toLowerCase();
 
+  // Track each in-flight fetch so the global timeout can report which assets
+  // were still outstanding instead of a bare "timed out". Maps a label to the
+  // asset's candidate URL(s).
+  const pending = new Map<string, unknown>();
+  const track = <T>(label: string, detail: unknown, p: Promise<T>): Promise<T> => {
+    pending.set(label, detail);
+    return p.finally(() => pending.delete(label));
+  };
+
   const doPreload = async (): Promise<PreloadedAssets> => {
     // Build candidate URL lists for each emote
     const idleUrls = buildEmoteUrls(AO_HOST, emoteExtensions, charName, charEmote, "(a)");
@@ -182,21 +191,27 @@ export default async function preloadMessageAssets(
       idleUrl, talkingUrl, preanimUrl, preanimDuration, pairIdleUrl,
       shoutSfxUrl, shoutBubbleResolved, emoteSfxUrl, realizationSfxUrl, stabSfxUrl,
     ] = await Promise.all([
-      resolveAndPreloadImage(idleUrls),
-      resolveAndPreloadImage(talkingUrls),
-      preanimUrls ? resolveAndPreloadImage(preanimUrls) : Promise.resolve(transparentPng),
-      hasPreanim
-        ? getAnimDuration(
-          `${AO_HOST}characters/${encodeURI(charName)}/${encodeURI(chatmsg.preanim!.toLowerCase())}`,
-          preanimAnimExtensions.length ? preanimAnimExtensions : undefined,
-        )
-        : Promise.resolve(0),
-      pairIdleUrls ? resolveAndPreloadImage(pairIdleUrls) : Promise.resolve(transparentPng),
-      shoutSfxPath ? resolveAndPreloadAudio(shoutSfxPath) : Promise.resolve(null),
-      shoutBubbleUrls ? resolveAndPreloadImage(shoutBubbleUrls) : Promise.resolve(null),
-      emoteSfxPath ? resolveAndPreloadAudio(emoteSfxPath) : Promise.resolve(null),
-      resolveAndPreloadAudio(realizationPath),
-      resolveAndPreloadAudio(stabPath),
+      track("idle sprite", idleUrls, resolveAndPreloadImage(idleUrls)),
+      track("talking sprite", talkingUrls, resolveAndPreloadImage(talkingUrls)),
+      track("preanim sprite", preanimUrls,
+        preanimUrls ? resolveAndPreloadImage(preanimUrls) : Promise.resolve(transparentPng)),
+      track("preanim duration", preanimUrls,
+        hasPreanim
+          ? getAnimDuration(
+            `${AO_HOST}characters/${encodeURI(charName)}/${encodeURI(chatmsg.preanim!.toLowerCase())}`,
+            preanimAnimExtensions.length ? preanimAnimExtensions : undefined,
+          )
+          : Promise.resolve(0)),
+      track("pair idle sprite", pairIdleUrls,
+        pairIdleUrls ? resolveAndPreloadImage(pairIdleUrls) : Promise.resolve(transparentPng)),
+      track("shout sfx", shoutSfxPath,
+        shoutSfxPath ? resolveAndPreloadAudio(shoutSfxPath) : Promise.resolve(null)),
+      track("shout bubble", shoutBubbleUrls,
+        shoutBubbleUrls ? resolveAndPreloadImage(shoutBubbleUrls) : Promise.resolve(null)),
+      track("emote sfx", emoteSfxPath,
+        emoteSfxPath ? resolveAndPreloadAudio(emoteSfxPath) : Promise.resolve(null)),
+      track("realization sfx", realizationPath, resolveAndPreloadAudio(realizationPath)),
+      track("stab sfx", stabPath, resolveAndPreloadAudio(stabPath)),
     ]);
 
     // resolveAndPreloadImage falls back to transparentPng when nothing exists;
@@ -222,7 +237,15 @@ export default async function preloadMessageAssets(
   // Race against global timeout for graceful degradation
   const timeoutPromise = new Promise<PreloadedAssets>((resolve) => {
     setTimeout(() => {
-      console.warn("Asset preloading timed out, using defaults");
+      const outstanding = [...pending.entries()].map(([label, detail]) => {
+        const url = Array.isArray(detail) ? detail[0] : detail;
+        return url ? `${label} (${url})` : label;
+      });
+      console.warn(
+        `Asset preloading for ${charName}/${charEmote} timed out after ` +
+          `${GLOBAL_TIMEOUT_MS}ms; using defaults. Still pending: ` +
+          (outstanding.join(", ") || "(none)"),
+      );
       resolve({ ...DEFAULT_ASSETS });
     }, GLOBAL_TIMEOUT_MS);
   });
