@@ -59,11 +59,15 @@ describe("aolib-ts custom channel (carries VS_*)", () => {
   });
 
   it("round-trips a registered custom packet through the fanta wire", () => {
-    wire.registerCodec("VS_SPEAK", {
-      encodeFanta: (p) => [p.on ? "1" : "0"],
-      decodeFanta: (a) => ({ uid: Number(a[0]), on: a[1] === "1" }),
-      encodeJson: (p) => JSON.stringify(p),
-      decodeJson: (raw) => JSON.parse(raw) as Record<string, unknown>,
+    ao.registerPacket("VS_SPEAK", {
+      fanta: {
+        encode: (p) => [p.on ? "1" : "0"],
+        decode: (a) => ({ uid: Number(a[0]), on: a[1] === "1" }),
+      },
+      json: {
+        encode: (p) => JSON.stringify(p),
+        decode: (raw) => JSON.parse(raw) as Record<string, unknown>,
+      },
     });
     const buf: string[] = [];
     const srv = ao.server({ send: (w) => buf.push(w) });
