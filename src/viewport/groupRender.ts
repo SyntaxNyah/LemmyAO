@@ -1,5 +1,4 @@
 import { groupPair, type GPMember } from "../groupPair";
-import { client } from "../client";
 import { AO_HOST } from "../client/aoHost";
 import transparentPng from "../constants/transparentPng";
 
