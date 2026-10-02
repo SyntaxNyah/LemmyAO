@@ -23,6 +23,7 @@ import {
 import preloadMessageAssets from "./preloadMessageAssets";
 import { setBlipUrl } from "./blipAudio";
 import { renderGroupPeers } from "../groupRender";
+import { groupPair } from "../../groupPair";
 import { getMmdController } from "../mmd";
 import { setupCharacterSlot } from "../mmd/applyEmote";
 import type { Model3dInfo } from "../mmd/types";
@@ -95,6 +96,10 @@ const buildChatMsg = (packet: aolib.packets.MSToClient): ChatMsg => {
   const msg_nameplate = char?.showname ?? packet.character;
   const msg_blips = char?.blips ?? "male";
   const char_chatbox = char?.chat ?? "default";
+  // A group roster (GP) supersedes the 2-person pair: blank the paired fields
+  // so the pair layer doesn't re-draw the first partner the group already
+  // renders (which left one member invisible and double-drew another).
+  const hasGroup = groupPair !== null && groupPair.members.length >= 2;
 
   let content = safeHtmlTags(unescapeUnicode(packet.message));
   let chatbox = char_chatbox;
@@ -114,8 +119,8 @@ const buildChatMsg = (packet: aolib.packets.MSToClient): ChatMsg => {
     sound: safeHtmlTags(packet.sfx_name).toLowerCase(),
     preanim: safeHtmlTags(packet.preanim).toLowerCase(),
     showname: safeHtmlTags(unescapeUnicode(packet.showname)),
-    paired_name: safeHtmlTags(packet.paired_name),
-    paired_emote: safeHtmlTags(packet.paired_emote),
+    paired_name: hasGroup ? "" : safeHtmlTags(packet.paired_name),
+    paired_emote: hasGroup ? "" : safeHtmlTags(packet.paired_emote),
     effects: [packet.effect.name, packet.effect.folder, packet.effect.sound],
     // Char-derived
     nameplate: msg_nameplate,
