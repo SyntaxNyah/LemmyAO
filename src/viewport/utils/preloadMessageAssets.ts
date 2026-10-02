@@ -17,7 +17,7 @@ const GLOBAL_TIMEOUT_MS = 8000;
  */
 const IMAGE_EXTENSIONS = [".gif", ".webp", ".apng", ".png"];
 
-function buildEmoteUrls(
+export function buildEmoteUrls(
   AO_HOST: string,
   extensions: string[],
   charactername: string,

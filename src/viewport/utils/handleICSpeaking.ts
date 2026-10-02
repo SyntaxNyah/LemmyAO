@@ -22,8 +22,7 @@ import {
 } from "aolib-ts";
 import preloadMessageAssets from "./preloadMessageAssets";
 import { setBlipUrl } from "./blipAudio";
-import { renderGroupPeers } from "../groupRender";
-import { groupPair } from "../../groupPair";
+import { renderGroupPeers, membersFromAdditionalChars } from "../groupRender";
 import { getMmdController } from "../mmd";
 import { setupCharacterSlot } from "../mmd/applyEmote";
 import type { Model3dInfo } from "../mmd/types";
@@ -96,10 +95,12 @@ const buildChatMsg = (packet: aolib.packets.MSToClient): ChatMsg => {
   const msg_nameplate = char?.showname ?? packet.character;
   const msg_blips = char?.blips ?? "male";
   const char_chatbox = char?.chat ?? "default";
-  // A group roster (GP) supersedes the 2-person pair: blank the paired fields
-  // so the pair layer doesn't re-draw the first partner the group already
-  // renders (which left one member invisible and double-drew another).
-  const hasGroup = groupPair !== null && groupPair.members.length >= 2;
+  // A group supersedes the 2-person pair: blank the paired fields so the pair
+  // layer doesn't re-draw the first partner the group already renders. The
+  // group is the per-message additional_chars (present only when a group
+  // member speaks), not the viewer's roster.
+  const additional = packet.$extras?.additional_chars;
+  const hasGroup = Array.isArray(additional) && additional.length >= 2;
 
   let content = safeHtmlTags(unescapeUnicode(packet.message));
   let chatbox = char_chatbox;
@@ -414,9 +415,13 @@ const renderICMessage = (chatmsg: ChatMsg) => {
     setEmoteFromUrl(preloaded.pairIdleUrl, true, chatmsg.side);
   }
 
-  // Group pairing (JSON-only GP roster): draw the other members behind the
-  // speaker. A no-op when no group is active.
-  renderGroupPeers(chatmsg.char_id, chatmsg.side);
+  // Group pairing: draw the other members behind the speaker from the
+  // per-message additional_chars (present only when a group member speaks).
+  renderGroupPeers(
+    membersFromAdditionalChars(chatmsg.$extras?.additional_chars),
+    chatmsg.char_id,
+    chatmsg.side,
+  );
 
   applyShout(chatmsg, chatContainerBox);
 

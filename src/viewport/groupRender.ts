@@ -1,6 +1,8 @@
-import { groupPair, type GPMember } from "../groupPair";
+import { type GPMember } from "../groupPair";
+import { client } from "../client";
 import { AO_HOST } from "../client/aoHost";
-import transparentPng from "../constants/transparentPng";
+import { resolveAndPreloadImage } from "../utils/assetCache";
+import { buildEmoteUrls } from "./utils/preloadMessageAssets";
 
 /**
  * Group sprite rendering for the `GP` extension (JSON-only). When a group
@@ -27,8 +29,16 @@ function container(): HTMLElement {
     c.style.position = "absolute";
     c.style.pointerEvents = "none";
     c.style.inset = "0";
-    c.style.zIndex = "1"; // behind the char/pair layers
-    (document.getElementById("client_gamewindow") ?? document.body).appendChild(c);
+    // Insert into the full-view stage between the court art and the character
+    // layers, so group members draw behind the speaker/pair but over the court.
+    const fullview = document.getElementById("client_fullview");
+    const anchor = fullview?.querySelector(".client_char");
+    if (fullview) {
+      if (anchor) fullview.insertBefore(c, anchor);
+      else fullview.appendChild(c);
+    } else {
+      (document.getElementById("client_gamewindow") ?? document.body).appendChild(c);
+    }
   }
   return c;
 }
@@ -58,10 +68,19 @@ function syncLayerCount(n: number): GroupLayer[] {
 
 // Build the idle-sprite URL for a group member. The GP roster carries the
 // character folder + idle emote; the `(a)` idle-frame prefix matches setEmote.
-function spriteURL(m: GPMember): string {
-  const name = m.name.toLowerCase();
-  const emote = m.emote.toLowerCase();
-  return `${AO_HOST}characters/${encodeURI(name)}/(a)${encodeURI(emote)}.gif`;
+function setGroupSprite(img: HTMLImageElement, m: GPMember): void {
+  const urls = buildEmoteUrls(
+    AO_HOST,
+    client.emote_extensions,
+    m.name.toLowerCase(),
+    m.emote.toLowerCase(),
+    "(a)",
+  );
+  // resolveAndPreloadImage returns the first candidate that loads (or the
+  // transparent fallback), covering every extension + the nested (a)/ layout.
+  resolveAndPreloadImage(urls).then((url) => {
+    img.src = url;
+  });
 }
 
 function flipTransform(flip: string): string {
@@ -76,14 +95,17 @@ function baseLeft(side: string): number {
   return side === "wit" ? 200 : side === "pro" ? 400 : 0;
 }
 
-export function renderGroupPeers(speakerCharID: number, speakerSide: string): void {
-  const gp = groupPair;
-  if (!gp || gp.members.length < 2) {
+export function renderGroupPeers(
+  members: GPMember[],
+  speakerCharID: number,
+  speakerSide: string,
+): void {
+  if (!members || members.length < 2) {
     clearGroup();
     return;
   }
 
-  const peers = gp.members.filter((m) => m.char_id !== speakerCharID);
+  const peers = members.filter((m) => m.char_id !== speakerCharID);
   const groupLayers = syncLayerCount(peers.length);
 
   peers.forEach((m, i) => {
@@ -91,14 +113,28 @@ export function renderGroupPeers(speakerCharID: number, speakerSide: string): vo
     // Each member keeps their own roster side + offset (the server sends both);
     // only fall back to the speaker's side for a roster that predates `side`.
     const side = m.side ?? speakerSide;
-    layer.img.src = spriteURL(m);
-    layer.img.onerror = () => (layer.img.src = transparentPng);
+    setGroupSprite(layer.img, m);
     layer.container.style.left = `${baseLeft(side) + (m.offset?.x ?? 0)}%`;
     layer.container.style.top = `${m.offset?.y ?? 0}%`;
     layer.container.style.transform = flipTransform(m.flip ?? "none");
     layer.container.style.zIndex = String(m.order ?? i);
     layer.container.style.opacity = "1";
   });
+}
+
+// Convert the JSON-only `additional_chars` MS field into the roster model.
+export function membersFromAdditionalChars(raw: unknown): GPMember[] {
+  if (!Array.isArray(raw)) return [];
+  return (raw as Array<Record<string, unknown>>).map((c) => ({
+    uid: 0,
+    char_id: Number(c.charid),
+    name: String(c.name ?? ""),
+    emote: String(c.emote ?? ""),
+    side: String(c.side ?? ""),
+    offset: (c.offset as { x?: number; y?: number }) ?? { x: 0, y: 0 },
+    flip: String(c.flip ?? "none"),
+    order: Number(c.order ?? 0),
+  }));
 }
 
 // Clear all group sprites (group dissolved, or a non-group message).
