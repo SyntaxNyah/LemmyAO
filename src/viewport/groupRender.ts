@@ -125,16 +125,19 @@ export function renderGroupPeers(
 // Convert the JSON-only `additional_chars` MS field into the roster model.
 export function membersFromAdditionalChars(raw: unknown): GPMember[] {
   if (!Array.isArray(raw)) return [];
-  return (raw as Array<Record<string, unknown>>).map((c) => ({
-    uid: 0,
-    char_id: Number(c.charid),
-    name: String(c.name ?? ""),
-    emote: String(c.emote ?? ""),
-    side: String(c.side ?? ""),
-    offset: (c.offset as { x?: number; y?: number }) ?? { x: 0, y: 0 },
-    flip: String(c.flip ?? "none"),
-    order: Number(c.order ?? 0),
-  }));
+  return (raw as Array<Record<string, unknown>>).map((c) => {
+    const off = (c.offset ?? {}) as { x?: number; y?: number };
+    return {
+      uid: 0,
+      char_id: Number(c.charid),
+      name: String(c.name ?? ""),
+      emote: String(c.emote ?? ""),
+      side: String(c.side ?? ""),
+      offset: { x: off.x ?? 0, y: off.y ?? 0 },
+      flip: String(c.flip ?? "none"),
+      order: Number(c.order ?? 0),
+    };
+  });
 }
 
 // Clear all group sprites (group dissolved, or a non-group message).
