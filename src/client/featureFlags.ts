@@ -1,4 +1,4 @@
-import { setExtraFeatures } from "../client";
+import { client, setExtraFeatures } from "../client";
 import type * as aolib from "aolib-ts";
 
 /**
@@ -9,6 +9,16 @@ import type * as aolib from "aolib-ts";
 export function applyFeatureFlags(packet: aolib.packets.FL) {
   const { features } = packet;
   setExtraFeatures(features);
+
+  // Symmetric FL: advertise our own capabilities back so the server sends GP /
+  // additional_chars. aolib models FL as server→client only, so the typed C2S
+  // send map has no `FL`; the runtime map carries both directions (loopback),
+  // so cast to reach it.
+  (
+    client.server.send as unknown as {
+      FL: (p: { features: string[] }) => void;
+    }
+  ).FL({ features: ["grouppair"] });
 
   if (features.includes("yellowtext")) {
     const colorselect = <HTMLSelectElement>document.getElementById("textcolor");
