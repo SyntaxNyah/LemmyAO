@@ -29,6 +29,11 @@ function container(): HTMLElement {
     c.style.position = "absolute";
     c.style.pointerEvents = "none";
     c.style.inset = "0";
+    // Give the group its own stacking context so the per-member z-index (the
+    // roster order) only orders members WITHIN the group and never leaks above
+    // the speaker/pair or the chatbox (#client_chatcontainer sits in a later
+    // sibling of #client_gamewindow).
+    c.style.isolation = "isolate";
     // Insert into the full-view stage between the court art and the character
     // layers, so group members draw behind the speaker/pair but over the court.
     const fullview = document.getElementById("client_fullview");
