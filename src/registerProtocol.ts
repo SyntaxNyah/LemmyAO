@@ -111,6 +111,7 @@ import {
   handleVoicePeerLeave,
 } from "./voice/voice";
 import { registerVoiceCodecs } from "./voice/vsPackets";
+import { applyGroupPair, registerGroupPairCodec } from "./groupPair";
 
 // ---------------------------------------------------------------------
 // Client -> server handlers (replay-mode synthesis only).
@@ -135,6 +136,7 @@ export function registerProtocol(
   clientSession: aolib.ClientSession,
 ): void {
   registerVoiceCodecs();
+  registerGroupPairCodec();
 
   // ---- server -> client ----
   server.on.ARUP(applyAreaStatus);
@@ -182,6 +184,7 @@ export function registerProtocol(
   server.onCustom("VS_LEAVE", handleVoicePeerLeave);
   server.onCustom("VS_PEERS", applyVoicePeerList);
   server.onCustom("VS_SPEAK", applyVoicePeerSpeak);
+  server.onCustom("GP", applyGroupPair);
   server.on.ZZ(showModcallNotice);
 
   // ---- client -> server (replay-mode synthesis) ----

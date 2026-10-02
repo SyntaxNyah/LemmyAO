@@ -1,4 +1,4 @@
-import { setExtraFeatures } from "../client";
+import { client, setExtraFeatures } from "../client";
 import type * as aolib from "aolib-ts";
 
 /**
@@ -9,6 +9,10 @@ import type * as aolib from "aolib-ts";
 export function applyFeatureFlags(packet: aolib.packets.FL) {
   const { features } = packet;
   setExtraFeatures(features);
+
+  // Symmetric FL: advertise our own capabilities back. "grouppair" gates the
+  // GP group-pair extension on Nyathena.
+  client.server.send.FL({ features: ["grouppair"] });
 
   if (features.includes("yellowtext")) {
     const colorselect = <HTMLSelectElement>document.getElementById("textcolor");

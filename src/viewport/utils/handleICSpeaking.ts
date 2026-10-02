@@ -22,6 +22,7 @@ import {
 } from "aolib-ts";
 import preloadMessageAssets from "./preloadMessageAssets";
 import { setBlipUrl } from "./blipAudio";
+import { renderGroupPeers } from "../groupRender";
 import { getMmdController } from "../mmd";
 import { setupCharacterSlot } from "../mmd/applyEmote";
 import type { Model3dInfo } from "../mmd/types";
@@ -407,6 +408,10 @@ const renderICMessage = (chatmsg: ChatMsg) => {
   if (chatmsg.paired_name) {
     setEmoteFromUrl(preloaded.pairIdleUrl, true, chatmsg.side);
   }
+
+  // Group pairing (JSON-only GP roster): draw the other members behind the
+  // speaker. A no-op when no group is active.
+  renderGroupPeers(chatmsg.char_id, chatmsg.side);
 
   applyShout(chatmsg, chatContainerBox);
 
