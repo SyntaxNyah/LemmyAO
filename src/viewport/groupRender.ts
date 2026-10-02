@@ -12,7 +12,12 @@ import transparentPng from "../constants/transparentPng";
 
 const CONTAINER_ID = "client_group";
 
-let layers: HTMLImageElement[] = [];
+interface GroupLayer {
+  container: HTMLDivElement;
+  img: HTMLImageElement;
+}
+
+let layers: GroupLayer[] = [];
 
 function container(): HTMLElement {
   let c = document.getElementById(CONTAINER_ID);
@@ -28,19 +33,25 @@ function container(): HTMLElement {
   return c;
 }
 
-function syncLayerCount(n: number): HTMLImageElement[] {
+function syncLayerCount(n: number): GroupLayer[] {
   const c = container();
   while (layers.length < n) {
+    // Mirror the char-sprite structure: a `.client_char` container (full-area,
+    // absolutely positioned, offset via left/top) wrapping a sprite `<img>`
+    // (styled by `.client_char > img`). Reusing that class gives the group
+    // members identical sizing/anchoring to the speaker sprite.
+    const div = document.createElement("div");
+    div.className = "client_char";
+    div.style.position = "absolute";
     const img = document.createElement("img");
-    img.className = "client_char"; // reuse the sprite sizing/positioning CSS
-    img.style.position = "absolute";
     img.dataset.action = "charError";
     img.dataset.event = "error";
-    c.appendChild(img);
-    layers.push(img);
+    div.appendChild(img);
+    c.appendChild(div);
+    layers.push({ container: div, img });
   }
   while (layers.length > n) {
-    layers.pop()!.remove();
+    layers.pop()!.container.remove();
   }
   return layers;
 }
@@ -61,7 +72,11 @@ function flipTransform(flip: string): string {
 
 // Render the non-speaking group members behind the speaker. `speakerCharID` is
 // the speaker's char id so we don't draw them twice.
-export function renderGroupPeers(speakerCharID: number, side: string): void {
+function baseLeft(side: string): number {
+  return side === "wit" ? 200 : side === "pro" ? 400 : 0;
+}
+
+export function renderGroupPeers(speakerCharID: number, speakerSide: string): void {
   const gp = groupPair;
   if (!gp || gp.members.length < 2) {
     clearGroup();
@@ -69,24 +84,25 @@ export function renderGroupPeers(speakerCharID: number, side: string): void {
   }
 
   const peers = gp.members.filter((m) => m.char_id !== speakerCharID);
-  const imgs = syncLayerCount(peers.length);
-
-  const baseLeft = side === "wit" ? 200 : side === "pro" ? 400 : 0;
+  const groupLayers = syncLayerCount(peers.length);
 
   peers.forEach((m, i) => {
-    const img = imgs[i];
-    img.src = spriteURL(m);
-    img.onerror = () => (img.src = transparentPng);
-    img.style.left = `${baseLeft + (m.offset?.x ?? 0)}%`;
-    img.style.top = `${m.offset?.y ?? 0}%`;
-    img.style.transform = flipTransform(m.flip ?? "none");
-    img.style.zIndex = String(m.order ?? i);
-    img.style.opacity = "1";
+    const layer = groupLayers[i];
+    // Each member keeps their own roster side + offset (the server sends both);
+    // only fall back to the speaker's side for a roster that predates `side`.
+    const side = m.side ?? speakerSide;
+    layer.img.src = spriteURL(m);
+    layer.img.onerror = () => (layer.img.src = transparentPng);
+    layer.container.style.left = `${baseLeft(side) + (m.offset?.x ?? 0)}%`;
+    layer.container.style.top = `${m.offset?.y ?? 0}%`;
+    layer.container.style.transform = flipTransform(m.flip ?? "none");
+    layer.container.style.zIndex = String(m.order ?? i);
+    layer.container.style.opacity = "1";
   });
 }
 
 // Clear all group sprites (group dissolved, or a non-group message).
 export function clearGroup(): void {
-  for (const img of layers) img.remove();
+  for (const layer of layers) layer.container.remove();
   layers = [];
 }

@@ -16,6 +16,7 @@ export interface GPMember {
   char_id: number;
   name: string;
   emote: string;
+  side: string;
   offset: { x: number; y: number };
   flip: string;
   order: number;
