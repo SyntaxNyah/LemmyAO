@@ -480,6 +480,13 @@ const renderICMessage = (chatmsg: ChatMsg) => {
     // Vertical offsets.
     pairLayers.style.top = `${chatmsg.paired_offset?.y ?? 0}%`;
     charLayers.style.top = `${chatmsg.offset?.y ?? 0}%`;
+
+    // Pair order: 0 = speaker in front (default), 1 = speaker behind. The DOM
+    // lists the pair layer before the char layer, so the speaker stacks on top
+    // by default; for "behind", lift the partner above the speaker.
+    const speakerBehind = chatmsg.paired_order === 1;
+    charLayers.style.zIndex = speakerBehind ? "1" : "2";
+    pairLayers.style.zIndex = speakerBehind ? "2" : "1";
   }
 
   setBlipUrl(
