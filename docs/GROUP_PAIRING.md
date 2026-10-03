@@ -60,3 +60,20 @@ list). There is no size limit.
   (`src/client/featureFlags.ts`).
 - **`membersFromAdditionalChars`** maps `charid`→`char_id` and defaults
   `offset.x/y` to `0`, producing the non-optional `GPMember.offset` shape.
+
+## Pair order
+
+LemmyAO is JSON-only, so every pair-order control maps to the server's
+`/pairorder` command (there is no FantaCode `^` suffix path here):
+
+- **"To front" / "To behind"** buttons send `/pairorder <uid> front|back`
+  with the local `client.playerID`, moving *you* within the roster.
+- **Group list** (`#group_order_list`, rendered by `src/dom/pairOrder.ts` from
+  the `groupPair` roster) shows members front→back with per-member `▲`/`▼`
+  buttons that send `/pairorder <uid> up|down`, so any member can be moved to
+  any position.
+
+`initPairOrder()` subscribes to roster changes via `onGroupPairChange` and
+re-renders the list; the controls live in the pairing settings
+(`public/client.html`), gated behind the same `cccc_ic_support` flag as the
+rest of the pairing UI. Tooltips (`title` attributes) explain the wire nuance.
