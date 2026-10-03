@@ -61,19 +61,18 @@ list). There is no size limit.
 - **`membersFromAdditionalChars`** maps `charid`→`char_id` and defaults
   `offset.x/y` to `0`, producing the non-optional `GPMember.offset` shape.
 
-## Pair order
+## Pair order (wire-aware)
 
-LemmyAO is JSON-only, so every pair-order control maps to the server's
-`/pairorder` command (there is no FantaCode `^` suffix path here):
+Pair order is wire-aware, mirroring AsyncAO:
 
-- **"To front" / "To behind"** buttons send `/pairorder <uid> front|back`
-  with the local `client.playerID`, moving *you* within the roster.
-- **Group list** (`#group_order_list`, rendered by `src/dom/pairOrder.ts` from
-  the `groupPair` roster) shows members front→back with per-member `▲`/`▼`
-  buttons that send `/pairorder <uid> up|down`, so any member can be moved to
-  any position.
+- **Classic pair (not in a group)** — "To front" / "To behind" set a local
+  `pairOrder` (0/1) sent as the MS `paired_order` field. aolib packs it as the
+  `^0`/`^1` suffix on FantaCode and keeps it as a separate `paired_order` field
+  on JSON, so the SAME toggle works on both wires with no manual detection.
+- **Group (JSON)** — the same buttons send `/pairorder <uid> front|back`, and
+  the group list (`#group_order_list`) reorders any member via
+  `/pairorder <uid> up|down`.
 
-`initPairOrder()` subscribes to roster changes via `onGroupPairChange` and
-re-renders the list; the controls live in the pairing settings
-(`public/client.html`), gated behind the same `cccc_ic_support` flag as the
-rest of the pairing UI. Tooltips (`title` attributes) explain the wire nuance.
+`src/dom/pairOrder.ts` owns the state (`getPairOrder`); `onICEnter.ts` sends
+`paired_order` on every IC message. The controls live in `public/client.html`,
+gated behind `cccc_ic_support`, with tooltips explaining the wire nuance.
