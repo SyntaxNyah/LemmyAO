@@ -481,12 +481,16 @@ const renderICMessage = (chatmsg: ChatMsg) => {
     pairLayers.style.top = `${chatmsg.paired_offset?.y ?? 0}%`;
     charLayers.style.top = `${chatmsg.offset?.y ?? 0}%`;
 
-    // Pair order: 0 = speaker in front (default), 1 = speaker behind. The DOM
-    // lists the pair layer before the char layer, so the speaker stacks on top
-    // by default; for "behind", lift the partner above the speaker.
+    // Pair order: 0 = speaker in front (default), 1 = speaker behind. The pair
+    // layer precedes the char layer in the DOM, so the speaker stacks on top by
+    // default; for "behind", move the pair after the char. DOM order drives the
+    // stacking here — a z-index would lift the sprites above the chat box.
     const speakerBehind = chatmsg.paired_order === 1;
-    charLayers.style.zIndex = speakerBehind ? "1" : "2";
-    pairLayers.style.zIndex = speakerBehind ? "2" : "1";
+    if (speakerBehind) {
+      charLayers.after(pairLayers);
+    } else {
+      charLayers.before(pairLayers);
+    }
   }
 
   setBlipUrl(
