@@ -58,6 +58,7 @@ import { onOOCEnter } from "./onOOCEnter";
 import { onReplayGo } from "./onReplayGo";
 import { opusCheck } from "./opusCheck";
 import { resetPairOffsets } from "./pairOffset";
+import { pairOrderFront, pairOrderBack, pairOrderMove } from "./pairOrder";
 import { pickChar } from "./pickChar";
 import { randomCharacterOOC } from "./randomCharacterOOC";
 import { ReconnectButton } from "./reconnectButton";
@@ -93,6 +94,9 @@ const actions: Record<string, (e: Event) => void> = {
   redHPP: () => client.server.send.HP({ bar: PenaltyBar.prosecution, value: client.hp[1] - 1 }),
   addHPP: () => client.server.send.HP({ bar: PenaltyBar.prosecution, value: client.hp[1] + 1 }),
   resetOffset: () => resetPairOffsets(),
+  pairOrderFront: () => pairOrderFront(),
+  pairOrderBack: () => pairOrderBack(),
+  pairOrderMove: (e) => pairOrderMove(e),
   preventDefault: (e) => e.preventDefault(),
 
   // No-arg actions.

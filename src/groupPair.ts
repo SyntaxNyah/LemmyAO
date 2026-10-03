@@ -31,8 +31,17 @@ export interface GP {
 // The current group roster. null when not in a renderable group (< 2 members).
 export let groupPair: GP | null = null;
 
+type GroupPairListener = () => void;
+const groupPairListeners: GroupPairListener[] = [];
+
+// onGroupPairChange registers a callback fired whenever the roster changes.
+export function onGroupPairChange(fn: GroupPairListener): void {
+  groupPairListeners.push(fn);
+}
+
 export function setGroupPair(gp: GP | null): void {
   groupPair = gp;
+  for (const fn of groupPairListeners) fn();
 }
 
 const jsonForm: JsonForm = {

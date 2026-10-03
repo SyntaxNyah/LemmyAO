@@ -13,6 +13,7 @@ import { isHideDesksEnabled } from "../dom/switchHideDesks";
 import { isPanTiltEnabled, switchPanTilt } from "../dom/switchPanTilt";
 import { initChatOffset } from "../dom/switchChatOffset";
 import { initPairOffsets } from "../dom/pairOffset";
+import { initPairOrder } from "../dom/pairOrder";
 import {
   isMusicMuted,
   isSfxMuted,
@@ -131,6 +132,9 @@ export function loadResources() {
 
   // Enable type/scroll adjustment for the pairing offset fields
   initPairOffsets();
+
+  // Pair-order controls (group roster reorder) — render + subscribe to GP changes.
+  initPairOrder();
 
   // Restore font setting
   const storedFont = localStorage.getItem("selectedFont") || "sans-serif";
