@@ -61,18 +61,22 @@ list). There is no size limit.
 - **`membersFromAdditionalChars`** maps `charid`→`char_id` and defaults
   `offset.x/y` to `0`, producing the non-optional `GPMember.offset` shape.
 
-## Pair order (wire-aware)
+## Pair order
 
-Pair order is wire-aware, mirroring AsyncAO:
+LemmyAO reorders the **group** roster via the server's `/pairorder` command:
 
-- **Classic pair (not in a group)** — "To front" / "To behind" set a local
-  `pairOrder` (0/1) sent as the MS `paired_order` field. aolib packs it as the
-  `^0`/`^1` suffix on FantaCode and keeps it as a separate `paired_order` field
-  on JSON, so the SAME toggle works on both wires with no manual detection.
-- **Group (JSON)** — the same buttons send `/pairorder <uid> front|back`, and
-  the group list (`#group_order_list`) reorders any member via
-  `/pairorder <uid> up|down`.
+- **"To front" / "To behind"** buttons send `/pairorder <uid> front|back` with
+  `client.playerID`, moving *you* within the roster.
+- **Group list** (`#group_order_list`, rendered by `src/dom/pairOrder.ts`) shows
+  members front→back with per-member `▲`/`▼` buttons sending
+  `/pairorder <uid> up|down`, so any member can be moved to any position.
 
-`src/dom/pairOrder.ts` owns the state (`getPairOrder`); `onICEnter.ts` sends
-`paired_order` on every IC message. The controls live in `public/client.html`,
-gated behind `cccc_ic_support`, with tooltips explaining the wire nuance.
+`initPairOrder()` subscribes to roster changes via `onGroupPairChange`; the
+controls live in `public/client.html` behind `cccc_ic_support` with tooltips.
+
+**Classic (non-group) pair order** — the aolib `paired_order` field (FantaCode
+`^0`/`^1` suffix) — is pending: it requires aolib-ts **2.6.1**, which has
+`paired_order` in `MSToServerInit` but is not yet on npm (latest is 2.6.0).
+aolib-go v2.6.1 (Nyathena) already has it; once aolib-ts 2.6.1 is published,
+`onICEnter.ts` should send `paired_order` and the buttons should branch on
+in-group (classic → `paired_order`, group → `/pairorder`), mirroring AsyncAO.

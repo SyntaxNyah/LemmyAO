@@ -2,57 +2,31 @@ import { client } from "../client";
 import { groupPair, onGroupPairChange } from "../groupPair";
 
 /**
- * Pair order — wire-aware, mirroring AsyncAO.
+ * Pair order — reorders the server-owned group roster (GP / additional_chars)
+ * via /pairorder. "To front"/"To behind" move YOU; the group list reorders any
+ * member to any position.
  *
- * - Classic pair (not in a group): the front/back choice rides the MS
- *   `paired_order` field, which aolib packs as the `^0`/`^1` suffix on
- *   FantaCode and keeps as a separate `paired_order` field on JSON. So the
- *   SAME toggle works on both wires with no manual wire detection.
- * - Group (JSON): the roster is server-owned, so the same buttons send
- *   `/pairorder` and the list below reorders any member to any position.
+ * The classic 2-person pair order (the aolib `paired_order` field, packed as
+ * the FantaCode `^0`/`^1` suffix) is NOT wired here yet: it needs aolib-ts
+ * 2.6.1, which has `paired_order` in `MSToServerInit` but is not yet published
+ * (npm latest is 2.6.0). Once 2.6.1 is published and bumped, `onICEnter.ts`
+ * should send `paired_order` and the two buttons should branch on in-group
+ * (classic → paired_order, group → /pairorder) — mirroring AsyncAO.
  */
-
-let pairOrder = 0; // 0 = speaker in front, 1 = speaker behind
-
-/** The classic pair z-order, sent as `paired_order` on the next IC message. */
-export function getPairOrder(): number {
-  return pairOrder;
-}
-
-function inGroup(): boolean {
-  return !!groupPair && groupPair.members.length >= 2;
-}
 
 function sendPairOrder(uid: number, op: string): void {
   const name = (document.getElementById("OOC_name") as HTMLInputElement).value;
   client.server.send.CT({ name, message: `/pairorder ${uid} ${op}` });
 }
 
-function updatePairOrderButtons(): void {
-  const front = document.getElementById("pair_order_front");
-  const back = document.getElementById("pair_order_back");
-  if (front) front.classList.toggle("dark", !inGroup() && pairOrder === 0);
-  if (back) back.classList.toggle("dark", !inGroup() && pairOrder === 1);
-}
-
-/** "To front": classic pair order, or move yourself to the front of the group. */
+/** Move yourself (the speaker) to the front of the group. */
 export function pairOrderFront(): void {
-  if (inGroup()) {
-    sendPairOrder(client.playerID, "front");
-  } else {
-    pairOrder = 0;
-    updatePairOrderButtons();
-  }
+  sendPairOrder(client.playerID, "front");
 }
 
-/** "To behind": classic pair order, or move yourself to the back of the group. */
+/** Move yourself (the speaker) to the back of the group. */
 export function pairOrderBack(): void {
-  if (inGroup()) {
-    sendPairOrder(client.playerID, "back");
-  } else {
-    pairOrder = 1;
-    updatePairOrderButtons();
-  }
+  sendPairOrder(client.playerID, "back");
 }
 
 /** Per-member reorder buttons: data-uid + data-op ("up"/"down"/"front"/"back"). */
@@ -121,7 +95,5 @@ export function renderGroupOrder(): void {
 /** Wire up the reorder controls and render once (re-renders on GP changes). */
 export function initPairOrder(): void {
   onGroupPairChange(renderGroupOrder);
-  onGroupPairChange(updatePairOrderButtons);
   renderGroupOrder();
-  updatePairOrderButtons();
 }

@@ -1,7 +1,6 @@
 import { client, selectedShout } from "../client";
 import * as aolib from "aolib-ts";
 import { enumByNumber } from "../utils/aoEnum";
-import { getPairOrder } from "./pairOrder";
 
 const input = (id: string) =>
   document.getElementById(id) as HTMLInputElement;
@@ -58,7 +57,6 @@ export function onICEnter(event: KeyboardEvent) {
     text_color,
     showname: input("ic_chat_name").value,
     paired_charid: Number(input("pair_select").value) || -1,
-    paired_order: getPairOrder(),
     offset: {
       x: Number(input("pair_offset").value) || 0,
       y: Number(input("pair_y_offset").value) || 0,
