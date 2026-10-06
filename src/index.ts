@@ -15,7 +15,10 @@ interface AOServer {
 }
 
 // const MASTERSERVER_IP = 'master.aceattorneyonline.com:27014';
-const serverlist_domain = "servers.aceattorneyonline.com";
+const serverlist_domains = [
+  "servers.aceattorneyonline.com",
+  "servers.umineko.online",
+];
 const protocol = window.location.protocol;
 
 const serverlist_cache_key = "masterlist";
@@ -46,19 +49,15 @@ function main() {
 
 main();
 
-// Fetches the serverlist from the masterserver
-// Returns a properly typed list of servers
-async function getServerlist(): Promise<AOServer[]> {
-  const url = `${protocol}//${serverlist_domain}/servers`;
+// Fetches and parses the serverlist from a single masterserver endpoint.
+async function fetchServerlistFrom(domain: string): Promise<AOServer[]> {
+  const url = `${protocol}//${domain}/servers`;
   const response = await fetch(url);
 
   if (!response.ok) {
-    console.error(
+    throw new Error(
       `Bad status code from masterserver. status: ${response.status}, body: ${response.body}`,
     );
-    document.getElementById("ms_error").style.display = "block";
-    // If we get a bad status code, try to use the cached serverlist
-    return getCachedServerlist();
   }
 
   const data = await response.json();
@@ -100,6 +99,48 @@ async function getServerlist(): Promise<AOServer[]> {
 
     serverlist.push(newServer);
   }
+
+  return serverlist;
+}
+
+// Merges lists from several masterservers, dropping duplicates (keyed by
+// ip + websocket port) and sorting by player count (highest first).
+function mergeAndSortServerlists(lists: AOServer[][]): AOServer[] {
+  const seen = new Set<string>();
+  const merged: AOServer[] = [];
+  for (const list of lists) {
+    for (const server of list) {
+      const key = `${server.ip}:${server.ws_port ?? server.wss_port ?? ""}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      merged.push(server);
+    }
+  }
+  merged.sort((a, b) => b.players - a.players);
+  return merged;
+}
+
+// Fetches the serverlist from every configured masterserver, merging the
+// results. Falls back to the cached list when every endpoint fails.
+async function getServerlist(): Promise<AOServer[]> {
+  const lists: AOServer[][] = [];
+  for (const domain of serverlist_domains) {
+    try {
+      lists.push(await fetchServerlistFrom(domain));
+    } catch (err) {
+      console.error(`Failed to fetch serverlist from ${domain}:`, err);
+    }
+  }
+
+  if (lists.length === 0) {
+    // Every masterserver is unreachable: fall back to the cached list.
+    document.getElementById("ms_error").style.display = "block";
+    return getCachedServerlist();
+  }
+
+  const serverlist = mergeAndSortServerlists(lists);
 
   // Always cache the result when we get it
   localStorage.setItem(serverlist_cache_key, JSON.stringify(serverlist));
@@ -192,7 +233,7 @@ function processServerlist(serverlist: AOServer[]) {
 }
 
 async function getMasterVersion(): Promise<string> {
-  const url = `${protocol}//${serverlist_domain}/version`;
+  const url = `${protocol}//${serverlist_domains[0]}/version`;
   const response = await fetch(url);
   if (!response.ok) {
     console.error(
