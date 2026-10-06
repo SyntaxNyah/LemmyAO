@@ -15,9 +15,9 @@ interface AOServer {
 }
 
 // const MASTERSERVER_IP = 'master.aceattorneyonline.com:27014';
-const serverlist_domains = [
-  "servers.aceattorneyonline.com",
-  "servers.umineko.online",
+const serverlist_endpoints = [
+  "servers.aceattorneyonline.com/servers",
+  "servers.umineko.online/servers/",
 ];
 const protocol = window.location.protocol;
 
@@ -50,8 +50,8 @@ function main() {
 main();
 
 // Fetches and parses the serverlist from a single masterserver endpoint.
-async function fetchServerlistFrom(domain: string): Promise<AOServer[]> {
-  const url = `${protocol}//${domain}/servers`;
+async function fetchServerlistFrom(endpoint: string): Promise<AOServer[]> {
+  const url = `${protocol}//${endpoint}`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -126,11 +126,11 @@ function mergeAndSortServerlists(lists: AOServer[][]): AOServer[] {
 // results. Falls back to the cached list when every endpoint fails.
 async function getServerlist(): Promise<AOServer[]> {
   const lists: AOServer[][] = [];
-  for (const domain of serverlist_domains) {
+  for (const endpoint of serverlist_endpoints) {
     try {
-      lists.push(await fetchServerlistFrom(domain));
+      lists.push(await fetchServerlistFrom(endpoint));
     } catch (err) {
-      console.error(`Failed to fetch serverlist from ${domain}:`, err);
+      console.error(`Failed to fetch serverlist from ${endpoint}:`, err);
     }
   }
 
@@ -233,7 +233,7 @@ function processServerlist(serverlist: AOServer[]) {
 }
 
 async function getMasterVersion(): Promise<string> {
-  const url = `${protocol}//${serverlist_domains[0]}/version`;
+  const url = `${protocol}//servers.aceattorneyonline.com/version`;
   const response = await fetch(url);
   if (!response.ok) {
     console.error(
