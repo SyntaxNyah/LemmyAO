@@ -17,7 +17,7 @@ interface AOServer {
 // const MASTERSERVER_IP = 'master.aceattorneyonline.com:27014';
 const serverlist_endpoints = [
   "servers.aceattorneyonline.com/servers",
-  "servers.umineko.online/servers/",
+  "servers.umineko.online/servers",
 ];
 const protocol = window.location.protocol;
 
