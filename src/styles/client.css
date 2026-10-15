@@ -635,7 +635,13 @@
 }
 
 .emote_button[data-preanim] {
-  box-shadow: 0 0 0 2px #000 inset, 0 0 6px 2px #ffcf4d;
+  box-shadow: 0 0 0 2px #000 inset,
+    0 0 var(--preanim-glow-blur, 6px) var(--preanim-glow-spread, 2px)
+      var(--preanim-glow-color, #ffcf4d);
+}
+
+body.no-preanim-glow .emote_button[data-preanim] {
+  box-shadow: 0 0 0 2px #000 inset;
 }
 
 #sprite_preview {

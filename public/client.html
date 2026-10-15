@@ -1155,6 +1155,43 @@
         />
         <br />
         <br />
+        <p>Preanim glow</p>
+        <label>
+          <input
+            type="checkbox"
+            id="client_preanimglow"
+            name="client_preanimglow"
+            data-action="switchPreanimGlow"
+            data-event="change"
+          />
+          Show glow on emotes with a preanimation
+        </label>
+        <br />
+        <label for="client_preanimglow_color">Glow color:</label>
+        <input
+          type="color"
+          id="client_preanimglow_color"
+          name="client_preanimglow_color"
+          value="#ffcf4d"
+          data-action="changePreanimGlowColor"
+          data-event="input"
+        />
+        <br />
+        <label for="client_preanimglow_intensity">Glow intensity:</label>
+        <input
+          type="range"
+          id="client_preanimglow_intensity"
+          name="client_preanimglow_intensity"
+          class="long"
+          min="0"
+          max="100"
+          step="1"
+          value="50"
+          data-action="changePreanimGlowIntensity"
+          data-event="input"
+        />
+        <br />
+        <br />
         <label for="client_callwords">Callwords:</label>
         <br />
         <textarea

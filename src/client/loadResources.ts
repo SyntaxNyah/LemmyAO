@@ -14,6 +14,7 @@ import { isPanTiltEnabled, switchPanTilt } from "../dom/switchPanTilt";
 import { initChatOffset } from "../dom/switchChatOffset";
 import { initPairOffsets } from "../dom/pairOffset";
 import { initPairOrder } from "../dom/pairOrder";
+import { restorePreanimGlow } from "../dom/switchPreanimGlow";
 import {
   isMusicMuted,
   isSfxMuted,
@@ -126,6 +127,9 @@ export function loadResources() {
   if (hideDesksCheckbox) {
     hideDesksCheckbox.checked = isHideDesksEnabled();
   }
+
+  // Restore preanim glow settings (defaults: on, gold, 50%)
+  restorePreanimGlow();
 
   // Restore chatbox offset (defaults to 0%) and enable mouse-wheel adjustment
   initChatOffset();

@@ -70,6 +70,11 @@ import { switchAspectRatio } from "./switchAspectRatio";
 import { switchChatOffset } from "./switchChatOffset";
 import { switchHideDesks } from "./switchHideDesks";
 import { switchPanTilt } from "./switchPanTilt";
+import {
+  changePreanimGlowColor,
+  changePreanimGlowIntensity,
+  switchPreanimGlow,
+} from "./switchPreanimGlow";
 import { openThemeMaker } from "./themeMaker";
 import { toggleEffect } from "./toggleEffect";
 import { toggleFavourite } from "./toggleFavourite";
@@ -132,6 +137,9 @@ const actions: Record<string, (e: Event) => void> = {
   switchChatOffset: () => switchChatOffset(),
   switchHideDesks: () => switchHideDesks(),
   switchPanTilt: () => switchPanTilt(),
+  switchPreanimGlow: () => switchPreanimGlow(),
+  changePreanimGlowColor: () => changePreanimGlowColor(),
+  changePreanimGlowIntensity: () => changePreanimGlowIntensity(),
   toggleMuteBlips: () => toggleMuteBlips(),
   toggleMuteMusic: () => toggleMuteMusic(),
   toggleMuteSfx: () => toggleMuteSfx(),
