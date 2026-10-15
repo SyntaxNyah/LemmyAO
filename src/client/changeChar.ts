@@ -112,11 +112,10 @@ function addEmoteButton(
   emote_item.className = "emote_button";
   emote_item.src = imgurl;
   emote_item.alt = desc;
-  // Flag emotes that ship a preanimation so the player can spot them at a
-  // glance (gold glow) and confirm by hovering (tooltip). A data attribute
-  // survives pickEmotion's className swaps on select/deselect.
+  // Flag emotes that ship a preanimation with a gold glow (hidden while
+  // hovering so the sprite preview stays clean). A data attribute survives
+  // pickEmotion's className swaps on select/deselect.
   if (preanim && preanim !== "-" && preanim !== "") {
-    emote_item.title = `Preanim supported: ${preanim}`;
     emote_item.dataset.preanim = "true";
   }
   emote_item.onclick = () => {

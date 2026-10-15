@@ -640,6 +640,12 @@
       var(--preanim-glow-color, #ffcf4d);
 }
 
+/* The glow is an at-a-glance marker; hide it while hovering so the sprite
+   preview popup is unobstructed. */
+.emote_button[data-preanim]:hover {
+  box-shadow: 0 0 0 2px #000 inset;
+}
+
 body.no-preanim-glow .emote_button[data-preanim] {
   box-shadow: 0 0 0 2px #000 inset;
 }
