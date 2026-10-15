@@ -1,5 +1,4 @@
 import { client } from "../client";
-import { isPreanimAlwaysEnabled } from "./switchPreanimAlways";
 /**
  * Highlights and selects an emotion for in-character chat.
  * @param {string} emo the new emotion to be selected
@@ -19,8 +18,12 @@ export function pickEmotion(emo: number) {
   (<HTMLInputElement>document.getElementById("sendsfx")).checked =
     client.emote.sfx.length > 1;
 
+  // A preanim sprite exists when char.ini names one (anything but "-"/"").
+  // Turning it on here means the selected emote's preanimation plays for its
+  // first message; resetICParams clears it afterwards so it doesn't replay.
+  const preanim = client.emote.preanim;
   (<HTMLInputElement>document.getElementById("sendpreanim")).checked =
-    isPreanimAlwaysEnabled() || client.emote.zoom == 1;
+    !!preanim && preanim !== "-" && preanim !== "";
 
   (<HTMLInputElement>document.getElementById("client_inputbox")).focus();
 }

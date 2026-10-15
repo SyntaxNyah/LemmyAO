@@ -15,10 +15,6 @@ import { initChatOffset } from "../dom/switchChatOffset";
 import { initPairOffsets } from "../dom/pairOffset";
 import { initPairOrder } from "../dom/pairOrder";
 import {
-  isPreanimAlwaysEnabled,
-  switchPreanimAlways,
-} from "../dom/switchPreanimAlways";
-import {
   isMusicMuted,
   isSfxMuted,
   isBlipMuted,
@@ -129,15 +125,6 @@ export function loadResources() {
   const hideDesksCheckbox = <HTMLInputElement>document.getElementById("client_hidedesks");
   if (hideDesksCheckbox) {
     hideDesksCheckbox.checked = isHideDesksEnabled();
-  }
-
-  // Restore preanimation-always-on setting (defaults to off)
-  const preanimAlwaysCheckbox = <HTMLInputElement>(
-    document.getElementById("sendpreanim_always")
-  );
-  if (preanimAlwaysCheckbox) {
-    preanimAlwaysCheckbox.checked = isPreanimAlwaysEnabled();
-    switchPreanimAlways();
   }
 
   // Restore chatbox offset (defaults to 0%) and enable mouse-wheel adjustment

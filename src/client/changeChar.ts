@@ -74,7 +74,14 @@ export async function changeChar(char_id: number) {
           button: url,
         };
 
-        addEmoteButton(i, url, emotes[i].desc, me.name.toLowerCase(), emotes[i].emote);
+        addEmoteButton(
+          i,
+          url,
+          emotes[i].desc,
+          me.name.toLowerCase(),
+          emotes[i].emote,
+          emotes[i].preanim,
+        );
 
         if (i === 1) pickEmotion(1);
       } catch (e) {
@@ -97,6 +104,7 @@ function addEmoteButton(
   desc: string,
   charactername: string,
   emotename: string,
+  preanim: string,
 ) {
   const emotesList = document.getElementById("client_emo");
   const emote_item = new Image();
@@ -104,6 +112,13 @@ function addEmoteButton(
   emote_item.className = "emote_button";
   emote_item.src = imgurl;
   emote_item.alt = desc;
+  // Flag emotes that ship a preanimation so the player can spot them at a
+  // glance (gold glow) and confirm by hovering (tooltip). A data attribute
+  // survives pickEmotion's className swaps on select/deselect.
+  if (preanim && preanim !== "-" && preanim !== "") {
+    emote_item.title = `Preanim supported: ${preanim}`;
+    emote_item.dataset.preanim = "true";
+  }
   emote_item.onclick = () => {
     pickEmotion(i);
   };

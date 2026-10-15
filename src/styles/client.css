@@ -634,6 +634,10 @@
   opacity: 0.5;
 }
 
+.emote_button[data-preanim] {
+  box-shadow: 0 0 0 2px #000 inset, 0 0 6px 2px #ffcf4d;
+}
+
 #sprite_preview {
   position: fixed;
   pointer-events: none;

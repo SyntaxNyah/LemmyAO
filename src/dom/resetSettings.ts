@@ -8,7 +8,6 @@ import { switchPanTilt } from "./switchPanTilt";
 import { switchAspectRatio } from "./switchAspectRatio";
 import { switchChatOffset } from "./switchChatOffset";
 import { switchHideDesks } from "./switchHideDesks";
-import { switchPreanimAlways } from "./switchPreanimAlways";
 import { resetThemeMaker } from "./themeMaker";
 import { showname_click } from "./showNameClick";
 import { applyMusicMute, applySfxMute, applyBlipMute } from "./audioMute";
@@ -28,7 +27,6 @@ const SETTINGS_KEYS = [
   "themeMakerConfig",
   "hideDesks",
   "panTilt",
-  "preanimAlways",
   "chatOffset",
   "musicMuted",
   "sfxMuted",
@@ -151,14 +149,5 @@ export function resetSettings() {
   if (hidedesks) {
     hidedesks.checked = false;
     switchHideDesks();
-  }
-
-  // --- Preanimation always-on ---
-  const preanimAlways = <HTMLInputElement>(
-    document.getElementById("sendpreanim_always")
-  );
-  if (preanimAlways) {
-    preanimAlways.checked = false;
-    switchPreanimAlways();
   }
 }
