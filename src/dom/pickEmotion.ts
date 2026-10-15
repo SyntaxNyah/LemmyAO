@@ -1,4 +1,5 @@
 import { client } from "../client";
+import { isPreanimAlwaysEnabled } from "./switchPreanimAlways";
 /**
  * Highlights and selects an emotion for in-character chat.
  * @param {string} emo the new emotion to be selected
@@ -19,7 +20,7 @@ export function pickEmotion(emo: number) {
     client.emote.sfx.length > 1;
 
   (<HTMLInputElement>document.getElementById("sendpreanim")).checked =
-    client.emote.zoom == 1;
+    isPreanimAlwaysEnabled() || client.emote.zoom == 1;
 
   (<HTMLInputElement>document.getElementById("client_inputbox")).focus();
 }

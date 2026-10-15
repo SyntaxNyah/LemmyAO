@@ -1,4 +1,5 @@
 import { selectedShout, setSelectedShout } from "../client";
+import { isPreanimAlwaysEnabled } from "../dom/switchPreanimAlways";
 
 /**
  * Resets the IC parameters for the player to enter a new chat message.
@@ -10,7 +11,8 @@ export function resetICParams() {
   document.getElementById("button_flash")!.className = "client_button";
   document.getElementById("button_shake")!.className = "client_button";
 
-  (<HTMLInputElement>document.getElementById("sendpreanim")).checked = false;
+  (<HTMLInputElement>document.getElementById("sendpreanim")).checked =
+    isPreanimAlwaysEnabled();
   (<HTMLInputElement>document.getElementById("sendsfx")).checked = false;
 
   if (selectedShout) {
