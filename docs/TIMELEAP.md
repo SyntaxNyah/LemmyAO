@@ -3,6 +3,8 @@
 > Client: **LemmyAO** (TypeScript / Bun / aolib-ts 2.6.1)
 > Server: **Nyathena** · Sibling client: **AsyncAO**
 > Status: **groundwork landed** on branch `timeleap`. POC: save/restore.
+> §9 specifies **D-Mail (`DM`)**, a sibling extension that is **designed but not
+> implemented**.
 
 **Companion documents**
 
@@ -239,6 +241,88 @@ stays clean.
 * Add TL to the README's protocol/extensions section with the Nyathena link.
 * Consider a `src/tl/` folder if the three TL modules grow (currently flat on
   purpose, to match `groupPair.ts`).
-* Confirm `stateRestore`'s dynamic `import()` is still needed once the cycle with
-  `handleICSpeaking` is broken; a static import is easier to trace.
+---
+
+## 9. D-Mail (`DM`) — client behaviour
+
+> **Status: specification only.** Nothing in this repo handles `DM` today. The
+> normative packet, gating and command design live in the Nyathena doc (§13); this
+> is the LemmyAO plan.
+
+### 9.1 What the client has to do
+
+A `DM` frame is a **message plus a worldline shift**:
+
+1. popup with sender, subject and body;
+2. roll the meter from `divergence_from` to `divergence_to`;
+3. if `reading_steiner`, show the prior worldline and a "you remember" badge;
+4. otherwise a single déjà-vu line;
+5. never restore state itself — a D-Mail that changes the past is followed by a
+   separate `TL` frame, which the existing `stateRestore.ts` already handles.
+
+The server guarantees `DM` before `TL`. `applyBackgroundChange` and
+`handleChatMessage` do not touch the popup, so ordering is already safe — but any
+future "clear overlays on restore" work must exempt it.
+
+### 9.2 Files (proposed)
+
+| File | Role |
+|---|---|
+| `src/dm.ts` | `DMPacket` type, `registerPacket("DM")`, `applyDMail` |
+| `src/dmUi.ts` | the popup DOM + dismiss handling |
+| `src/divergenceMeter.ts` | **reused as-is** — `animateDivergence(target, ms)` already rolls left-to-right at ~1400 ms |
+| `src/registerProtocol.ts` | `registerDMailCodec()` + `server.onCustom("DM", applyDMail)` |
+| `src/client/featureFlags.ts` | `if (features.includes("dmail")) sendRawFL("dmail")` |
+
+`animateDivergence` animates *to* one target; a D-Mail needs *from → to*. Two
+options, in order of preference:
+
+* **extend it** with an optional `from` argument (smallest change, keeps one
+  renderer): `animateDivergence(to, ms, from?)`;
+* or call it twice with a short delay (roll to `from` instantly, then to `to`),
+  which is a hack and will look like it.
+
+The popup should mount above `#client_gamewindow` and use the same stacking
+context trick the group renderer uses (`isolation: isolate`), so a `TL` restore
+cannot paint over it.
+
+### 9.3 Reading Steiner
+
+`reading_steiner` is a hint, not a permission (Nyathena §13.7). Store the
+"holder" preference client-side — the existing settings surface is the place —
+and render:
+
+* holder + `reading_steiner: true` → badge `1.048596 → 1.130205`, prior number
+  struck through;
+* otherwise → the roll and one flavour line, no prior number.
+
+### 9.4 Tests to add (bun)
+
+1. `registerPacket("DM")` does not throw; `decodeCustom` returns an object.
+2. `applyDMail` calls `animateDivergence` with `divergence_to` and the popup
+   fields; mock the meter.
+3. `reading_steiner: false` omits the prior-number node.
+4. A `TL` frame arriving after `DM` leaves the popup mounted.
+
+These are the same shape as the TL tests in P0 of §8, and they should land
+together so DM never ships untested the way TL nearly did.
+
+### 9.5 Next steps for DM (after TL is signed off)
+
+**P0** — `src/dm.ts` + registration + advert line; no UI. One test for the codec.
+
+**P1** — `src/dmUi.ts` popup; extend `animateDivergence` with `from`; RS
+preference + badge; the four tests above.
+
+**P2** — queueing if two D-Mails land together (today the last wins); an inbox
+view (deferred in the Nyathena doc, so do not build it first); and the
+operator-supplied tube sheet, which is the same asset hook TL's meter needs
+(`MeterOpts.sheetUrl` → `ASS` origin).
+
+### 9.6 Licensing reminder
+
+The meter's fallback exists so this repo never bundles Nitroplus/MAGES pixels.
+That applies doubly to D-Mail: a popup is a tempting place to drop a screenshot
+of the PhoneWave. Don't. Code-drawn art or operator-supplied assets only.
+
 
