@@ -46,19 +46,29 @@ export function applyFeatureFlags(packet: aolib.packets.FL) {
     document.getElementById("y_offset")!.style.display = "";
   }
 
-  // Advertise our own capabilities back (client->server FL) so FantaCode
-  // servers learn we support "grouppair". aolib models FL as server->client
-  // only, so the typed C2S `send.FL` throws the role guard and `sendCustom`
-  // throws for a spec header — send the raw wire directly instead. Best-effort
-  // and fully guarded: it runs last, and a failure must never hide the UI.
+  // Advertise our own capabilities back (client->server FL) for the features
+  // this server actually implements. Raw wire on purpose: aolib-ts models FL as
+  // server->client only, so the typed `send.FL` throws the role guard and
+  // `sendCustom` throws for a spec header. Nyathena accepts the positional form
+  // on a JSON session because it auto-detects the wire format per frame — the
+  // previous `!jsonMode` guard suppressed the advert in exactly that case, so a
+  // JSON-mode peer never advertised at all. Gating on the ADVERTISED FEATURE
+  // (rather than on wire mode) also keeps us from sending FantaCode frames to
+  // servers that implement neither extension.
+  if (features.includes("grouppair")) {
+    sendRawFL("grouppair");
+  }
+}
+
+// sendRawFL advertises one capability back to the server as a positional FL
+// frame. Best-effort and fully guarded: a failure must never hide the UI.
+function sendRawFL(feature: string): void {
   try {
     const socket = client.socket;
-    const jsonMode =
-      (client.server as unknown as { jsonMode?: boolean }).jsonMode === true;
-    if (socket && socket.readyState === WebSocket.OPEN && !jsonMode) {
-      socket.send("FL#grouppair#%");
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(`FL#${feature}#%`);
     }
   } catch {
-    // The advert is optional; JSON servers gate GP on JSON mode.
+    // The advert is optional.
   }
 }
