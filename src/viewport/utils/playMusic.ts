@@ -5,7 +5,10 @@ import { MusicChannel } from "aolib-ts";
 import type * as aolib from "aolib-ts";
 
 /** MC: server announces a music change; switch the channel and log it. */
-export function playMusicChange(packet: aolib.packets.MCToClient) {
+export function playMusicChange(
+  packet: aolib.packets.MCToClient,
+  silent = false,
+) {
   const music = client.viewport.music[packet.channel];
   music.pause();
   // An empty track name is a stop, not a track: building a URL from it would
@@ -24,10 +27,14 @@ export function playMusicChange(packet: aolib.packets.MCToClient) {
 
   const musicname: string | undefined = client.chars[packet.char_id]?.name;
   const looptext = packet.looping ? "(looping)" : "";
-  if (musicname) {
-    appendICLog(`changed music to ${packet.name} ${looptext}`, packet.showname, musicname);
-  } else {
-    appendICLog(`The music was changed to ${packet.name} ${looptext}`, packet.showname);
+  // `silent` is for replays (TimeLeap restore): the snapshot carries its own
+  // transcript, so adding "changed music to ..." would forge a log line.
+  if (!silent) {
+    if (musicname) {
+      appendICLog(`changed music to ${packet.name} ${looptext}`, packet.showname, musicname);
+    } else {
+      appendICLog(`The music was changed to ${packet.name} ${looptext}`, packet.showname);
+    }
   }
 
   document.getElementById("client_trackstatustext")!.innerText = packet.name;

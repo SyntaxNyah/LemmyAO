@@ -112,6 +112,10 @@ import {
 } from "./voice/voice";
 import { registerVoiceCodecs } from "./voice/vsPackets";
 import { applyGroupPair, registerGroupPairCodec } from "./groupPair";
+import {
+  applyTimeLeap,
+  registerTimeLeapCodec,
+} from "./timeLeap";
 
 // ---------------------------------------------------------------------
 // Client -> server handlers (replay-mode synthesis only).
@@ -137,6 +141,7 @@ export function registerProtocol(
 ): void {
   registerVoiceCodecs();
   registerGroupPairCodec();
+  registerTimeLeapCodec();
 
   // ---- server -> client ----
   server.on.ARUP(applyAreaStatus);
@@ -185,6 +190,7 @@ export function registerProtocol(
   server.onCustom("VS_PEERS", applyVoicePeerList);
   server.onCustom("VS_SPEAK", applyVoicePeerSpeak);
   server.onCustom("GP", applyGroupPair);
+  server.onCustom("TL", applyTimeLeap);
   server.on.ZZ(showModcallNotice);
 
   // ---- client -> server (replay-mode synthesis) ----

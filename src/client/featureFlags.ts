@@ -58,6 +58,9 @@ export function applyFeatureFlags(packet: aolib.packets.FL) {
   if (features.includes("grouppair")) {
     sendRawFL("grouppair");
   }
+  if (features.includes("timeleap")) {
+    sendRawFL("timeleap");
+  }
 }
 
 // sendRawFL advertises one capability back to the server as a positional FL
