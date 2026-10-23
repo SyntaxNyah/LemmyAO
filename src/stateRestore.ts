@@ -6,10 +6,10 @@ import { handleChatMessage } from "./viewport/utils/handleICSpeaking";
 import { renderGroupPeers } from "./viewport/groupRender";
 import { animateDivergence } from "./divergenceMeter";
 import type { GPMember } from "./groupPair";
-import type { TLLogLine, TLPacket } from "./timeLeap";
+import type { TPLogLine, TPPacket } from "./teleport";
 
 /**
- * Replays a TimeLeap snapshot into the existing renderers. TL deliberately does
+ * Replays a Teleport snapshot into the existing renderers. TP deliberately does
  * not re-implement rendering: a restore that diverges from live rendering would
  * be a second renderer to keep in sync forever.
  *
@@ -42,7 +42,7 @@ function colorName(n: number): TextColorName {
 // toMS synthesises the MS packet the IC renderer expects from one snapshot line.
 // Fields the snapshot does not carry (offsets, effects, pairs) take inert
 // defaults so a replayed line cannot shake, flash or re-pair the stage.
-function toMS(line: TLLogLine): aolib.packets.MSToClient {
+function toMS(line: TPLogLine): aolib.packets.MSToClient {
   return {
     $header: "MS",
     desk_modifier: "shown",
@@ -79,7 +79,7 @@ function toMS(line: TLLogLine): aolib.packets.MSToClient {
   } as unknown as aolib.packets.MSToClient;
 }
 
-export async function restoreTimeLeap(packet: TLPacket): Promise<void> {
+export async function restoreTeleport(packet: TPPacket): Promise<void> {
   const { area, cast, log } = packet.state;
 
   // 1. Background + side first: the BN re-stage tears the old scene down, so

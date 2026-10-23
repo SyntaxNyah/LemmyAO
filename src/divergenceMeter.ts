@@ -1,4 +1,4 @@
-// Divergence meter: a small canvas widget for the TimeLeap overlay. The meter is
+// Divergence meter: a small canvas widget for the Teleport overlay. The meter is
 // presentation only — nothing reads its value back.
 //
 // The visual style is Steins;Gate's nixie tube, but no VN art ships here: the
@@ -29,7 +29,7 @@ export function initDivergenceMeter(
   opts: MeterOpts = {},
 ): void {
   canvas = document.createElement("canvas");
-  canvas.className = "tl-meter";
+  canvas.className = "tp-meter";
   canvas.style.cssText = `height:${opts.height ?? 48}px;image-rendering:pixelated;display:block`;
   host.appendChild(canvas);
   ctx = canvas.getContext("2d");

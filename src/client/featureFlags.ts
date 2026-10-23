@@ -58,8 +58,8 @@ export function applyFeatureFlags(packet: aolib.packets.FL) {
   if (features.includes("grouppair")) {
     sendRawFL("grouppair");
   }
-  if (features.includes("timeleap")) {
-    sendRawFL("timeleap");
+  if (features.includes("teleport")) {
+    sendRawFL("teleport");
   }
 }
 

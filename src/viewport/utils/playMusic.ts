@@ -27,7 +27,7 @@ export function playMusicChange(
 
   const musicname: string | undefined = client.chars[packet.char_id]?.name;
   const looptext = packet.looping ? "(looping)" : "";
-  // `silent` is for replays (TimeLeap restore): the snapshot carries its own
+  // `silent` is for replays (Teleport restore): the snapshot carries its own
   // transcript, so adding "changed music to ..." would forge a log line.
   if (!silent) {
     if (musicname) {

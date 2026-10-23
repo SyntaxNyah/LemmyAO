@@ -1,8 +1,8 @@
-# TimeLeap (`TL`) — LemmyAO Client Notes
+# Teleport (`TP`) — LemmyAO Client Notes
 
 > Client: **LemmyAO** (TypeScript / Bun / aolib-ts 2.6.1)
 > Server: **Nyathena** · Sibling client: **AsyncAO**
-> Status: **groundwork landed** on branch `timeleap`. POC: save/restore.
+> Status: **groundwork landed** on branch `teleport`. POC: save/restore.
 > §9 specifies **D-Mail (`DM`)**, a sibling extension that is **designed but not
 > implemented**.
 
@@ -10,9 +10,9 @@
 
 | Repo | Document |
 |---|---|
-| LemmyAO (this repo) | `docs/TIMELEAP.md` |
-| Nyathena (server, protocol authority) | <https://github.com/SyntaxNyah/Nyathena/blob/timeleap/docs/TIMELEAP.md> |
-| AsyncAO (Go client) | <https://github.com/SyntaxNyah/AsyncAO/blob/timeleap/docs/TIMELEAP.md> |
+| LemmyAO (this repo) | `docs/TELEPORT.md` |
+| Nyathena (server, protocol authority) | <https://github.com/SyntaxNyah/Nyathena/blob/timeleap/docs/TELEPORT.md> |
+| AsyncAO (Go client) | <https://github.com/SyntaxNyah/AsyncAO/blob/timeleap/docs/TELEPORT.md> |
 | Background | `docs/GROUP_PAIRING.md` |
 
 The Nyathena document is normative (wire schema, field semantics, modes,
@@ -20,10 +20,10 @@ handshake). This file covers the browser implementation and what is still open.
 
 ---
 
-## 0. TL in one paragraph
+## 0. TP in one paragraph
 
-`TL` is a JSON-only custom packet the server sends on demand. It carries a full
-room snapshot; the client replaces its TL state wholesale and re-stages the room
+`TP` is a JSON-only custom packet the server sends on demand. It carries a full
+room snapshot; the client replaces its TP state wholesale and re-stages the room
 from it. It is **second-class**: it goes through aolib-ts's `registerPacket` /
 `sendCustom` / `onCustom` surface, is never added to `spec/`, and has no
 conformance vector. Nothing here required a binding version bump — the custom
@@ -33,12 +33,12 @@ registry predates the 2.6.1 pin in `package.json`.
 
 ## 1. Status
 
-Branch `timeleap` (base `c84fb279`):
+Branch `teleport` (base `c84fb279`):
 
 | Commit | What |
 |---|---|
 | `f5d55a1a` | `fix(fl): advertise grouppair in JSON mode too` |
-| `c78898e3` | `feat(tl): render TimeLeap snapshots` |
+| `c78898e3` | `feat(tp): render Teleport snapshots` |
 
 `tsc --noEmit` is clean. **`bun test` has not been run** — `bun` is not installed
 on the machine where this landed; see P0-1.
@@ -51,14 +51,14 @@ Deliberately flat, mirroring `src/groupPair.ts`:
 
 | File | Role |
 |---|---|
-| `src/timeLeap.ts` | packet types, `registerPacket("TL")`, state + listeners, `applyTimeLeap` |
+| `src/teleport.ts` | packet types, `registerPacket("TP")`, state + listeners, `applyTeleport` |
 | `src/stateRestore.ts` | replays a snapshot into the existing renderers |
 | `src/divergenceMeter.ts` | canvas meter + roll animation (no VN art bundled) |
-| `src/registerProtocol.ts` | `registerTimeLeapCodec()`, `server.onCustom("TL", applyTimeLeap)` |
-| `src/client/featureFlags.ts` | advertises `timeleap` when the server offers it |
+| `src/registerProtocol.ts` | `registerTeleportCodec()`, `server.onCustom("TP", applyTeleport)` |
+| `src/client/featureFlags.ts` | advertises `teleport` when the server offers it |
 | `src/viewport/utils/playMusic.ts` | `playMusicChange(packet, silent)` — new optional flag |
 
-> There is no `src/ui/` directory (the repo has a `src/ui.ts` file), so the TL
+> There is no `src/ui/` directory (the repo has a `src/ui.ts` file), so the TP
 > modules sit at the root next to `groupPair.ts` rather than inventing a folder.
 
 ---
@@ -68,20 +68,20 @@ Deliberately flat, mirroring `src/groupPair.ts`:
 ```
 WebSocket frame (JSON)
   -> client.server.receive
-     -> decodeCustom("TL")           registered by registerTimeLeapCodec()
-        -> server.onCustom("TL")     registerProtocol.ts
-           -> applyTimeLeap(packet)  timeLeap.ts
-              -> setTimeLeap(packet)          state + listeners
+     -> decodeCustom("TP")           registered by registerTeleportCodec()
+        -> server.onCustom("TP")     registerProtocol.ts
+           -> applyTeleport(packet)  teleport.ts
+              -> setTeleport(packet)          state + listeners
               -> import("./stateRestore")     lazy, avoids an import cycle
-                 -> restoreTimeLeap(packet)   stateRestore.ts
+                 -> restoreTeleport(packet)   stateRestore.ts
 ```
 
-`decodeCustom` runs for **every** inbound frame before spec dispatch, so TL must
-be registered or `onCustom` never fires. That is why `registerTimeLeapCodec()` is
+`decodeCustom` runs for **every** inbound frame before spec dispatch, so TP must
+be registered or `onCustom` never fires. That is why `registerTeleportCodec()` is
 called from `registerProtocol()` alongside `registerGroupPairCodec()`.
 
-`applyTimeLeap` ignores `op:"save"` (the private ack) and treats everything else
-as a replace: TL is idempotent exactly like GP.
+`applyTeleport` ignores `op:"save"` (the private ack) and treats everything else
+as a replace: TP is idempotent exactly like GP.
 
 ---
 
@@ -130,7 +130,7 @@ JSON session. The guard is now the **advertised feature**, not the wire mode:
 
 ```ts
 if (features.includes("grouppair")) sendRawFL("grouppair");
-if (features.includes("timeleap"))  sendRawFL("timeleap");
+if (features.includes("teleport"))  sendRawFL("teleport");
 ```
 
 Gating on the feature also stops us sending FantaCode frames to servers that
@@ -158,12 +158,12 @@ bun test                                          # full suite (needs bun instal
 bun run lint
 ```
 
-Manual: two tabs against a Nyathena build with TL. Tab A `/tl save radio`; Tab B
-speaks three lines; Tab A `/bg other`; Tab B `/tl wr-1`. Expect the background to
+Manual: two tabs against a Nyathena build with TP. Tab A `/tp save radio`; Tab B
+speaks three lines; Tab A `/bg other`; Tab B `/tp wr-1`. Expect the background to
 revert, the three lines to replay, and the meter to roll to `1.048596`.
 
 In DevTools → Network → WS, confirm the advert is the text frame
-`FL#timeleap#%` — not a JSON object. A JSON advert is silently dropped by the
+`FL#teleport#%` — not a JSON object. A JSON advert is silently dropped by the
 server's FL shim.
 
 ---
@@ -172,11 +172,11 @@ server's FL shim.
 
 | Limitation | Impact |
 |---|---|
-| `bun test` never run | the TL modules have no automated test yet |
-| Slots into GP's sprite container | a live GP roster and a TL cast compete for the same layers |
+| `bun test` never run | the TP modules have no automated test yet |
+| Slots into GP's sprite container | a live GP roster and a TP cast compete for the same layers |
 | Evidence/testimony ignored | snapshot carries them, nothing applies them |
 | Meter art is code-drawn | no authentic nixie tubes without an operator-supplied sheet |
-| No UI affordance | `/tl` must be typed in OOC |
+| No UI affordance | `/tp` must be typed in OOC |
 | `overlay` looks the same as `authoritative` locally | the mode describes server behaviour only |
 | Duplicate-text de-dupe | `handleChatMessage` skips a message whose text equals the current one, so two identical consecutive log lines replay as one |
 | Replay is unbounded | 256 lines replay at once if the server's buffer is full |
@@ -187,10 +187,10 @@ server's FL shim.
 
 ### P0 — correctness
 
-**P0-1 Add and run the TL tests.** `bun` was unavailable when this landed, so
-nothing under `src/tests/` covers TL. Minimum set:
-`registerPacket("TL")` does not throw; `decodeCustom` returns an object for a TL
-frame; `applyTimeLeap` ignores `op:"save"`; `restoreTimeLeap` calls
+**P0-1 Add and run the TP tests.** `bun` was unavailable when this landed, so
+nothing under `src/tests/` covers TP. Minimum set:
+`registerPacket("TP")` does not throw; `decodeCustom` returns an object for a TP
+frame; `applyTeleport` ignores `op:"save"`; `restoreTeleport` calls
 background → music → log in that order (mock the three helpers); the advert is
 sent only when the feature is advertised. Then wire `bun test` into CI.
 
@@ -201,13 +201,13 @@ bypass the de-dupe for replays (a flag on the synthetic message, or a dedicated
 `renderICLine` entry point) or accept it and document. Bypassing is correct: the
 snapshot *is* history, so it cannot be a duplicate.
 
-**P0-3 Resolve the GP container collision.** TL reuses `#client_group`. If a
+**P0-3 Resolve the GP container collision.** TP reuses `#client_group`. If a
 group roster is active while a snapshot is restored, the two fight for the same
-layers. Either render the TL cast into its own container (cleanest), or clear the
+layers. Either render the TP cast into its own container (cleanest), or clear the
 GP roster on restore and let the next `GP` frame rebuild it.
 
 **P0-4 Apply evidence + testimony** (`applyEvidenceList`, `applyTestimonyState`),
-or drop the fields from `TLArea` on both sides.
+or drop the fields from `TPArea` on both sides.
 
 ### P1 — the feature a player would recognise
 
@@ -218,7 +218,7 @@ is showing an old world is that the room looks wrong.
 
 **P1-2 Meter integration.** `divergenceMeter.ts` exists but nothing mounts it.
 Decide the host element (the viewport overlay is the natural place), size it from
-the layout, and hook it to `onTimeLeapChange` so it also resets when the snapshot
+the layout, and hook it to `onTeleportChange` so it also resets when the snapshot
 clears. Handle HiDPI (`devicePixelRatio`) — the canvas currently renders at CSS
 pixel size.
 
@@ -229,7 +229,7 @@ user has "reduce motion"/"instant" preferences. There are already
 
 **P1-4 Asset hook.** Wire `MeterOpts.sheetUrl` to the asset origin
 (`applyAssetOrigin`/`ASS`) so a server can serve meter art at
-`<origin>/timeleap/divergence.png`. **Do not bundle VN art**: the code licences
+`<origin>/teleport/divergence.png`. **Do not bundle VN art**: the code licences
 (New BSD for the HTML toy, MIT for TriggersTools) cover the code, not the
 Nitroplus/MAGES pixels. The fallback in `divergenceMeter.ts` exists so the repo
 stays clean.
@@ -238,8 +238,8 @@ stays clean.
 
 * `docs/GROUP_PAIRING.md`: note that the advert guard changed and why (a future
   reader will otherwise copy the old `!jsonMode` line).
-* Add TL to the README's protocol/extensions section with the Nyathena link.
-* Consider a `src/tl/` folder if the three TL modules grow (currently flat on
+* Add TP to the README's protocol/extensions section with the Nyathena link.
+* Consider a `src/tp/` folder if the three TP modules grow (currently flat on
   purpose, to match `groupPair.ts`).
 ---
 
@@ -258,9 +258,9 @@ A `DM` frame is a **message plus a worldline shift**:
 3. if `reading_steiner`, show the prior worldline and a "you remember" badge;
 4. otherwise a single déjà-vu line;
 5. never restore state itself — a D-Mail that changes the past is followed by a
-   separate `TL` frame, which the existing `stateRestore.ts` already handles.
+   separate `TP` frame, which the existing `stateRestore.ts` already handles.
 
-The server guarantees `DM` before `TL`. `applyBackgroundChange` and
+The server guarantees `DM` before `TP`. `applyBackgroundChange` and
 `handleChatMessage` do not touch the popup, so ordering is already safe — but any
 future "clear overlays on restore" work must exempt it.
 
@@ -283,7 +283,7 @@ options, in order of preference:
   which is a hack and will look like it.
 
 The popup should mount above `#client_gamewindow` and use the same stacking
-context trick the group renderer uses (`isolation: isolate`), so a `TL` restore
+context trick the group renderer uses (`isolation: isolate`), so a `TP` restore
 cannot paint over it.
 
 ### 9.3 Reading Steiner
@@ -302,12 +302,12 @@ and render:
 2. `applyDMail` calls `animateDivergence` with `divergence_to` and the popup
    fields; mock the meter.
 3. `reading_steiner: false` omits the prior-number node.
-4. A `TL` frame arriving after `DM` leaves the popup mounted.
+4. A `TP` frame arriving after `DM` leaves the popup mounted.
 
-These are the same shape as the TL tests in P0 of §8, and they should land
-together so DM never ships untested the way TL nearly did.
+These are the same shape as the TP tests in P0 of §8, and they should land
+together so DM never ships untested the way TP nearly did.
 
-### 9.5 Next steps for DM (after TL is signed off)
+### 9.5 Next steps for DM (after TP is signed off)
 
 **P0** — `src/dm.ts` + registration + advert line; no UI. One test for the codec.
 
@@ -316,7 +316,7 @@ preference + badge; the four tests above.
 
 **P2** — queueing if two D-Mails land together (today the last wins); an inbox
 view (deferred in the Nyathena doc, so do not build it first); and the
-operator-supplied tube sheet, which is the same asset hook TL's meter needs
+operator-supplied tube sheet, which is the same asset hook TP's meter needs
 (`MeterOpts.sheetUrl` → `ASS` origin).
 
 ### 9.6 Licensing reminder
