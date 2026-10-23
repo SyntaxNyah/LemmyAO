@@ -51,12 +51,12 @@ registry predates the 2.6.1 pin in `package.json`.
 
 ## 1. Status
 
-Branch `teleport` (base `c84fb279`):
+Branch `timeleap` (base `c84fb279`):
 
 | Commit | What |
 |---|---|
-| `f5d55a1a` | `fix(fl): advertise grouppair in JSON mode too` |
-| `c78898e3` | `feat(tp): render Teleport snapshots` |
+| `f5d55a1a` | advertise grouppair in JSON mode too |
+| `c78898e3` | render Teleport snapshots |
 
 `tsc --noEmit` is clean. **`bun test` has not been run** — `bun` is not installed
 on the machine where this landed; see P0-1.
