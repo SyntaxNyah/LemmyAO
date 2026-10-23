@@ -2,7 +2,8 @@
 
 > Client: **LemmyAO** (TypeScript / Bun / aolib-ts 2.6.1)
 > Server: **Nyathena** · Sibling client: **AsyncAO**
-> Status: **groundwork landed** on branch `teleport`. POC: save/restore.
+> Status: **groundwork landed** on branch `timeleap` (branch name predates the
+> rename). POC: save/restore.
 > §9 specifies **D-Mail (`DM`)**, a sibling extension that is **designed but not
 > implemented**.
 
@@ -17,6 +18,23 @@
 
 The Nyathena document is normative (wire schema, field semantics, modes,
 handshake). This file covers the browser implementation and what is still open.
+
+---
+
+## Why this exists
+
+A Teleport snapshot rewinds a room: the chat log, who was standing where, the
+background, the music. Players use it for flashbacks ("this is what actually
+happened that night"), to recover a scene that got wiped, or to branch a scene at
+a decision point.
+
+On this client you will see the room re-stage itself — background and music first,
+then the transcript replaying in order, then the cast and the divergence meter. In
+`authoritative` mode the whole room has moved; in `overlay` mode only
+Teleport-capable clients are looking at the older moment.
+
+This file is the client plan. The wire format, gating and command design are
+normative in the Nyathena document linked above.
 
 ---
 
@@ -81,7 +99,7 @@ be registered or `onCustom` never fires. That is why `registerTeleportCodec()` i
 called from `registerProtocol()` alongside `registerGroupPairCodec()`.
 
 `applyTeleport` ignores `op:"save"` (the private ack) and treats everything else
-as a replace: TP is idempotent exactly like GP.
+as a replace: TP is idempotent exactly like GP (GroupPair).
 
 ---
 
