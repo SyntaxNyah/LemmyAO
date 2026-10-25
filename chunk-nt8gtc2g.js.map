@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "sources": ["../src/utils/assetName.ts"],
+  "sourcesContent": [
+    "/** Extensions LemmyAO can render as a sprite (a literal filename's ext). */\r\nexport const IMAGE_EXTENSIONS = [\".gif\", \".webp\", \".apng\", \".png\"];\r\n\r\n// A real extension is a short, letter-led alphanumeric run after the last dot\r\n// of the last path segment: \"normal.png\", \"idle.webp\", \"motion.vmd\". Legacy\r\n// AO2 char.ini stems routinely carry dots that are NOT extensions\r\n// (\"images/11.1-Presenting-Gun\", \"1.5-normal\") — reading those as filenames\r\n// blanks the sprite instead of probing the extension ladder.\r\nconst EXTENSION_LIKE = /\\.([a-z][a-z0-9]{0,4})$/i;\r\n\r\n/**\r\n * The lowercased trailing extension of a name or URL (\".png\"), or null when\r\n * it has none — i.e. when the value is a legacy emote stem that the caller\r\n * must expand through the `(a)X` / `(a)/X` / bare-`X` extension ladder.\r\n *\r\n * @param name an emote name (\"images/11.1-Presenting-Gun\") or a URL to probe\r\n * @returns the extension with its leading dot, or null for a bare stem\r\n */\r\nexport function fileNameExtension(name: string): string | null {\r\n  const match = EXTENSION_LIKE.exec(name);\r\n  return match ? `.${match[1].toLowerCase()}` : null;\r\n}\r\n"
+  ],
+  "mappings": "AACO,IAAM,EAAmB,CAAC,OAAQ,QAAS,QAAS,MAAM,EAO3D,EAAiB,2BAUhB,SAAS,CAAiB,CAAC,EAA6B,CAC7D,IAAM,EAAQ,EAAe,KAAK,CAAI,EACtC,OAAO,EAAQ,IAAI,EAAM,GAAG,YAAY,IAAM",
+  "debugId": "5CE72BBA0AD7189B64756E2164756E21",
+  "names": []
+}
