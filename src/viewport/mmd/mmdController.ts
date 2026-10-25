@@ -23,6 +23,7 @@ import type { MmdAnimation } from "babylon-mmd/esm/Loader/Animation/mmdAnimation
 import type { MmdRuntimeAnimationHandle } from "babylon-mmd/esm/Runtime/mmdRuntimeAnimationHandle";
 
 import { Model3dInfo } from "./types";
+import { fileNameExtension } from "../../utils/assetName";
 
 interface Vowel {
   name: string;
@@ -67,10 +68,10 @@ const TALK_FADE_RATE = 12;
 
 // VMD candidates for an animation reference. A block-format name already carries
 // its extension (used as-is); a legacy stem gets `.vmd`, with the `(a)`-prefixed
-// name some packs use as a fallback.
-const HAS_EXTENSION = /\.[^.\s/]+$/;
+// name some packs use as a fallback. The extension test is deliberate about
+// legacy stems carrying a dot of their own ("images/11.1-presenting-gun").
 function vmdCandidates(folder: string, name: string): string[] {
-  return HAS_EXTENSION.test(name)
+  return fileNameExtension(name)
     ? [`${folder}${encodeURI(name)}`]
     : [`${folder}${encodeURI(name)}.vmd`, `${folder}${encodeURI(`(a)${name}`)}.vmd`];
 }

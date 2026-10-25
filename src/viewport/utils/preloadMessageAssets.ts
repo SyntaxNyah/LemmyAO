@@ -8,56 +8,9 @@ import {
   getAnimDuration,
 } from "../../utils/assetCache";
 import transparentPng from "../../constants/transparentPng";
+import { buildEmoteUrls } from "../../utils/emoteUrls";
 
 const GLOBAL_TIMEOUT_MS = 8000;
-
-/**
- * Builds the list of candidate URLs for a character emote across all extensions.
- * Replicates the URL construction logic from setEmote.ts.
- */
-const IMAGE_EXTENSIONS = [".gif", ".webp", ".apng", ".png"];
-
-export function buildEmoteUrls(
-  AO_HOST: string,
-  extensions: string[],
-  charactername: string,
-  emotename: string,
-  prefix: string,
-): string[] {
-  const characterFolder = `${AO_HOST}characters/`;
-  const base = `${characterFolder}${encodeURI(charactername)}/`;
-
-  // A name that already carries an extension (char.ini block format) is a
-  // literal filename: never deduce. The path is fully determined (lowercase
-  // name, fixed (a)/(b) prefix, given extension), so it's the single candidate.
-  // A non-image extension (e.g. a 3D `.vmd`) has no sprite to load.
-  const dot = emotename.lastIndexOf(".");
-  if (dot !== -1) {
-    const ext = emotename.slice(dot).toLowerCase();
-    if (!IMAGE_EXTENSIONS.includes(ext)) return [];
-    return [`${base}${encodeURI(prefix)}${encodeURI(emotename)}`];
-  }
-
-  const urls: string[] = [];
-  for (const extension of extensions) {
-    let url: string;
-    if (extension === ".png") {
-      url = `${characterFolder}${encodeURI(charactername)}/${encodeURI(emotename)}${extension}`;
-    } else if (extension === ".webp.static") {
-      url = `${characterFolder}${encodeURI(charactername)}/${encodeURI(emotename)}.webp`;
-    } else {
-      url = `${characterFolder}${encodeURI(charactername)}/${encodeURI(prefix)}${encodeURI(emotename)}${extension}`;
-    }
-    urls.push(url);
-    // Some character packs nest idle/talking frames in a "(a)"/"(b)" folder
-    // instead of prefixing the filename. Try that layout too.
-    if (prefix && extension !== ".png" && extension !== ".webp.static") {
-      urls.push(`${characterFolder}${encodeURI(charactername)}/${encodeURI(prefix)}/${encodeURI(emotename)}${extension}`);
-    }
-  }
-
-  return urls;
-}
 
 const DEFAULT_ASSETS: PreloadedAssets = {
   idleUrl: transparentPng,

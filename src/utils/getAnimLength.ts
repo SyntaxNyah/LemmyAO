@@ -1,5 +1,6 @@
 import calculatorHandler from "./calculatorHandler";
 import fileExists from "./fileExists";
+import { fileNameExtension } from "./assetName";
 import { requestBuffer } from "../services/request";
 
 const DEFAULT_EXTENSIONS = [".gif", ".webp", ".apng"];
@@ -21,12 +22,12 @@ const getAnimLength = async (
 ): Promise<number> => {
   // If the url already carries an extension (char.ini block format), use it
   // verbatim instead of probing. Only measurable image types have a handler; a
-  // non-image extension (e.g. a 3D `.vmd`) yields 0.
-  const dot = url.lastIndexOf(".");
-  if (dot > url.lastIndexOf("/")) {
-    const ext = url.slice(dot).toLowerCase();
-    if (!calculatorHandler[ext] || !(await fileExists(url))) return 0;
-    return calculatorHandler[ext](await requestBuffer(url));
+  // non-image extension (e.g. a 3D `.vmd`) yields 0. A legacy stem with a dot
+  // in it ("…/11.1-presenting-gun") carries no extension, so it probes below.
+  const explicit = fileNameExtension(url);
+  if (explicit) {
+    if (!calculatorHandler[explicit] || !(await fileExists(url))) return 0;
+    return calculatorHandler[explicit](await requestBuffer(url));
   }
 
   const exists = await Promise.all(

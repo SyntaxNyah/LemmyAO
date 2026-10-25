@@ -1,6 +1,7 @@
 import { client } from "../client";
 import { AO_HOST } from "../client/aoHost";
 import { resolveAndPreloadImage } from "../utils/assetCache";
+import { buildEmoteUrls } from "../utils/emoteUrls";
 
 const PREVIEW_OFFSET = 16;
 const HOVER_DELAY_MS = 400;
@@ -12,22 +13,16 @@ let activeButton: HTMLElement | null = null;
 let activeToken = 0;
 let openTimer: number | null = null;
 
+// Idle-frame spellings only; the ladder itself lives in utils/emoteUrls so the
+// preview can never drift from what the viewport renders.
 function buildIdleUrls(charactername: string, emotename: string): string[] {
-  const characterFolder = `${AO_HOST}characters/`;
-  const urls: string[] = [];
-  for (const extension of client.emote_extensions) {
-    if (extension === ".png") {
-      urls.push(`${characterFolder}${encodeURI(charactername)}/${encodeURI(emotename)}${extension}`);
-    } else if (extension === ".webp.static") {
-      urls.push(`${characterFolder}${encodeURI(charactername)}/${encodeURI(emotename)}.webp`);
-    } else {
-      urls.push(`${characterFolder}${encodeURI(charactername)}/(a)${encodeURI(emotename)}${extension}`);
-      // Some character packs nest idle frames in a "(a)" folder instead of
-      // prefixing the filename. Try that layout too.
-      urls.push(`${characterFolder}${encodeURI(charactername)}/(a)/${encodeURI(emotename)}${extension}`);
-    }
-  }
-  return urls;
+  return buildEmoteUrls(
+    AO_HOST,
+    client.emote_extensions,
+    charactername,
+    emotename,
+    "(a)",
+  );
 }
 
 function ensurePreviewEl(): { root: HTMLDivElement; img: HTMLImageElement; label: HTMLDivElement } {

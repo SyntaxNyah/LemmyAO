@@ -2,7 +2,7 @@ import { type GPMember } from "../groupPair";
 import { client } from "../client";
 import { AO_HOST } from "../client/aoHost";
 import { resolveAndPreloadImage } from "../utils/assetCache";
-import { buildEmoteUrls } from "./utils/preloadMessageAssets";
+import { buildEmoteUrls } from "../utils/emoteUrls";
 
 /**
  * Group sprite rendering for the `GP` extension (JSON-only). When a group

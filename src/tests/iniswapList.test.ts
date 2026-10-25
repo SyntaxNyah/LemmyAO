@@ -20,9 +20,14 @@ mock.module("../client/changeChar", () => ({ changeChar: changeCharMock }));
 mock.module("../client/handleCharacterInfo", () => ({
   handleCharacterInfo: handleCharacterInfoMock,
 }));
+// bun's mock.module is global for the whole test process, so every export any
+// other module in the graph imports must be present here — a stub missing one
+// (e.g. requestBuffer, used by utils/getAnimLength) breaks unrelated test files
+// depending on file order.
 mock.module("../services/request", () => ({
   default: (url: string) => requestImpl(url),
   request: (url: string) => requestImpl(url),
+  requestBuffer: async (_url: string) => new ArrayBuffer(0),
 }));
 
 const { openIniswapList, closeIniswapList, pickIniswap, iniswaplist_filter } =
