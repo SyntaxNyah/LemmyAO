@@ -415,12 +415,13 @@ const renderICMessage = (chatmsg: ChatMsg) => {
     setEmoteFromUrl(preloaded.pairIdleUrl, true, chatmsg.side);
   }
 
-  // Group pairing: draw the other members behind the speaker from the
+  // Group pairing: draw the full ordered roster around the speaker from the
   // per-message additional_chars (present only when a group member speaks).
   renderGroupPeers(
     membersFromAdditionalChars(chatmsg.$extras?.additional_chars),
     chatmsg.char_id,
     chatmsg.side,
+    { honorOrder: true },
   );
 
   applyShout(chatmsg, chatContainerBox);

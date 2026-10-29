@@ -20,10 +20,20 @@ export function pairPlayer(id: number) {
       const hasOption = Array.from(pairSelect.options).some(
         (opt) => opt.value === charIdStr,
       );
-      if (hasOption) {
-        pairSelect.value = charIdStr;
-        pairSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      // The character roster can still be downloading when the pair button is
+      // used. Add the target's option instead of silently leaving the select
+      // at "None" — without a real paired_charid, aolib cannot send the
+      // paired_order suffix and the pair defaults to speaker-in-front.
+      if (!hasOption) {
+        const label =
+          target.charName ||
+          target.showName ||
+          target.name ||
+          `Character ${charIdStr}`;
+        pairSelect.add(new Option(label, charIdStr));
       }
+      pairSelect.value = charIdStr;
+      pairSelect.dispatchEvent(new Event("change", { bubbles: true }));
     }
   }
 }
