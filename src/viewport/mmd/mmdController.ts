@@ -23,6 +23,7 @@ import type { MmdAnimation } from "babylon-mmd/esm/Loader/Animation/mmdAnimation
 import type { MmdRuntimeAnimationHandle } from "babylon-mmd/esm/Runtime/mmdRuntimeAnimationHandle";
 
 import { Model3dInfo } from "./types";
+import { textureOverrides } from "./textureOverrides";
 import { fileNameExtension } from "../../utils/assetName";
 
 interface Vowel {
@@ -93,6 +94,31 @@ function resolveVowels(morphNames: string[]): Vowel[] {
     if (found) vowels.push({ name: found, open: spec.open });
   }
   return vowels;
+}
+
+/**
+ * Remaps the PMX texture table before babylon-mmd resolves it, so a pack whose
+ * images were re-encoded on the host (PNG -> WebP) still loads. Synchronous on
+ * purpose: `buildMaterials` registers every texture and then closes the model's
+ * texture-load batch, so awaiting a probe here would race that bookkeeping.
+ */
+class TextureAwareMaterialBuilder extends MmdStandardMaterialBuilder {
+  override buildMaterials(
+    ...args: Parameters<MmdStandardMaterialBuilder["buildMaterials"]>
+  ): ReturnType<MmdStandardMaterialBuilder["buildMaterials"]> {
+    const [uniqueId, materialsInfo, texturesInfo, imagePathTable, rootUrl, fileRootId, ...rest] =
+      args;
+    const resolved = imagePathTable.map((path) => textureOverrides.resolve(rootUrl, path));
+    return super.buildMaterials(
+      uniqueId,
+      materialsInfo,
+      texturesInfo,
+      resolved,
+      rootUrl,
+      fileRootId,
+      ...rest,
+    );
+  }
 }
 
 /**
@@ -192,7 +218,7 @@ export class MmdController {
       }
     });
 
-    this.materialBuilder = new MmdStandardMaterialBuilder();
+    this.materialBuilder = new TextureAwareMaterialBuilder();
     this.materialBuilder.renderMethod = MmdMaterialRenderMethod.AlphaEvaluation;
     this.guardTextureLoader();
 
@@ -543,7 +569,13 @@ export class MmdController {
 
     const promise = (async (): Promise<LoadedModel | null> => {
       try {
-        const url = `${this.characterFolder(charName)}${encodeURI(modelFile)}`;
+        const folder = this.characterFolder(charName);
+        const url = `${folder}${encodeURI(modelFile)}`;
+        // Learn the host's texture names before the loader reads the PMX
+        // table; the material builder consults that map synchronously.
+        if (fileNameExtension(modelFile) === ".pmx") {
+          await textureOverrides.prepare(url, folder);
+        }
         const result = await ImportMeshAsync(url, this.scene, {
           pluginOptions: { mmdmodel: { materialBuilder: this.materialBuilder } },
         });

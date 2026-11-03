@@ -11,6 +11,7 @@
     "server": "bun --hot server.ts",
     "lint": "bunx --bun eslint src",
     "probe": "bun scripts/probe-load.ts",
+    "probe:3d": "bun scripts/probe-3d-textures.ts",
     "lint:fix": "bun run lint -- --fix"
   },
   "repository": {
