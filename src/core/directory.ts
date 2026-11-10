@@ -1,10 +1,12 @@
 import { reactive } from "@vue/reactivity";
 
+// Always https: umineko's http URL redirects to https without CORS headers,
+// so a browser blocks it.
 export const MASTER_ENDPOINTS = [
-  "servers.aceattorneyonline.com/servers",
-  "servers.umineko.online/servers",
+  "https://servers.aceattorneyonline.com/servers",
+  "https://servers.umineko.online/servers",
 ];
-const VERSION_ENDPOINT = "servers.aceattorneyonline.com/version";
+const VERSION_ENDPOINT = "https://servers.aceattorneyonline.com/version";
 const CACHE_KEY = "masterlist";
 
 type Fetch = (url: string) => Promise<Response>;
@@ -147,14 +149,11 @@ export const directory: Directory = reactive({
 });
 
 /** Fetches every master server's list and merges them, falling back to the saved list. */
-export async function refreshDirectory(
-  fetchFn: Fetch = fetch,
-  protocol = globalThis.location?.protocol ?? "https:",
-) {
+export async function refreshDirectory(fetchFn: Fetch = fetch) {
   directory.loading = true;
   const results = await Promise.allSettled(
     MASTER_ENDPOINTS.map(async (endpoint) => {
-      const res = await fetchFn(`${protocol}//${endpoint}`);
+      const res = await fetchFn(endpoint);
       if (!res.ok) throw new Error(`${endpoint}: HTTP ${res.status}`);
       return parseServerlist(await res.json());
     }),
@@ -175,12 +174,9 @@ export async function refreshDirectory(
   directory.loading = false;
 }
 
-export async function fetchMasterVersion(
-  fetchFn: Fetch = fetch,
-  protocol = globalThis.location?.protocol ?? "https:",
-) {
+export async function fetchMasterVersion(fetchFn: Fetch = fetch) {
   try {
-    const res = await fetchFn(`${protocol}//${VERSION_ENDPOINT}`);
+    const res = await fetchFn(VERSION_ENDPOINT);
     if (res.ok) directory.masterVersion = (await res.text()).trim();
   } catch {
     /* only shown as page info */

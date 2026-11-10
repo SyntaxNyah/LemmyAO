@@ -106,7 +106,7 @@ describe("refreshDirectory", () => {
   test("merges every reachable master server and caches the result", async () => {
     let call = 0;
     const fetchFn = () => (call++ === 0 ? respond(raw) : Promise.reject(new Error("down")));
-    await refreshDirectory(fetchFn, "https:");
+    await refreshDirectory(fetchFn);
     expect(directory.fromCache).toBe(false);
     expect(directory.servers.map((s) => s.name)).toEqual(["Plain", "Both", "Legacy"]);
     expect(JSON.parse(localStorage.getItem("masterlist")!)).toHaveLength(3);
@@ -114,7 +114,7 @@ describe("refreshDirectory", () => {
 
   test("falls back to the saved list, including one saved by the old page", async () => {
     localStorage.setItem("masterlist", JSON.stringify([{ name: "Old", ip: "o.example", ws_port: 1, players: 2 }]));
-    await refreshDirectory(() => respond([], false), "https:");
+    await refreshDirectory(() => respond([], false));
     expect(directory.fromCache).toBe(true);
     expect(directory.servers.map((s) => s.name)).toEqual(["Old"]);
   });
