@@ -24,6 +24,7 @@ const LEAD_S = 0.05;
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 let playing = 0;
+let releaseQueue = () => {};
 
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -150,12 +151,14 @@ export function stopPlayback() {
   playing++;
   clearTimeout(timer);
   cancelScheduled();
+  releaseQueue();
 }
 
 /**
  * Plays a prepared message: every sound is scheduled up front on the audio
  * clock, and the visuals follow the same timeline, shifted by the output
  * latency so what is seen matches what is heard. `render` sets the scene up.
+ * Resolves once the message is on screen, so the next one can't skip it.
  */
 export async function playTimeline(chatmsg: ChatMsg, events: TimelineEvent[], sounds: MessageSounds, render: () => void) {
   stopPlayback();
@@ -173,8 +176,11 @@ export async function playTimeline(chatmsg: ChatMsg, events: TimelineEvent[], so
 
   let next = 0;
   let rendered = false;
+  let shown!: () => void;
+  const onScreen = new Promise<void>((resolve) => (shown = resolve));
+  releaseQueue = shown;
   const step = () => {
-    if (id !== playing) return;
+    if (id !== playing) return shown();
     const now = performance.now() - visualStart;
     if (!rendered) {
       rendered = true;
@@ -183,6 +189,8 @@ export async function playTimeline(chatmsg: ChatMsg, events: TimelineEvent[], so
     // Late timers catch up in order rather than skip.
     while (next < events.length && events[next].at <= now) apply(events[next++], chatmsg);
     if (next < events.length) timer = setTimeout(step, Math.max(0, events[next].at - now));
+    shown();
   };
   timer = setTimeout(step, Math.max(0, latencyMs));
+  return onScreen;
 }
