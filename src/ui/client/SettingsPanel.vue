@@ -8,6 +8,7 @@ import chatboxStyles from "../../constants/chatboxes";
 import { version } from "../../version";
 import { voiceUi, toggleVoice, toggleTalk, setOpenMic, setVoiceMuted, chooseDevice, setVoiceVolume } from "../../voice/voiceUI";
 import TabOrderSettings from "./TabOrderSettings.vue";
+import { applyUpdate, install, installable, installed, showIosHint, updateReady } from "../pwa";
 
 // Bound, not a literal src: the template compiler would turn a literal into an import.
 const logo = "logo-new.png";
@@ -22,6 +23,7 @@ const SECTIONS: Record<string, string> = {
   chat: "chat callwords mention modcall sound",
   layout: "layout tabs tab order",
   log: "log chat log download export transcript txt html",
+  app: "app install home screen update pwa",
   advanced: "advanced disconnect reset defaults",
   about: "about version credits lemmyao webao",
 };
@@ -285,6 +287,18 @@ const checkbox = (key: SettingKey) => ({
       <div class="buttons">
         <button class="btn" @click="exportLog('txt')">Download as text</button>
         <button class="btn" @click="exportLog('html')">Download as HTML</button>
+      </div>
+    </section>
+
+    <section v-show="visible('app')" class="section">
+      <h3>App</h3>
+      <p v-if="installed" class="muted">LemmyAO is installed on this device.</p>
+      <div v-else-if="installable"><button class="btn btn-primary" @click="install">Install LemmyAO</button></div>
+      <p v-else-if="showIosHint" class="muted">To install, tap Share, then Add to Home Screen.</p>
+      <p v-else class="muted">This browser doesn't offer to install LemmyAO. Chrome, Edge and Safari do.</p>
+      <div v-if="updateReady" class="buttons">
+        <span class="muted">A new version is ready. Reloading disconnects you.</span>
+        <button class="btn" @click="applyUpdate">Reload now</button>
       </div>
     </section>
 

@@ -11,6 +11,7 @@ import {
 import { settings, setSetting } from "../../core/settings";
 import { version } from "../../version";
 import ServerRow from "./ServerRow.vue";
+import { applyUpdate, install, installable, showIosHint, updateReady } from "../pwa";
 
 const page = location.href;
 const query = ref("");
@@ -118,6 +119,15 @@ onMounted(() => {
       <p v-if="directError" class="error" role="alert">{{ directError }}</p>
     </form>
 
+    <div v-if="updateReady" class="app card" role="status">
+      <span>A new version of LemmyAO is ready.</span>
+      <button class="btn btn-primary" @click="applyUpdate">Reload</button>
+    </div>
+    <div v-else-if="installable" class="app card">
+      <span>Install LemmyAO for a home screen icon and a full-screen window.</span>
+      <button class="btn btn-primary" @click="install">Install</button>
+    </div>
+
     <footer class="footer muted">
       <span>{{ directory.servers.length }} servers · {{ playerTotal }} players online</span>
       <nav class="links">
@@ -126,6 +136,7 @@ onMounted(() => {
         <a href="https://discord.gg/wWvQ3pw">Discord</a>
         <a href="https://servers.aceattorneyonline.com/privacy">Privacy</a>
       </nav>
+      <span v-if="showIosHint">To install, tap Share, then Add to Home Screen.</span>
       <span>
         LemmyAO {{ version }}<template v-if="directory.masterVersion"> · master server {{ directory.masterVersion }}</template>
       </span>
@@ -242,6 +253,16 @@ onMounted(() => {
   margin-bottom: 10px;
   color: var(--text-muted);
   cursor: pointer;
+}
+
+.app {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-top: 16px;
+  padding: 12px 16px;
 }
 
 .footer {
