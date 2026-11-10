@@ -7,7 +7,7 @@ export interface CoreEvents {
   closed: { code: number; reason: string };
   /** The handshake finished and the area/character lists are loaded. */
   joined: void;
-  /** An in-character message for the stage to play. */
+  /** An in-character message for the viewport to play. */
   icMessage: packets.MSToClient;
   /** A moderator was called. */
   modcall: string;

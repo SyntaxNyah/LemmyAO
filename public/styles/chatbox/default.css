@@ -1,5 +1,5 @@
 /* LemmyAO's default chatbox, used when a character doesn't name a chatbox style.
-   Sizes are in em: the stage scales #client_chatcontainer's font-size with its height. */
+   Sizes are in em: the viewport scales #client_chatcontainer's font-size with its height. */
 
 .text_white {
   color: #f4f5f8;

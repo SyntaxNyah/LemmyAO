@@ -2,7 +2,7 @@ import { effect } from "@vue/reactivity";
 import { client } from "../client";
 import { settings } from "../core/settings";
 import { on } from "../core/events";
-import { setBlipMuted, setBlipPitch, setBlipVolume } from "../viewport/utils/blipAudio";
+import { setBlipMuted, setBlipPitch, setBlipVolume } from "./utils/blipAudio";
 import { setChatbox } from "../dom/setChatbox";
 import { applyPanTilt } from "../dom/switchPanTilt";
 import { applyHideDesks } from "../dom/switchHideDesks";
@@ -48,7 +48,7 @@ function applyLook() {
   applyPreanimGlow();
 }
 
-/** Keeps the stage in step with the settings; call once the stage markup exists. */
+/** Keeps the viewport in step with the settings; call once its markup exists. */
 export function followSettings() {
   effect(applyAudio);
   effect(applyLook);

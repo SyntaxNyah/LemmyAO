@@ -95,8 +95,8 @@ function flipTransform(flip: string): string {
   return `scale(${x}, ${y})`;
 }
 
-// Each member's own horizontal anchor in the full-view stage. Classic-view
-// sides all sit at 0 (there is only one stage).
+// Each member's own horizontal anchor in the full-view viewport. Classic-view
+// sides all sit at 0 (there is only one viewport).
 function baseLeft(side: string): number {
   return side === "wit" ? 200 : side === "pro" ? 400 : 0;
 }
@@ -200,7 +200,7 @@ export function renderGroupPeers(
   appendInStackOrder(behindContainer, true);
   appendInStackOrder(frontContainer, false);
 
-  // Don't leave empty stacking contexts in the stage.
+  // Don't leave empty stacking contexts in the viewport.
   if (!peers.some((peer) => peer.behind)) behindContainer.remove();
   if (!peers.some((peer) => !peer.behind)) frontContainer.remove();
 }

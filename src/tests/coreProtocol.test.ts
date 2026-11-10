@@ -246,7 +246,7 @@ describe("court and logs", () => {
     expect(calls).toEqual(["help"]);
   });
 
-  test("IC messages are logged once and handed to the stage", () => {
+  test("IC messages are logged once and handed to the viewport", () => {
     const shown: string[] = [];
     const off = on("icMessage", (p) => shown.push(p.message));
     const ms = { character: "Phoenix", emote: "normal", message: "Objection!", side: Side.def, char_id: 0 };

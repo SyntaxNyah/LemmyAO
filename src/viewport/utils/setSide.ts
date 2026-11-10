@@ -128,7 +128,7 @@ import { state } from "../../core/state";
 import { draft } from "../../core/commands";
 import { safeHtmlTags } from "../../escaping";
 
-/** Swaps every background slot on the stage. */
+/** Swaps every background slot in the viewport. */
 export function showBackground(background: string) {
   client.viewport.setBackgroundName(safeHtmlTags(background));
   const packet = { background };

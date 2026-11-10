@@ -1,8 +1,8 @@
 import { unlockBlipAudio } from "../viewport/utils/blipAudio";
 
 /**
- * Startup work the stage still needs. Settings are applied by the stage
- * itself (src/stage/settings.ts), so nothing here reads form fields.
+ * Startup work the viewport still needs. Settings are applied by the viewport
+ * itself (src/viewport/settings.ts), so nothing here reads form fields.
  */
 export function loadResources() {
   (document.getElementById("mod_ui") as HTMLLinkElement).href = "styles/nomod.css";

@@ -1,6 +1,6 @@
 /**
  * DOM -> TS dispatch via `data-action` attributes, for the markup that is
- * still plain HTML: the stage.
+ * still plain HTML: the viewport.
  *
  * The default event is "click"; override with `data-event="error"` etc.
  * One delegated listener per event type, registered in capture phase so

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from "vue";
 import { focusICInput } from "./focus";
-import { mountStage } from "../../stage";
+import { mountViewport } from "../../viewport/mount";
 import VoiceSpeakers from "./VoiceSpeakers.vue";
 import ICLog from "./ICLog.vue";
 import ICControls from "./ICControls.vue";
@@ -24,8 +24,8 @@ import ConnectionOverlay from "./ConnectionOverlay.vue";
 import ServerAlert from "./ServerAlert.vue";
 import { offsetPreview } from "./offsetPreview";
 
-// Landscape: the stage with the first tab under it, beside a column for the
-// other tabs. Portrait: the stage, the message bar, then every tab.
+// Landscape: the viewport with the first tab under it, beside a column for the
+// other tabs. Portrait: the viewport, the message bar, then every tab.
 const landscapeQuery = window.matchMedia("(orientation: landscape)");
 const isLandscape = ref(landscapeQuery.matches);
 const onOrientation = (e: MediaQueryListEvent) => (isLandscape.value = e.matches);
@@ -36,7 +36,7 @@ const stripTabs = computed(() => (isLandscape.value ? tabs.value.slice(1) : tabs
 const tab = ref<TabId>(isLandscape.value ? tabs.value[1].id : first.value);
 
 // The first tab is already on screen in landscape; land on what was showing
-// under the stage when turning to portrait, and off it when turning back.
+// under the viewport when turning to portrait, and off it when turning back.
 watch([isLandscape, first], ([landscape]) => {
   if (!landscape) tab.value = first.value;
   else if (tab.value === first.value) tab.value = tabs.value[1].id;
@@ -78,7 +78,7 @@ watch([tab, stripTabs], async () => {
   measureTabs();
 });
 
-const stageHost = ref<HTMLElement>();
+const viewportHost = ref<HTMLElement>();
 const icInput = ref<HTMLInputElement>();
 provide(focusICInput, () => icInput.value?.focus());
 const scrollers: Partial<Record<TabId, { onVisible: () => void }>> = {};
@@ -98,7 +98,7 @@ onMounted(() => {
   tabObserver = new ResizeObserver(measureTabs);
   tabObserver.observe(tabStrip.value!);
   measureTabs();
-  mountStage(stageHost.value!);
+  mountViewport(viewportHost.value!);
   landscapeQuery.addEventListener("change", onOrientation);
 });
 onUnmounted(() => {
@@ -109,8 +109,8 @@ onUnmounted(() => {
 
 <template>
   <div class="shell" :class="isLandscape ? 'landscape' : 'portrait'">
-    <div class="stage-frame">
-      <div ref="stageHost" class="legacy stage"></div>
+    <div class="viewport-frame">
+      <div ref="viewportHost" class="legacy viewport"></div>
       <OffsetGhost v-if="offsetPreview" />
       <VoiceSpeakers />
     </div>
@@ -164,7 +164,7 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <!-- Every panel stays mounted; in landscape the first tab moves to the area under the stage. -->
+    <!-- Every panel stays mounted; in landscape the first tab moves to the area under the viewport. -->
     <div
       v-for="t in DEFAULT_TABS"
       v-show="shown(t.id)"
@@ -202,7 +202,7 @@ onUnmounted(() => {
 
 .portrait {
   grid-template:
-    "stage" auto
+    "viewport" auto
     "input" auto
     "tabs" auto
     "panels" 1fr
@@ -211,15 +211,15 @@ onUnmounted(() => {
 
 .landscape {
   grid-template:
-    "stage tabs" auto
-    "stage panels" auto
+    "viewport tabs" auto
+    "viewport panels" auto
     "input panels" auto
     "under panels" 1fr
     / minmax(0, 1fr) clamp(340px, 32vw, 480px);
 }
 
-.stage-frame {
-  grid-area: stage;
+.viewport-frame {
+  grid-area: viewport;
   position: relative;
   width: 100%;
   margin: 0 auto;
@@ -227,19 +227,19 @@ onUnmounted(() => {
 }
 
 /* The full courtroom view is three screens wide and pans inside the frame. */
-.stage {
+.viewport {
   position: relative;
   overflow: hidden;
 }
 
 /* Leave room for the message bar and a panel. */
-.portrait .stage-frame {
+.portrait .viewport-frame {
   max-width: calc(55dvh * 4 / 3);
 }
 
-/* Keep the 4:3 stage from pushing the controls off screen: tall screens keep
-   260px for them, short ones (landscape phones) give the stage 60%. */
-.landscape .stage-frame {
+/* Keep the 4:3 viewport from pushing the controls off screen: tall screens keep
+   260px for them, short ones (landscape phones) give the viewport 60%. */
+.landscape .viewport-frame {
   max-width: calc(min(100dvh - 120px, max(60dvh, 100dvh - 260px)) * 4 / 3);
 }
 

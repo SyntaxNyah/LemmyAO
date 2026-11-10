@@ -34,7 +34,7 @@ export function loadCharIni(name: string) {
 
 const KNOWN_SIDES = new Set<string>(Object.values(Side));
 
-/** What the stage needs to show a character, from its char.ini. */
+/** What the viewport needs to show a character, from its char.ini. */
 export interface CharacterInfo {
   name: string;
   showname: string;

@@ -17,7 +17,7 @@ const attempt = ref(0);
 watch(urls, () => (attempt.value = 0));
 const src = computed(() => urls.value[attempt.value]);
 
-// Same placement the stage gives the speaking character.
+// Same placement the viewport gives the speaking character.
 const style = computed(() => ({
   left: `${draft.pair.offset.x}%`,
   top: `${draft.pair.offset.y}%`,

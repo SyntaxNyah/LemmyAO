@@ -19,7 +19,7 @@ function move(index: number, by: number) {
     <h2>Tab order</h2>
     <ol>
       <li v-for="(tab, i) in tabs" :key="tab.id">
-        <span>{{ tab.label }}<small v-if="i === 0"> (under the stage in landscape)</small></span>
+        <span>{{ tab.label }}<small v-if="i === 0"> (under the viewport in landscape)</small></span>
         <button class="btn" :disabled="i === 0" :aria-label="`Move ${tab.label} earlier`" @click="move(i, -1)">↑</button>
         <button class="btn" :disabled="i === tabs.length - 1" :aria-label="`Move ${tab.label} later`" @click="move(i, 1)">↓</button>
       </li>

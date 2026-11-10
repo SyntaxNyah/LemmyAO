@@ -182,7 +182,7 @@ const checkbox = (key: SettingKey) => ({
         </label>
       </div>
       <div class="checks">
-        <label class="check"><input type="checkbox" v-bind="checkbox('widescreen')" /> 16:9 stage</label>
+        <label class="check"><input type="checkbox" v-bind="checkbox('widescreen')" /> 16:9 viewport</label>
         <label class="check"><input type="checkbox" v-bind="checkbox('panTilt')" /> Pan between positions</label>
         <label class="check"><input type="checkbox" v-bind="checkbox('hideDesks')" /> Hide desks</label>
       </div>

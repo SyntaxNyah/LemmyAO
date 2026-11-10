@@ -1,6 +1,6 @@
 import { ref } from "vue";
 
-/** True while the position sliders are being adjusted; the stage shows a ghost sprite. */
+/** True while the position sliders are being adjusted; the viewport shows a ghost sprite. */
 export const offsetPreview = ref(false);
 
 let holding = false;

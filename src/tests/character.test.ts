@@ -68,7 +68,7 @@ describe("characterInfo", () => {
       body === null ? new Response("", { status: 404 }) : new Response(body)) as unknown as typeof fetch;
   };
 
-  test("reads the stage's display data from char.ini", async () => {
+  test("reads the viewport's display data from char.ini", async () => {
     state.server.assetHost = "https://info-a.test/";
     serve("[Options]\nname = Apollo\nshowname = Apollo Justice\nside = DEF\nblips = Male\ncategory = AA\nmodel = Apollo.pmx\n[Emotions]\nnumber = 1\n1 = Normal#-#normal#0#1\n");
     const { characterInfo } = await import("../core/character");

@@ -7,7 +7,7 @@
   box-sizing: border-box;
 }
 
-/* Legacy markup and the stage's chatbox skins were written for content-box. */
+/* Legacy markup and the viewport's chatbox skins were written for content-box. */
 :where(.legacy, .legacy *, .legacy *::before, .legacy *::after) {
   box-sizing: content-box;
 }
