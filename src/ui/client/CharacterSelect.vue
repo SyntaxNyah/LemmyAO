@@ -85,9 +85,6 @@ function close() {
           autocomplete="off"
         />
         <button class="btn" @click="sendOOC('/randomchar')">Random</button>
-        <a class="btn" href="index.html" title="Back to the server list" aria-label="Server list">
-          <span aria-hidden="true">←</span><span class="wide-only" aria-hidden="true"> Server list</span>
-        </a>
         <button
           class="icon-btn dismiss"
           :aria-label="canClose ? 'Close' : 'Spectate'"
@@ -190,12 +187,6 @@ function close() {
   gap: 8px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
-}
-
-@media (max-width: 480px) {
-  .wide-only {
-    display: none;
-  }
 }
 
 .search {
