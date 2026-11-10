@@ -1,20 +1,15 @@
 import { CHATBOX, setCHATBOX } from "../client";
 import chatbox_arr from "../constants/chatboxes";
-import { setSetting } from "../core/settings";
+import { settings } from "../core/settings";
 
 /**
- * Set the style of the chatbox
+ * Applies the chatbox style setting; "dynamic" uses the speaker's own style.
  */
 export function setChatbox(setstyle: string) {
   const chatbox_theme = <HTMLAnchorElement>(
     document.getElementById("chatbox_theme")
   );
-  const themeselect = <HTMLSelectElement>(
-    document.getElementById("client_chatboxselect")
-  );
-  setCHATBOX(themeselect.value);
-
-  setSetting("chatbox", CHATBOX);
+  setCHATBOX(settings.chatbox);
   if (CHATBOX === "dynamic") {
     const style = setstyle.replace("chat", "");
     if (chatbox_arr.includes(style)) {

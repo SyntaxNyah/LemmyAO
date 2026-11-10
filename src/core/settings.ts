@@ -74,6 +74,7 @@ const schema = {
   blipMuted: field("blipMuted", flag01, false),
 
   panTilt: field("panTilt", flagText, false),
+  widescreen: field("widescreen", flagText, false),
   hideDesks: field("hideDesks", flagText, false),
   chatOffset: field("chatOffset", range(0, 100), 0),
   preanimGlow: field("preanimGlowEnabled", flagText, true),
@@ -84,6 +85,11 @@ const schema = {
   voiceMuted: field("vcMuted", flag01, false),
   voiceOpenMic: field("voiceOpenMic", flag01, false),
   voiceOutputVolume: field("voiceOutputVolume", range(0, 1), 1),
+
+  /** "system", "dark" or "light". */
+  theme: field("uiTheme", text, "system"),
+  /** A CSS colour replacing the theme's accent; "" keeps the default. */
+  accent: field("uiAccent", text, ""),
 
   favouriteServers: field("favouriteServers", stringList, [] as string[]),
   /** Lowercased area names, shared across servers for now. */

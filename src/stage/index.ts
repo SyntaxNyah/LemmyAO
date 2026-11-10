@@ -8,6 +8,7 @@ import { showBackground } from "../viewport/utils/setSide";
 import { playMusicTrack, seekMusic } from "../viewport/utils/playMusic";
 import { showTestimony } from "../viewport/utils/initTestimonyUpdater";
 import { STAGE_HTML } from "./markup";
+import { followSettings } from "./settings";
 
 let mounted = false;
 
@@ -30,6 +31,7 @@ export function mountStage(host: HTMLElement) {
   if (mounted) throw new Error("the stage is already mounted");
   mounted = true;
   host.innerHTML = STAGE_HTML;
+  followSettings();
 
   // The nameplate shows the sender's showname, or their character name.
   effect(() => {

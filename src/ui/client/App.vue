@@ -5,7 +5,7 @@ import { mountStage } from "../../stage";
 import LegacyPanel from "./LegacyPanel.vue";
 import ICLog from "./ICLog.vue";
 import ICControls from "./ICControls.vue";
-import TabOrderSettings from "./TabOrderSettings.vue";
+import SettingsPanel from "./SettingsPanel.vue";
 import { DEFAULT_TABS, orderTabs, type TabId } from "./tabs";
 import { settings } from "../../core/settings";
 import { draft, sendIC } from "../../core/commands";
@@ -43,8 +43,6 @@ watch([isLandscape, first], ([landscape]) => {
 const underStage = (id: TabId) => isLandscape.value && id === first.value;
 const shown = (id: TabId) => underStage(id) || tab.value === id;
 
-// Legacy panels fill in during their own mount; teleport into them only after that.
-const legacyReady = ref(false);
 
 /** Evidence and pair order still live in legacy code; copy them into the draft, then send. */
 function sendMessage() {
@@ -99,7 +97,6 @@ onMounted(() => {
   tabObserver.observe(tabStrip.value!);
   measureTabs();
   mountStage(stageHost.value!);
-  legacyReady.value = true;
   landscapeQuery.addEventListener("change", onOrientation);
 });
 onUnmounted(() => {
@@ -182,15 +179,11 @@ onUnmounted(() => {
       <BackgroundPanel v-else-if="t.id === 'background'" />
       <EvidencePanel v-else-if="t.id === 'evidence'" />
       <PlayersPanel v-else-if="t.id === 'players'" />
-      <LegacyPanel v-else template="mainmenu" />
+      <SettingsPanel v-else />
     </div>
 
     <CharacterSelect />
     <LoadingOverlay />
-
-    <Teleport v-if="legacyReady" to="#content_3">
-      <TabOrderSettings />
-    </Teleport>
   </div>
 </template>
 
@@ -240,10 +233,8 @@ onUnmounted(() => {
 }
 
 /* Keep the 4:3 stage from pushing the controls off screen: tall screens keep
-   260px for them, short ones (landscape phones) give the stage 60%. The
-   message bar matches the stage's width. */
-.landscape .stage-frame,
-.landscape .ic-input {
+   260px for them, short ones (landscape phones) give the stage 60%. */
+.landscape .stage-frame {
   max-width: calc(min(100dvh - 120px, max(60dvh, 100dvh - 260px)) * 4 / 3);
 }
 

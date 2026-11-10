@@ -12,15 +12,14 @@ export function isPanTiltEnabled(): boolean {
  * Triggered by the pantilt checkbox.
  */
 export async function switchPanTilt() {
-  const fullview = document.getElementById("client_fullview")!;
   const checkbox = <HTMLInputElement>document.getElementById("client_pantilt");
   const enabled = !!checkbox?.checked;
-
   setSetting("panTilt", enabled);
+  applyPanTilt(enabled);
+}
 
-  if (enabled) {
-    fullview.style.transition = "0.5s ease-in-out";
-  } else {
-    fullview.style.transition = "none";
-  }
+/** Pans between positions instead of cutting. */
+export function applyPanTilt(enabled: boolean) {
+  const fullview = document.getElementById("client_fullview");
+  if (fullview) fullview.style.transition = enabled ? "0.5s ease-in-out" : "none";
 }

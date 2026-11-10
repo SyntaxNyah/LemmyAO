@@ -17,7 +17,10 @@ export async function switchHideDesks() {
   const checkbox = <HTMLInputElement>document.getElementById("client_hidedesks");
   const enabled = !!checkbox?.checked;
   setSetting("hideDesks", enabled);
+  applyHideDesks(enabled);
+}
 
+export function applyHideDesks(enabled: boolean) {
   const benches = ["client_def_bench", "client_wit_bench", "client_pro_bench", "client_bench_classic"];
   for (const id of benches) {
     const bench = <HTMLImageElement | null>document.getElementById(id);

@@ -123,7 +123,8 @@ export async function set_side({
 }
 
 import { getIndexFromSelect } from "../../dom/getIndexFromSelect";
-import { switchPanTilt } from "../../dom/switchPanTilt";
+import { applyPanTilt } from "../../dom/switchPanTilt";
+import { settings } from "../../core/settings";
 import { updateBackgroundPreview } from "../../dom/updateBackgroundPreview";
 import { safeHtmlTags } from "../../escaping";
 import type * as aolib from "aolib-ts";
@@ -155,8 +156,7 @@ export function showBackground(background: string) {
   setBackgroundImage("client_court", packet.background, "court");
 
   if ((<HTMLImageElement>document.getElementById("client_court")).src !== transparentPng) {
-    const pantiltCheckbox = <HTMLInputElement>document.getElementById("client_pantilt");
-    if (pantiltCheckbox.checked) switchPanTilt();
+    if (settings.panTilt) applyPanTilt(true);
   }
 
   if (client.charID === -1) {

@@ -1,4 +1,4 @@
-export type TabId = "emotes" | "log" | "ooc" | "areas" | "music" | "background" | "evidence" | "players" | "menu";
+export type TabId = "emotes" | "log" | "ooc" | "areas" | "music" | "background" | "evidence" | "players" | "settings";
 
 export interface TabDef {
   id: TabId;
@@ -14,7 +14,7 @@ export const DEFAULT_TABS: TabDef[] = [
   { id: "players", label: "Players" },
   { id: "background", label: "Background" },
   { id: "evidence", label: "Evidence" },
-  { id: "menu", label: "Menu" },
+  { id: "settings", label: "Settings" },
 ];
 
 /** The tabs in the saved order; unknown ids are dropped and new tabs go last. */

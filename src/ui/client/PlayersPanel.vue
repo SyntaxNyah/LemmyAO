@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from "vue";
 import { state, type Player } from "../../core/state";
-import { pairWith, removePlayer } from "../../core/commands";
+import { callMod, pairWith, removePlayer } from "../../core/commands";
 import { characterFolder } from "../../core/character";
 import { pairMentions } from "../../core/log";
 import { getLocalPlayerID, getSpeakingUids, isLocalSpeaking, isVoiceAvailable, onSpeakingChange } from "../../voice/voice";
@@ -47,6 +47,17 @@ watch(
   },
 );
 
+const modcallOpen = ref(false);
+const modcallReason = ref("");
+const modcallSent = ref(false);
+function sendModcall() {
+  callMod(modcallReason.value.trim());
+  modcallOpen.value = false;
+  modcallReason.value = "";
+  modcallSent.value = true;
+  setTimeout(() => (modcallSent.value = false), 4000);
+}
+
 // Moderation: one open form at a time, instead of browser prompts.
 const moderating = ref<{ id: number; ban: boolean } | null>(null);
 const reason = ref("");
@@ -73,8 +84,18 @@ function confirmModeration() {
           · {{ elsewhere }} elsewhere</template
         >
       </span>
-      <label class="check"><input v-model="allAreas" type="checkbox" /> All areas</label>
+      <span class="head-actions">
+        <label class="check"><input v-model="allAreas" type="checkbox" /> All areas</label>
+        <button class="btn danger" @click="modcallOpen = !modcallOpen">Call mod</button>
+      </span>
     </div>
+
+    <form v-if="modcallOpen" class="moderate" @submit.prevent="sendModcall">
+      <input v-model="modcallReason" class="input" placeholder="What's going on? (optional)" />
+      <button class="btn danger" type="submit">Call a moderator</button>
+      <button class="btn" type="button" @click="modcallOpen = false">Cancel</button>
+    </form>
+    <p v-if="modcallSent" class="muted" role="status">A moderator has been called.</p>
 
     <p v-if="!players.length" class="empty">Nobody else is here.</p>
 
@@ -143,6 +164,12 @@ function confirmModeration() {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .empty {

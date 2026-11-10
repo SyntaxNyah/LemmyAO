@@ -8,9 +8,9 @@ test("no saved order keeps the defaults", () => {
 });
 
 test("saved tabs come first, the rest keep their default order", () => {
-  expect(ids(["menu", "log"])).toEqual(["menu", "log", "emotes", "ooc", "areas", "music", "players", "background", "evidence"]);
+  expect(ids(["settings", "log"])).toEqual(["settings", "log", "emotes", "ooc", "areas", "music", "players", "background", "evidence"]);
 });
 
 test("unknown ids from an older build are ignored", () => {
-  expect(ids(["gone", "ooc"])).toEqual(["ooc", "emotes", "log", "areas", "music", "players", "background", "evidence", "menu"]);
+  expect(ids(["gone", "ooc"])).toEqual(["ooc", "emotes", "log", "areas", "music", "players", "background", "evidence", "settings"]);
 });

@@ -118,6 +118,9 @@ export function delay(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
 }
 
+// Fills the iniswap/iniedit character list in Settings.
+onCore("joined", () => fetchCharacterList());
+
 // The legacy player list filters by area; the Areas tab moves through core.
 effect(() => {
   void state.self.areaId;

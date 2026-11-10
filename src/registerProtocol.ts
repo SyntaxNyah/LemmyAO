@@ -71,8 +71,6 @@ import {
 // Server counts (kicks off download)
 import { applyServerCounts } from "./client/fetchLists";
 
-// Timer
-import { applyTimerUpdate } from "./dom/timer";
 
 // Voice
 import {
@@ -163,7 +161,7 @@ export function registerProtocol(
   on("SI", applyServerCounts);
   on("SM");
   on("SP");
-  on("TI", applyTimerUpdate);
+  on("TI");
   // VS_* are a LemmyAO transport extension, not part of the meta spec, so they
   // ride aolib-ts's custom channel (codecs in ./voice/vsPackets).
   server.onCustom("VS_AUDIO", handleVoiceAudio);
