@@ -62,19 +62,7 @@ function close() {
 
 <template>
   <div v-if="charSelectOpen" class="overlay" @keydown.esc="close">
-    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="charselect-title">
-      <header class="head">
-        <h2 id="charselect-title">Choose your character</h2>
-        <button
-          class="icon-btn dismiss"
-          :aria-label="canClose ? 'Close' : 'Spectate'"
-          :title="canClose ? 'Close' : 'Spectate'"
-          @click="canClose ? close() : spectate()"
-        >
-          ✕
-        </button>
-      </header>
-
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Choose your character">
       <div class="toolbar">
         <input
           ref="search"
@@ -86,6 +74,14 @@ function close() {
           autocomplete="off"
         />
         <button class="btn" @click="sendOOC('/randomchar')">Random</button>
+        <button
+          class="icon-btn dismiss"
+          :aria-label="canClose ? 'Close' : 'Spectate'"
+          :title="canClose ? 'Close' : 'Spectate'"
+          @click="canClose ? close() : spectate()"
+        >
+          ✕
+        </button>
       </div>
 
       <p v-if="!tiles.length" class="empty">
@@ -154,20 +150,8 @@ function close() {
   box-shadow: var(--shadow);
 }
 
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px 0;
-}
-
-h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
 .icon-btn {
+  flex: none;
   width: 36px;
   height: 36px;
   border: 0;
@@ -190,7 +174,6 @@ h2 {
 
 .toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
@@ -198,7 +181,8 @@ h2 {
 }
 
 .search {
-  flex: 1 1 220px;
+  flex: 1;
+  min-width: 0;
   width: auto;
 }
 
