@@ -80,7 +80,7 @@ import {
   applyFullMusicList,
   applyMusicListBatch,
 } from "./client/addTrack";
-import { applyMusicSeek, playMusicChange } from "./viewport/utils/playMusic";
+import { playMusicChange } from "./viewport/utils/playMusic";
 
 // Player roster
 import {
@@ -90,9 +90,6 @@ import {
 
 // Server counts (kicks off download)
 import { applyServerCounts } from "./client/fetchLists";
-
-// Testimony state
-import { applyTestimonyState } from "./viewport/utils/initTestimonyUpdater";
 
 // Timer
 import { applyTimerUpdate } from "./dom/timer";
@@ -180,8 +177,8 @@ export function registerProtocol(
   on("PR", applyPlayerRosterChange);
   on("PU", applyPlayerFieldUpdate);
   on("PV", applyCharacterPick);
-  on("RMC", applyMusicSeek);
-  on("RT", applyTestimonyState);
+  on("RMC");
+  on("RT");
   on("SC", applyFullCharacterList);
   on("SI", applyServerCounts);
   on("SM", applyMusicListBatch);

@@ -1,4 +1,5 @@
 import { GoldenLayout, type LayoutConfig } from "golden-layout";
+import { mountStage } from "./stage";
 
 const config = {
   settings: {
@@ -204,6 +205,7 @@ if (isMobileDevice) {
     "client_icoptions_stack",
   );
 }
+mountStage(document.getElementById("client_stage")!);
 
 /**
  * Height of the chrome GoldenLayout wraps around a pane's content: its tab

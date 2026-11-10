@@ -531,13 +531,10 @@ import { handleCharacterInfo as handleCharacterInfoForChat, ensureCharIni as ens
 import { resetICParams } from "../../client/resetICParams";
 
 /**
- * MS: in-character chat broadcast. Gatekeeps (duplicate / iniedit /
- * muted) and delegates rendering to `handle_ic_speaking`.
+ * Plays an IC message. Core has already dropped duplicates and muted
+ * characters. A changed character name means the sender iniedited.
  */
-export function handleChatMessage(packet: aolib.packets.MSToClient) {
-  // duplicate message
-  if (packet.message === client.viewport.getChatmsg().content) return;
-
+export function playICMessage(packet: aolib.packets.MSToClient) {
   const char_id = packet.char_id;
   const char_name = safeHtmlTags(packet.character);
 
@@ -553,12 +550,10 @@ export function handleChatMessage(packet: aolib.packets.MSToClient) {
     }
   }
 
-  if (client.chars[char_id]?.muted) return;
-
-  // our own message appeared, reset the buttons
-  if (char_id === client.charID) {
-    resetICParams();
-  }
-
   handle_ic_speaking(packet);
+}
+
+/** MS: our own message came back, so reset the IC controls. */
+export function handleChatMessage(packet: aolib.packets.MSToClient) {
+  if (packet.char_id === client.charID) resetICParams();
 }

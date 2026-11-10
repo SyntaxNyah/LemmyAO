@@ -5,8 +5,6 @@
  * scroll/format conventions in one place.
  */
 
-import { client } from "../client";
-import { AO_HOST } from "../client/aoHost";
 import { unescapeUnicode, safeHtmlTags } from "../escaping";
 import queryParser from "../utils/queryParser";
 import { flashPairActivity } from "./pairNotification";
@@ -42,7 +40,7 @@ export function appendOOCMessage(packet: aolib.packets.CTToClient) {
   flashPairActivity(rawMessage);
 }
 
-/** ZZ: server modcall broadcast; show a `$Alert:` notice and play the gallery sfx. */
+/** ZZ: server modcall broadcast; show a `$Alert:` notice. The stage plays the sound. */
 export function showModcallNotice(packet: aolib.packets.ZZToClient) {
   const oocLog = document.getElementById("client_ooclog")!;
   const message = safeHtmlTags(unescapeUnicode(packet.reason)).replace(/\n/g, "<br>");
@@ -51,13 +49,6 @@ export function showModcallNotice(packet: aolib.packets.ZZToClient) {
   if (wasAtBottom) {
     oocLog.scrollTop = oocLog.scrollHeight;
   }
-
-  client.viewport.getSfxAudio().pause();
-  const oldvolume = client.viewport.getSfxAudio().volume;
-  client.viewport.getSfxAudio().volume = 1;
-  client.viewport.getSfxAudio().src = `${AO_HOST}sounds/general/sfx-gallery.opus`;
-  client.viewport.getSfxAudio().play().catch(() => {});
-  client.viewport.getSfxAudio().volume = oldvolume;
 }
 
 /** CASEA: server broadcast of a case announcement; show the alert plus roles needed. */

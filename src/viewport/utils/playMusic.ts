@@ -4,8 +4,8 @@ import { appendICLog } from "../../client/appendICLog";
 import { MusicChannel } from "aolib-ts";
 import type * as aolib from "aolib-ts";
 
-/** MC: server announces a music change; switch the channel and log it. */
-export function playMusicChange(packet: aolib.packets.MCToClient) {
+/** Switches a music channel to the announced track. */
+export function playMusicTrack(packet: aolib.packets.MCToClient) {
   const music = client.viewport.music[packet.channel];
   music.pause();
   // An empty track name is a stop, not a track: building a URL from it would
@@ -21,7 +21,11 @@ export function playMusicChange(packet: aolib.packets.MCToClient) {
   } else {
     music.removeAttribute("src");
   }
+  document.getElementById("client_trackstatustext")!.innerText = packet.name;
+}
 
+/** MC: log the music change. The stage plays it. */
+export function playMusicChange(packet: aolib.packets.MCToClient) {
   const musicname: string | undefined = client.chars[packet.char_id]?.name;
   const looptext = packet.looping ? "(looping)" : "";
   if (musicname) {
@@ -29,19 +33,12 @@ export function playMusicChange(packet: aolib.packets.MCToClient) {
   } else {
     appendICLog(`The music was changed to ${packet.name} ${looptext}`, packet.showname);
   }
-
-  document.getElementById("client_trackstatustext")!.innerText = packet.name;
 }
 
-/**
- * RMC: music seek to a specific offset. Undocumented; not in the
- * official Packet Reference. `to_time` is a seconds string parsed with
- * `parseFloat`.
- */
-export function applyMusicSeek(packet: aolib.packets.RMC) {
+/** RMC (undocumented): seek the music channel to `toTime` seconds. */
+export function seekMusic(toTime: number) {
   const music = client.viewport.music[MusicChannel.music];
   music.pause();
-  const toTime = parseFloat(packet.to_time);
   const requestedAt = Date.now() / 1000;
   music.addEventListener(
     "loadedmetadata",

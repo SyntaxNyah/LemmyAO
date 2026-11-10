@@ -256,6 +256,7 @@ export function coreHandlers(conn: Connection): CoreHandlers {
 
     MC: (p) => {
       state.court.music[p.channel] = { track: p.name, looping: p.looping };
+      emit("music", p);
       logIC({
         kind: "music",
         charId: p.char_id,
@@ -272,6 +273,7 @@ export function coreHandlers(conn: Connection): CoreHandlers {
 
     BN: (p) => {
       state.court.background = p.background;
+      emit("background", p.background);
     },
 
     HP: (p) => {
@@ -281,6 +283,7 @@ export function coreHandlers(conn: Connection): CoreHandlers {
 
     RT: (p) => {
       state.court.testimony = p.animation === RTAnimation.end_animation ? null : p.animation;
+      emit("testimony", p.animation);
     },
 
     TI: (p) => {

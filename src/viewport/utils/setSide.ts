@@ -128,19 +128,22 @@ import { updateBackgroundPreview } from "../../dom/updateBackgroundPreview";
 import { safeHtmlTags } from "../../escaping";
 import type * as aolib from "aolib-ts";
 
-/** BN: background change broadcast — swap every viewport background slot. */
+/** BN: sync the background picker in the settings panel. The stage draws it. */
 export function applyBackgroundChange(packet: aolib.packets.BN) {
-  const bgFromArgs = safeHtmlTags(packet.background);
-  client.viewport.setBackgroundName(bgFromArgs);
-  const bg_index = getIndexFromSelect("bg_select", client.viewport.getBackgroundName());
+  const name = safeHtmlTags(packet.background);
+  const bg_index = getIndexFromSelect("bg_select", name);
   (<HTMLSelectElement>document.getElementById("bg_select")).selectedIndex = bg_index;
   updateBackgroundPreview();
   if (bg_index === 0) {
-    (<HTMLInputElement>document.getElementById("bg_filename")).value =
-      client.viewport.getBackgroundName();
+    (<HTMLInputElement>document.getElementById("bg_filename")).value = name;
   }
-
   setBackgroundImage("bg_preview", packet.background, "defenseempty");
+}
+
+/** Swaps every background slot on the stage. */
+export function showBackground(background: string) {
+  client.viewport.setBackgroundName(safeHtmlTags(background));
+  const packet = { background };
   setBackgroundImage("client_def_bench", packet.background, "defensedesk");
   setBackgroundImage("client_wit_bench", packet.background, "stand");
   setBackgroundImage("client_pro_bench", packet.background, "prosecutiondesk");

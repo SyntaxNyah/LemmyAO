@@ -13,6 +13,12 @@ export interface CoreEvents {
   modcall: string;
   /** The server asked to seek the music channel to this many seconds. */
   musicSeek: number;
+  /** A track started or stopped on a channel. */
+  music: packets.MCToClient;
+  /** The background changed (or was re-sent). */
+  background: string;
+  /** A judge animation to play; end_animation clears it. */
+  testimony: packets.RTToClient["animation"];
 }
 
 type Listener<T> = (payload: T) => void;

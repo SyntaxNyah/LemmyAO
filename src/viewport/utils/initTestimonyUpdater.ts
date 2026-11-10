@@ -33,14 +33,10 @@ export function initTestimonyUpdater() {
 }
 
 import { RTAnimation } from "aolib-ts";
-import type * as aolib from "aolib-ts";
 
-/**
- * RT: drive the testimony / judge-ruling state machine. `end_animation`
- * stops any looping testimony overlay instead of showing one.
- */
-export function applyTestimonyState(packet: aolib.packets.RTToClient) {
-  switch (packet.animation) {
+/** Plays a judge animation; `end_animation` stops the looping overlay. */
+export function showTestimony(animation: RTAnimation) {
+  switch (animation) {
     case RTAnimation.witness_testimony:
       client.testimonyID = 1;
       break;
