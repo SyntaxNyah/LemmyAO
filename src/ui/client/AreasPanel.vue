@@ -1,6 +1,26 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { state } from "../../core/state";
 import { changeArea } from "../../core/commands";
+import { settings, setSetting } from "../../core/settings";
+
+const favourites = computed(() => new Set(settings.favouriteAreas));
+const isFavourite = (name: string) => favourites.value.has(name.toLowerCase());
+
+function toggleFavourite(name: string) {
+  const key = name.toLowerCase();
+  const next = new Set(favourites.value);
+  if (next.has(key)) next.delete(key);
+  else next.add(key);
+  setSetting("favouriteAreas", [...next]);
+}
+
+/** Favorites first, otherwise in the server's order; keeps each area's index for changeArea. */
+const rows = computed(() =>
+  state.areas
+    .map((area, index) => ({ area, index, favourite: isFavourite(area.name) }))
+    .sort((a, b) => Number(b.favourite) - Number(a.favourite) || a.index - b.index),
+);
 
 const STATUS: Record<string, { label: string; tone: string }> = {
   IDLE: { label: "Idle", tone: "idle" },
@@ -20,7 +40,16 @@ const lockLabel = (lock: string) => (lock.toUpperCase() === "SPECTATABLE" ? "Spe
   <div class="areas">
     <p v-if="!state.areas.length" class="empty">No areas yet.</p>
     <ul v-else role="listbox" aria-label="Areas">
-      <li v-for="(area, i) in state.areas" :key="i">
+      <li v-for="{ area, index: i, favourite } in rows" :key="i" class="row">
+        <button
+          class="star"
+          :class="{ on: favourite }"
+          :aria-pressed="favourite"
+          :aria-label="favourite ? `Remove ${area.name} from favorites` : `Add ${area.name} to favorites`"
+          @click="toggleFavourite(area.name)"
+        >
+          ★
+        </button>
         <button
           class="area"
           role="option"
@@ -74,11 +103,37 @@ ul {
   list-style: none;
 }
 
+.row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.star {
+  flex: none;
+  width: 40px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--border);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.star:hover {
+  color: var(--text-muted);
+}
+
+.star.on {
+  color: var(--warn);
+}
+
 .area {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);

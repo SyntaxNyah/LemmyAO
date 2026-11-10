@@ -9,7 +9,6 @@ import { changeCharacter } from "../../dom/changeCharacter";
 import { RAINBOW, TEXT_COLORS } from "../textColors";
 import EmoteTile from "./EmoteTile.vue";
 import ComboBox, { type ComboItem } from "../components/ComboBox.vue";
-import AssetImage from "./AssetImage.vue";
 
 const character = computed(() => state.self.character);
 const features = computed(() => new Set(state.server.features));
@@ -80,12 +79,6 @@ function resetOffsets() {
 
 const openCharacterSelect = () => changeCharacter(new Event("click"));
 
-const menuOpen = ref(false);
-function menu(action: () => void) {
-  menuOpen.value = false;
-  action();
-}
-
 const muteQuery = ref("");
 const muteResults = computed(() => {
   const q = muteQuery.value.trim().toLowerCase();
@@ -102,18 +95,6 @@ const muteResults = computed(() => {
 
 <template>
   <div class="ic-controls">
-    <div class="who">
-      <button class="chip" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
-        <AssetImage v-if="character" class="chip-icon" :base="`${characterFolder(character.name)}char_icon`" alt="" />
-        <span>{{ character?.showname ?? "Spectating" }}</span>
-        <span aria-hidden="true" class="caret">▾</span>
-      </button>
-      <div v-if="menuOpen" class="menu" role="menu">
-        <button role="menuitem" @click="menu(openCharacterSelect)">Change character</button>
-        <button role="menuitem" @click="menu(() => sendOOC('/randomchar'))">Random character</button>
-      </div>
-    </div>
-
     <div v-if="character" class="emotes" role="listbox" aria-label="Emotes">
       <EmoteTile
         v-for="(emote, i) in character.emotes"
@@ -248,6 +229,11 @@ const muteResults = computed(() => {
     </section>
 
     <section class="group">
+      <h3>Character</h3>
+      <button class="btn" @click="openCharacterSelect">Change character</button>
+    </section>
+
+    <section class="group">
       <h3>Mute</h3>
       <div class="mute">
         <ComboBox
@@ -276,78 +262,6 @@ const muteResults = computed(() => {
   gap: 10px;
   padding: 10px 12px 16px;
 }
-
-
-.who {
-  position: relative;
-  align-self: flex-start;
-}
-
-.chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 220px;
-  min-height: 40px;
-  padding: 4px 10px 4px 4px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--text);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.chip span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chip-icon {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--surface);
-}
-
-.caret {
-  color: var(--text-muted);
-}
-
-.menu {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 4px);
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  min-width: 200px;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.menu button {
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 4px;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.menu button:hover {
-  background: var(--surface-hover);
-}
-
 
 .emotes {
   display: grid;
@@ -473,7 +387,6 @@ const muteResults = computed(() => {
   max-width: 360px;
 }
 
-
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -544,8 +457,5 @@ const muteResults = computed(() => {
   min-width: 36px;
   padding: 0;
 }
-
-
-
 
 </style>

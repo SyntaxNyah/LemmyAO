@@ -86,6 +86,8 @@ const schema = {
   voiceOutputVolume: field("voiceOutputVolume", range(0, 1), 1),
 
   favouriteServers: field("favouriteServers", stringList, [] as string[]),
+  /** Lowercased area names, shared across servers for now. */
+  favouriteAreas: field("favouriteAreas", stringList, [] as string[]),
   /** Client tab ids in display order; tabs missing from it keep their default place at the end. */
   tabOrder: field("tabOrder", stringList, [] as string[]),
 };

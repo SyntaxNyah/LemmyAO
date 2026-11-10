@@ -4,7 +4,7 @@
  * Serves the client + assets AND speaks enough of the AO protocol (via
  * aolib) to get clients into a single shared area, then relays IC (MS),
  * OOC (CT) and music (MC) to everyone. Not a real server: no auth, no
- * moderation, no persistence, one area.
+ * moderation, no persistence; the areas listed all share one room.
  *
  *   bun run server
  *   → open the printed URL, pick a character, chat. Open it in a second
@@ -19,7 +19,9 @@ const PORT = Number(process.env.PORT ?? 8081);
 // (lowercased) under the asset host. The local dev-assets 3D characters
 // plus a couple of vanilla names for 2D testing.
 const ROSTER = ["Fenomeno3D", "test3d", "1127-cti", "Phoenix", "Edgeworth"];
-const MUSIC = ["Demo Area", "=== Music ===", "Trial.opus", "Investigation.opus"];
+// Areas come first in the SM list; everyone shares one room regardless of area.
+const AREAS = ["Demo Area", "Courtroom", "Lobby"];
+const MUSIC = [...AREAS, "=== Music ===", "Trial.opus", "Investigation.opus"];
 const BACKGROUND = "gs4";
 
 const FEATURES = [
@@ -112,7 +114,11 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
     broadcast((s) => s.send.MS(packet as never));
   });
   session.on.CT((packet) => broadcast((s) => s.send.CT(packet as never)));
-  session.on.MC((packet) => broadcast((s) => s.send.MC(packet as never)));
+  // MC carrying an area name is a move, not a song; there is only one room to move to.
+  session.on.MC((packet) => {
+    if (AREAS.includes((packet as { name: string }).name)) return;
+    broadcast((s) => s.send.MC(packet as never));
+  });
 
   return session;
 }
