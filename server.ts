@@ -21,10 +21,6 @@ const PORT = Number(process.env.PORT ?? 8081);
 const ROSTER = ["Fenomeno3D", "test3d", "1127-cti", "Phoenix", "Edgeworth"];
 const MUSIC = ["Demo Area", "=== Music ===", "Trial.opus", "Investigation.opus"];
 const BACKGROUND = "gs4";
-// Assets (characters/, background/, sounds/) are served from this server, so
-// tell clients to fetch from here. They only adopt it if they didn't join with
-// an explicit ?asset= override.
-const ASSET_URL = `http://localhost:${PORT}/`;
 
 const FEATURES = [
   "fastloading",
@@ -48,7 +44,10 @@ const broadcast = (fn: (s: ClientSession) => void): void => {
   }
 };
 
-function setupSession(ws: { send(data: string): void }): ClientSession {
+// Assets (characters/, background/, sounds/) are served from this server, so
+// tell clients to fetch from here, under the host they reached us by. They only
+// adopt it if they didn't join with an explicit ?asset= override.
+function setupSession(ws: { send(data: string): void }, assetUrl: string): ClientSession {
   const session = aoClient({
     send: (wire) => ws.send(wire),
     onUnhandled: (header) => {
@@ -64,7 +63,7 @@ function setupSession(ws: { send(data: string): void }): ClientSession {
     session.send.FL({ features: FEATURES });
     // Point the client at this server's asset host (before the char list is
     // fetched, so char.ini / icons resolve here).
-    session.send.ASS({ asset_url: ASSET_URL });
+    session.send.ASS({ asset_url: assetUrl });
   });
 
   session.on.ID(() => {
@@ -117,21 +116,25 @@ function setupSession(ws: { send(data: string): void }): ClientSession {
   return session;
 }
 
+// Lets a client served from elsewhere (e.g. the Vite dev server) use these assets.
+const CORS = { "Access-Control-Allow-Origin": "*" };
+
 const staticFile = async (pathname: string): Promise<Response | null> => {
   const built = Bun.file(`./dist${pathname === "/" ? "/index.html" : pathname}`);
-  if (await built.exists()) return new Response(built);
+  if (await built.exists()) return new Response(built, { headers: CORS });
   const local = Bun.file(`./dev-assets${decodeURIComponent(pathname)}`);
-  if (await local.exists()) return new Response(local);
+  if (await local.exists()) return new Response(local, { headers: CORS });
   return null;
 };
 
-const server = Bun.serve<{ session: ClientSession | null }>({
+const server = Bun.serve<{ session: ClientSession | null; assetUrl: string }>({
   port: PORT,
   development: true,
   async fetch(req, srv) {
     // Upgrade AO WebSocket connections.
     if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
-      if (srv.upgrade(req, { data: { session: null } })) return undefined;
+      const assetUrl = `http://${req.headers.get("host") ?? `localhost:${PORT}`}/`;
+      if (srv.upgrade(req, { data: { session: null, assetUrl } })) return undefined;
       return new Response("WebSocket upgrade failed", { status: 400 });
     }
     const url = new URL(req.url);
@@ -139,7 +142,7 @@ const server = Bun.serve<{ session: ClientSession | null }>({
   },
   websocket: {
     open(ws) {
-      ws.data.session = setupSession(ws);
+      ws.data.session = setupSession(ws, ws.data.assetUrl);
       sessions.add(ws.data.session);
       // The client waits for a decryptor packet before sending HI.
       ws.data.session.send.decryptor({ value: "NOENCRYPT" } as never);
