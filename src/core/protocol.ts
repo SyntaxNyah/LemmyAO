@@ -241,6 +241,7 @@ export function coreHandlers(conn: Connection): CoreHandlers {
       // Servers echo a message to everyone, sometimes more than once.
       if (p.message === lastICMessage) return;
       lastICMessage = p.message;
+      state.spokenShownames[p.char_id] = p.showname;
       if (state.self.muted.includes(p.char_id)) return;
       const callword = matchesCallword(p.message, settings.callwords);
       logIC({

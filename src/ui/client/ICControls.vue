@@ -59,13 +59,18 @@ const dotFor = (c: TextColor) => (c === TextColor.rainbow ? RAINBOW : TEXT_COLOR
 const hasCustomShout = ref(false);
 watch(
   () => character.value?.name,
-  (name) => {
+  (name, _old, onCleanup) => {
     hasCustomShout.value = false;
+    if (draft.shout === ShoutModifier.custom) draft.shout = ShoutModifier.none;
     if (!name) return;
+    let current = true;
+    onCleanup(() => (current = false));
     const folder = characterFolder(name);
     for (const ext of [".gif", ".webp", ".apng", ".png"]) {
       const probe = new Image();
-      probe.onload = () => (hasCustomShout.value = true);
+      probe.onload = () => {
+        if (current) hasCustomShout.value = true;
+      };
       probe.src = `${folder}custom${ext}`;
     }
   },

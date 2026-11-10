@@ -59,7 +59,6 @@ const field = <T>(key: string, codec: Codec<T>, fallback: T): Field<T> => ({
 const schema = {
   oocName: field("OOC_name", text, ""),
   showname: field("ic_chat_name", text, ""),
-  shownamesEnabled: field("showname", flagText, true),
   callwords: field("callwords", lines, [] as string[]),
   chatbox: field("chatbox", text, "dynamic"),
   font: field("selectedFont", text, "sans-serif"),

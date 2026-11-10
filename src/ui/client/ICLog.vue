@@ -21,7 +21,7 @@ const showTime = (i: number) => {
   return true;
 };
 
-const speaker = (e: Extract<ICEntry, { kind: "message" }>) => speakerName(e, true);
+const speaker = (e: Extract<ICEntry, { kind: "message" }>) => speakerName(e);
 </script>
 
 <template>

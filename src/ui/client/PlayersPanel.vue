@@ -31,19 +31,8 @@ watch(
   { immediate: true },
 );
 
-// What each character's last IC message showed; servers don't always report showname changes.
-const spokenNames = computed(() => {
-  const names = new Map<number, string>();
-  for (let i = state.icLog.length - 1; i >= 0; i--) {
-    const entry = state.icLog[i];
-    if (entry.kind === "message" && !names.has(entry.charId)) names.set(entry.charId, entry.showname);
-  }
-  return names;
-});
-
 const displayName = (p: Player) => {
-  const spoken = p.charId >= 0 ? spokenNames.value.get(p.charId) : undefined;
-  const custom = spoken ?? p.showName;
+  const custom = state.spokenShownames[p.charId] ?? p.showName;
   return custom || iniNames.value[p.charName] || p.charName || p.name || `Player ${p.id}`;
 };
 const areaName = (p: Player) => state.areas[p.area]?.name ?? `Area ${p.area}`;

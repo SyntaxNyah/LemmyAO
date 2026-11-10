@@ -1,15 +1,16 @@
 import { state } from "../core/state";
 import { icLogAsText } from "../core/log";
 import { safeHtmlTags } from "../escaping";
+import downloadFile from "../services/downloadFile";
 
 /** Downloads the IC log as plain text or a standalone HTML page. */
 export function exportLog(format: string) {
   const timestamp = new Date().toISOString().replace(/[T:.]/g, "-").slice(0, 19);
   const filename = `lemmyao-log-${timestamp}`;
-  const text = icLogAsText(state.icLog, true);
+  const text = icLogAsText(state.icLog);
 
   if (format === "txt") {
-    downloadBlob(text, `${filename}.txt`, "text/plain;charset=utf-8");
+    downloadFile(text, `${filename}.txt`);
   } else if (format === "html") {
     const lines = text
       .split("\n")
@@ -29,20 +30,6 @@ export function exportLog(format: string) {
 ${lines}
 </body>
 </html>`;
-    downloadBlob(html, `${filename}.html`, "text/html;charset=utf-8");
+    downloadFile(html, `${filename}.html`, "text/html;charset=utf-8");
   }
-}
-
-function downloadBlob(content: string, filename: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  // Revoke after a short delay to allow the browser to initiate the download
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

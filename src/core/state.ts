@@ -117,6 +117,8 @@ export interface State {
   characters: CharacterEntry[];
   evidence: Evidence[];
   players: Record<number, Player>;
+  /** The showname each character last spoke under, by character id; servers don't always report changes. */
+  spokenShownames: Record<number, string>;
   oocLog: OOCEntry[];
   icLog: ICEntry[];
   court: {
@@ -170,6 +172,7 @@ export function initialState(assetHost = ""): State {
     characters: [],
     evidence: [],
     players: {},
+    spokenShownames: {},
     oocLog: [],
     icLog: [],
     court: {

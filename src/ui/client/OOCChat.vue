@@ -2,9 +2,8 @@
 import { computed, ref } from "vue";
 import { state } from "../../core/state";
 import { settings, setSetting } from "../../core/settings";
-import { icLogAsText } from "../../core/log";
 import { oocName, sendOOC } from "../../core/commands";
-import downloadFile from "../../services/downloadFile";
+import { exportLog } from "../../dom/exportLog";
 import LinkifiedText from "../components/LinkifiedText.vue";
 import { useStickyScroll } from "./useStickyScroll";
 
@@ -18,12 +17,7 @@ const name = computed({
 });
 const message = ref("");
 
-function saveChatlog() {
-  const day = new Date().toISOString().slice(0, 10);
-  downloadFile(icLogAsText(state.icLog, true), `chatlog-${day}.txt`);
-}
-
-const LOCAL_COMMANDS: Record<string, () => void> = { "/save_chatlog": saveChatlog };
+const LOCAL_COMMANDS: Record<string, () => void> = { "/save_chatlog": () => exportLog("txt") };
 
 function send() {
   const text = message.value.trim();

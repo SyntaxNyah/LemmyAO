@@ -18,8 +18,7 @@ export function matchesCallword(message: string, callwords: readonly string[]) {
 }
 
 /** The name an IC entry is shown under. */
-export const speakerName = (entry: Extract<ICEntry, { kind: "message" }>, useShownames: boolean) =>
-  (useShownames && entry.showname) || entry.character;
+export const speakerName = (entry: Extract<ICEntry, { kind: "message" }>) => entry.showname || entry.character;
 
 /** AO's `~~` prefix centres the chatbox text; it is not part of the message. */
 export const messageText = (message: string) => (message.startsWith("~~") ? message.slice(2) : message);
@@ -28,13 +27,13 @@ const clock = (time: number) =>
   new Date(time).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 
 /** The IC log as plain text, one line per entry. */
-export function icLogAsText(entries: readonly ICEntry[], useShownames: boolean) {
+export function icLogAsText(entries: readonly ICEntry[]) {
   return entries
     .map((e) => {
       const at = `[${clock(e.time)}]`;
       switch (e.kind) {
         case "message":
-          return `${at} ${speakerName(e, useShownames)}: ${messageText(e.message)}`;
+          return `${at} ${speakerName(e)}: ${messageText(e.message)}`;
         case "music":
           return `${at} ${e.showname || "Someone"} played ${e.track}${e.looping ? " (looping)" : ""}`;
         case "notice":

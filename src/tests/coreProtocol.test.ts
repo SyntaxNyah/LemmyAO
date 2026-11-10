@@ -417,6 +417,14 @@ describe("log", () => {
     expect(state.icLog.map((e) => e.kind === "notice" && e.text)).toEqual(["Connected", "Moved to Courtroom"]);
   });
 
+  test("each character's last showname is remembered, blank included", () => {
+    receive("SC#Phoenix#Edgeworth#%");
+    const ms = { character: "Edgeworth", emote: "normal", side: Side.pro, char_id: 1 };
+    server().MS({ ...ms, showname: "Miles", message: "one" });
+    server().MS({ ...ms, showname: "", message: "two" });
+    expect(state.spokenShownames[1]).toBe("");
+  });
+
   test("logs survive a reconnect", () => {
     server().CT({ name: "a", message: "before", is_from_server: false });
     connect();
@@ -431,7 +439,6 @@ describe("log", () => {
         { kind: "message", charId: 0, character: "Phoenix", showname: "Nick", message: "~~Hold it!", color: "white", callword: false, time: at },
         { kind: "music", charId: 0, showname: "", track: "trial.opus", looping: true, time: at },
       ],
-      true,
     ).replace(/\[[^\]]+\]/g, "[t]");
     expect(text).toBe("[t] -- Connected --\n[t] Nick: Hold it!\n[t] Someone played trial.opus (looping)");
   });
