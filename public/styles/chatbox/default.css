@@ -54,8 +54,9 @@
 #client_name {
   display: block;
   position: absolute;
-  top: 0;
-  left: 4%;
+  /* Sits just above the panel (which ends 80% up the container), never over the text. */
+  bottom: calc(80% + 0.2em);
+  left: 3%;
   z-index: 1;
   max-width: 70%;
   margin: 0;
