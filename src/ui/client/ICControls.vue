@@ -124,11 +124,11 @@ function toggleMute(e: Event) {
     </div>
 
     <div class="options">
-      <label><input v-model="draft.sendPreanim" type="checkbox" /> Preanim</label>
-      <label><input v-model="draft.sendSfx" type="checkbox" /> SFX</label>
-      <label><input v-model="draft.flip" type="checkbox" /> Flip</label>
-      <label><input v-model="draft.flash" type="checkbox" /> Flash</label>
-      <label><input v-model="draft.screenshake" type="checkbox" /> Shake</label>
+      <label class="check"><input v-model="draft.sendPreanim" type="checkbox" /> Preanim</label>
+      <label class="check"><input v-model="draft.sendSfx" type="checkbox" /> SFX</label>
+      <label class="check"><input v-model="draft.flip" type="checkbox" /> Flip</label>
+      <label class="check"><input v-model="draft.flash" type="checkbox" /> Flash</label>
+      <label class="check"><input v-model="draft.screenshake" type="checkbox" /> Shake</label>
     </div>
 
     <div class="options">
@@ -172,7 +172,7 @@ function toggleMute(e: Event) {
     <details class="more">
       <summary>More options</summary>
       <div class="more-body">
-        <label>
+        <label class="check">
           <input
             type="checkbox"
             :checked="settings.shownamesEnabled"
@@ -180,10 +180,10 @@ function toggleMute(e: Event) {
           />
           Show others' shownames
         </label>
-        <label><input v-model="draft.nonInterrupting" type="checkbox" /> Non-interrupting preanim</label>
-        <label><input v-model="draft.loopSfx" type="checkbox" /> Looping SFX</label>
+        <label class="check"><input v-model="draft.nonInterrupting" type="checkbox" /> Non-interrupting preanim</label>
+        <label class="check"><input v-model="draft.loopSfx" type="checkbox" /> Looping SFX</label>
         <template v-if="features.has('effects')">
-          <label><input v-model="draft.additive" type="checkbox" /> Additive</label>
+          <label class="check"><input v-model="draft.additive" type="checkbox" /> Additive</label>
           <label class="field">
             Effect
             <select
@@ -321,7 +321,7 @@ function toggleMute(e: Event) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 16px;
+  gap: 6px;
 }
 
 .options label,
@@ -330,12 +330,6 @@ function toggleMute(e: Event) {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-}
-
-input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent);
 }
 
 .select {

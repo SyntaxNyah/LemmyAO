@@ -90,6 +90,62 @@ a {
   color: var(--text-muted);
 }
 
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px 0 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.check:hover {
+  background: var(--surface-hover);
+}
+
+.check:has(input:checked) {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+.check input {
+  appearance: none;
+  flex: none;
+  display: grid;
+  place-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 2px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.check input::after {
+  content: "";
+  width: 10px;
+  height: 6px;
+  margin-top: -2px;
+  border: solid var(--accent-contrast);
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg) scale(0);
+  transition: transform 80ms ease-out;
+}
+
+.check input:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.check input:checked::after {
+  transform: rotate(-45deg) scale(1);
+}
+
 .muted {
   color: var(--text-muted);
 }
@@ -104,7 +160,8 @@ a {
 }
 
 @media (pointer: coarse) {
-  .btn {
+  .btn,
+  .check {
     min-height: var(--tap);
   }
 
