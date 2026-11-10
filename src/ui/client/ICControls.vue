@@ -7,7 +7,6 @@ import { draft, changeHealth, playTestimony, sendOOC, setMuted } from "../../cor
 import { characterFolder, selectEmote, setPosition } from "../../core/character";
 import { changeCharacter } from "../../dom/changeCharacter";
 import { openBackgroundList } from "../../dom/backgroundList";
-import LegacyPanel from "./LegacyPanel.vue";
 import { RAINBOW, TEXT_COLORS } from "../textColors";
 import EmoteTile from "./EmoteTile.vue";
 import AssetImage from "./AssetImage.vue";
@@ -66,6 +65,21 @@ const showJudge = computed(
     state.self.judgeControls === "shown" ||
     (state.self.judgeControls === "by_position" && draft.side === Side.jud),
 );
+
+const offsetAxes = computed(() => [
+  { key: "x" as const, label: "Horizontal" },
+  ...(features.value.has("y_offset") ? [{ key: "y" as const, label: "Vertical" }] : []),
+]);
+
+function nudge(axis: "x" | "y", e: WheelEvent) {
+  const next = draft.pair.offset[axis] + (e.deltaY < 0 ? 1 : -1);
+  draft.pair.offset[axis] = Math.min(100, Math.max(-100, next));
+}
+
+function resetOffsets() {
+  draft.pair.offset.x = 0;
+  draft.pair.offset.y = 0;
+}
 
 const openCharacterSelect = () => changeCharacter(new Event("click"));
 
@@ -198,8 +212,24 @@ function toggleMute(e: Event) {
     </section>
 
     <section class="group">
-      <h3>Pairing</h3>
-      <LegacyPanel template="pairing" />
+      <h3>Position</h3>
+      <div class="offsets">
+        <label v-for="axis in offsetAxes" :key="axis.key" class="field">
+          <span class="field-label">
+            {{ axis.label }} offset <span class="value">{{ draft.pair.offset[axis.key] }}%</span>
+          </span>
+          <input
+            v-model.number="draft.pair.offset[axis.key]"
+            class="range"
+            type="range"
+            min="-100"
+            max="100"
+            step="1"
+            @wheel.prevent="nudge(axis.key, $event)"
+          />
+        </label>
+        <button class="btn" :disabled="!draft.pair.offset.x && !draft.pair.offset.y" @click="resetOffsets">Reset</button>
+      </div>
     </section>
 
     <section class="group">
@@ -390,6 +420,23 @@ function toggleMute(e: Event) {
 
 .group .field {
   max-width: 360px;
+}
+
+.offsets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+}
+
+.offsets .field {
+  flex: 1 1 200px;
+}
+
+.value {
+  margin-left: 4px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 .group h3 {

@@ -1,39 +1,19 @@
 import { client } from "../client";
-import { sendOOC } from "../core/commands";
+import { draft, sendOOC } from "../core/commands";
 
 /**
  * Pair with a player on both supported pathways at once:
  *  1. Server-side OOC command `/pair <playerID>` (used by servers that
  *     implement bidirectional pairing announcements).
- *  2. Local `#pair_select` dropdown (the canonical AO `paired_charid`
- *     route — embedded in the next outgoing IC message). This works on
- *     any vanilla AO server even when the OOC command is unknown.
+ *  2. The draft's pair partner (the canonical AO `paired_charid` route,
+ *     embedded in the next outgoing IC message). This works on any vanilla
+ *     AO server even when the OOC command is unknown.
  */
 export function pairPlayer(id: number) {
   sendOOC(`/pair ${id}`);
 
   const target = client.playerlist?.get(id);
   if (target && Number.isInteger(target.charId) && target.charId >= 0) {
-    const pairSelect = document.getElementById("pair_select") as HTMLSelectElement | null;
-    if (pairSelect) {
-      const charIdStr = String(target.charId);
-      const hasOption = Array.from(pairSelect.options).some(
-        (opt) => opt.value === charIdStr,
-      );
-      // The character roster can still be downloading when the pair button is
-      // used. Add the target's option instead of silently leaving the select
-      // at "None" — without a real paired_charid, aolib cannot send the
-      // paired_order suffix and the pair defaults to speaker-in-front.
-      if (!hasOption) {
-        const label =
-          target.charName ||
-          target.showName ||
-          target.name ||
-          `Character ${charIdStr}`;
-        pairSelect.add(new Option(label, charIdStr));
-      }
-      pairSelect.value = charIdStr;
-      pairSelect.dispatchEvent(new Event("change", { bubbles: true }));
-    }
+    draft.pair.charId = target.charId;
   }
 }

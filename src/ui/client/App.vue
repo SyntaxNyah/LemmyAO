@@ -9,7 +9,6 @@ import { DEFAULT_TABS, orderTabs, type TabId } from "./tabs";
 import { settings } from "../../core/settings";
 import { client } from "../../client";
 import { draft, sendIC } from "../../core/commands";
-import { parsePairedCharID } from "../../utils/pairCharID";
 import { getPairOrder } from "../../dom/pairOrder";
 import OOCChat from "./OOCChat.vue";
 
@@ -37,18 +36,10 @@ const shown = (id: TabId) => underStage(id) || tab.value === id;
 // Legacy panels fill in during their own mount; teleport into them only after that.
 const legacyReady = ref(false);
 
-const legacyNumber = (id: string) =>
-  Number((document.getElementById(id) as HTMLInputElement | null)?.value) || 0;
-
-/** Evidence and pairing still live in legacy panels; copy them into the draft, then send. */
+/** Evidence and pair order still live in legacy code; copy them into the draft, then send. */
 function sendMessage() {
   draft.evidence = client.evidence;
-  const partner = document.getElementById("pair_select") as HTMLSelectElement | null;
-  draft.pair = {
-    charId: parsePairedCharID(partner?.value ?? ""),
-    order: getPairOrder(),
-    offset: { x: legacyNumber("pair_offset"), y: legacyNumber("pair_y_offset") },
-  };
+  draft.pair.order = getPairOrder();
   sendIC();
 }
 
