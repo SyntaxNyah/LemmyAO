@@ -16,6 +16,7 @@ import { registerProtocol } from "./registerProtocol";
 import { Connection } from "./core/connection";
 import { coreHandlers } from "./core/protocol";
 import { state } from "./core/state";
+import { blockedOnPage } from "./core/directory";
 import { loadResources } from "./client/loadResources";
 import { AO_HOST } from "./client/aoHost";
 import { installVoiceUI } from "./voice/voiceUI";
@@ -56,6 +57,7 @@ const replayDisabled = mode === "replay";
 
 if (replayDisabled) {
   state.connection.status = "disconnected";
+  state.connection.blocked = "Replay mode is unavailable for now.";
 }
 
 fpPromise
@@ -64,29 +66,18 @@ fpPromise
     if (replayDisabled) return;
     const hdid = result.visitorId;
 
-    let connectionString = connect;
-
-    if (!connectionString && !isLocalMode) {
-      if (serverIP) {
-        // if connectionString is not set, try IP
-        // and just guess ws, though it could be wss
-        connectionString = `ws://${serverIP}`;
-      } else {
-        alert("No connection string specified!");
-        return;
-      }
-    }
-
-    if (
-      window.location.protocol === "https:" &&
-      connectionString.startsWith("ws://")
-    ) {
-      // If protocol is https: and connectionString is ws://
-      // We have a problem, since it's impossible to connect to ws:// from https://
-      // Connection will fail, but at least warn the user
-      alert(
-        "WS not supported on HTTPS. Please try removing the s from https:// at the start of the URL bar. (You might have to click inside the URL bar to see it)",
-      );
+    // A bare ?ip= has no scheme; guess the one this page can use.
+    const connectionString = connect || (serverIP ? `${location.protocol === "https:" ? "wss" : "ws"}://${serverIP}` : "");
+    const blocked =
+      !connectionString && !isLocalMode
+        ? "This link doesn't say which server to join."
+        : blockedOnPage(connectionString, location.protocol)
+          ? "This server only accepts unencrypted connections, which browsers block on a secure (https) page."
+          : null;
+    if (blocked) {
+      state.connection.status = "disconnected";
+      state.connection.blocked = blocked;
+      return;
     }
 
     client = new Client(connectionString, hdid);

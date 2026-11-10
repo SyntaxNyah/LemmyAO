@@ -36,7 +36,7 @@ const detailsId = computed(() => `server-${props.server.id.replace(/[^a-z0-9]/gi
         <span class="meta">
           <span class="players">{{ server.players }} online</span>
           <span v-if="server.wssPort" class="badge ok">Secure</span>
-          <span v-else-if="server.wsPort" class="badge warn" title="Unencrypted connection">Insecure</span>
+          <span v-else-if="server.wsPort" class="badge warn" title="Unencrypted connection; joins over http">Insecure</span>
           <span v-else class="badge" title="Only the desktop client can join this server">Desktop only</span>
         </span>
       </button>

@@ -96,6 +96,8 @@ export interface State {
     removal: { kind: "kicked" | "banned"; reason: string } | null;
     /** Whether we ever finished joining; tells "disconnected" from "could not connect". */
     wasJoined: boolean;
+    /** Why no connection was attempted (bad link, blocked by the browser); no retry offered. */
+    blocked: string | null;
   };
   /** BB warnings from the server, oldest first, until dismissed. */
   alerts: string[];
@@ -152,7 +154,7 @@ export const LOG_LIMIT = 1000;
 
 export function initialState(assetHost = ""): State {
   return {
-    connection: { status: "idle", closeCode: null, removal: null, wasJoined: false },
+    connection: { status: "idle", closeCode: null, removal: null, wasJoined: false, blocked: null },
     alerts: [],
     server: {
       playerId: -1,

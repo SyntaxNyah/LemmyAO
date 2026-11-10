@@ -73,6 +73,10 @@ export function transportFor(server: ServerEntry, pageProtocol: string): Transpo
   return null;
 }
 
+/** Browsers refuse unencrypted sockets from https pages (mixed content). */
+export const blockedOnPage = (socket: string, pageProtocol: string) =>
+  pageProtocol === "https:" && socket.startsWith("ws://");
+
 /** The websocket URL for a server over the given transport. */
 export function socketUrl(server: ServerEntry, transport: Transport) {
   const p = transport === "wss" ? server.wssPort : server.wsPort;
@@ -80,8 +84,8 @@ export function socketUrl(server: ServerEntry, transport: Transport) {
 }
 
 /**
- * The client page URL for joining (or watching) a socket. An insecure socket
- * needs the client served over http, or the browser blocks it as mixed content.
+ * The client page URL for joining (or watching) a socket. An unencrypted socket
+ * gets the client over http, since browsers block ws:// on https pages.
  */
 export function clientUrl(
   socket: string,

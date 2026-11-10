@@ -5,6 +5,7 @@ import {
   transportFor,
   socketUrl,
   clientUrl,
+  blockedOnPage,
   parseDirectConnect,
   refreshDirectory,
   directory,
@@ -81,6 +82,14 @@ describe("clientUrl", () => {
   });
   test("insecure sockets switch the client to http", () => {
     expect(clientUrl("ws://h:80", { page, watch: true })).toStartWith("http://webao.example/app/client.html?mode=watch");
+  });
+});
+
+describe("blockedOnPage", () => {
+  test("only unencrypted sockets on https pages are blocked", () => {
+    expect(blockedOnPage("ws://h:80", "https:")).toBe(true);
+    expect(blockedOnPage("wss://h:443", "https:")).toBe(false);
+    expect(blockedOnPage("ws://h:80", "http:")).toBe(false);
   });
 });
 

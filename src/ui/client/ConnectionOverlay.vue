@@ -2,13 +2,16 @@
 import { computed } from "vue";
 import { state } from "../../core/state";
 import { reconnect } from "../../client/reconnect";
+import { blockedOnPage } from "../../core/directory";
 import queryParser from "../../utils/queryParser";
 
-const replay = queryParser().mode === "replay";
+// The same link over http, where browsers allow unencrypted sockets.
+const { connect } = queryParser();
+const httpUrl = connect && blockedOnPage(connect, location.protocol) ? location.href.replace(/^https:/, "http:") : null;
 
 const message = computed(() => {
-  const { removal, wasJoined } = state.connection;
-  if (replay) return { title: "Replay mode is unavailable for now.", reason: "", retry: false };
+  const { removal, wasJoined, blocked } = state.connection;
+  if (blocked) return { title: blocked, reason: "", retry: false };
   if (removal) {
     return { title: removal.kind === "kicked" ? "You were kicked" : "You are banned", reason: removal.reason, retry: removal.kind === "kicked" };
   }
@@ -29,11 +32,12 @@ const message = computed(() => {
       </svg>
       <strong id="connection-title" class="title">{{ message.title }}</strong>
       <p v-if="message.reason" class="reason">{{ message.reason }}</p>
-      <span v-if="!replay && !state.connection.removal && state.connection.closeCode" class="code">
+      <span v-if="!state.connection.blocked && !state.connection.removal && state.connection.closeCode" class="code">
         Code {{ state.connection.closeCode }}
       </span>
       <div class="buttons">
         <button v-if="message.retry" class="btn btn-primary" @click="reconnect">Reconnect</button>
+        <a v-if="httpUrl" class="btn btn-primary" :href="httpUrl">Open over http</a>
         <a class="btn" href="index.html">Server list</a>
       </div>
       <p v-if="!state.connection.removal" class="help">
