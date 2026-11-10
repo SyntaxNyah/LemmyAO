@@ -17,6 +17,15 @@ interface QueryParams {
   disableJson: boolean;
 }
 
+// Without a name from the server list, the address is the best label.
+const hostOf = (socket: string | null) => {
+  try {
+    return socket ? new URL(socket).host : "";
+  } catch {
+    return "";
+  }
+};
+
 const queryParser = (): QueryParams => {
   const protocol = window.location.protocol;
   const urlParams = new URLSearchParams(window.location.search);
@@ -26,7 +35,7 @@ const queryParser = (): QueryParams => {
     mode: urlParams.get("mode") || "join",
     asset: urlParams.get("asset") || `${protocol}//attorneyoffline.de/base/`,
     theme: urlParams.get("theme") || "default",
-    serverName: urlParams.get("serverName") || "Attorney Online session",
+    serverName: urlParams.get("serverName") || hostOf(urlParams.get("connect")) || "Attorney Online session",
     char: urlParams.get("char") || "",
     area: urlParams.get("area") || "",
     disableJson: urlParams.get("disableJson") === "true",

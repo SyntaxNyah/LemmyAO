@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { settings, setSetting, resetSettings, type SettingKey } from "../../core/settings";
-import { currentConnection } from "../../core/connection";
 import { exportLog } from "../../dom/exportLog";
 import { modcall_test } from "../../dom/modCallTest";
 import chatboxStyles from "../../constants/chatboxes";
@@ -12,6 +11,7 @@ import { applyUpdate, install, installable, installed, iosInstallSteps, updateRe
 
 // Bound, not a literal src: the template compiler would turn a literal into an import.
 const logo = "logo-new.png";
+const serverName = document.title;
 const query = ref("");
 
 /** Each section's searchable words; a section shows when the query matches any. */
@@ -24,7 +24,8 @@ const SECTIONS: Record<string, string> = {
   layout: "layout tabs tab order",
   log: "log chat log download export transcript txt html",
   app: "app install home screen update pwa",
-  advanced: "advanced disconnect reset defaults",
+  server: "server list leave disconnect exit",
+  advanced: "advanced reset defaults",
   about: "about version credits lemmyao webao",
 };
 const visible = (id: string) => {
@@ -111,6 +112,11 @@ const checkbox = (key: SettingKey) => ({
   <div class="settings">
     <input v-model="query" class="input" type="search" placeholder="Search settings…" aria-label="Search settings" />
     <p v-if="!anyVisible" class="empty">No settings match.</p>
+
+    <section v-show="visible('server')" class="section server">
+      <span>Connected to <strong>{{ serverName }}</strong></span>
+      <div><a class="btn" href="index.html">← Server list</a></div>
+    </section>
 
     <section v-show="visible('audio')" class="section">
       <h3>Audio</h3>
@@ -301,7 +307,6 @@ const checkbox = (key: SettingKey) => ({
     <section v-show="visible('advanced')" class="section">
       <h3>Advanced</h3>
       <div class="buttons">
-        <button class="btn" @click="currentConnection()?.disconnect()">Disconnect</button>
         <button v-if="!confirmReset" class="btn danger" @click="confirmReset = true">Reset settings</button>
         <template v-else>
           <button class="btn danger" @click="reset">Reset to defaults</button>
