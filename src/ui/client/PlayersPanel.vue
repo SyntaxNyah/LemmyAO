@@ -2,7 +2,7 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 import { state, type Player } from "../../core/state";
 import { callMod, pairWith, removePlayer } from "../../core/commands";
-import { characterFolder } from "../../core/character";
+import { characterFolder, loadCharIni } from "../../core/character";
 import { pairMentions } from "../../core/log";
 import { getLocalPlayerID, getSpeakingUids, isLocalSpeaking, isVoiceAvailable, onSpeakingChange } from "../../voice/voice";
 import AssetImage from "./AssetImage.vue";
@@ -17,7 +17,22 @@ const players = computed(() =>
 );
 const elsewhere = computed(() => Object.keys(state.players).length - players.value.length);
 
-const displayName = (p: Player) => p.showName || p.charName || p.name || `Player ${p.id}`;
+// Without a custom showname the chatbox uses the char.ini name, so match it here.
+const iniNames = ref<Record<string, string>>({});
+watch(
+  () => players.value.map((p) => p.charName),
+  (names) => {
+    for (const name of names) {
+      if (!name || name in iniNames.value) continue;
+      iniNames.value[name] = "";
+      void loadCharIni(name).then(({ ini }) => (iniNames.value[name] = String(ini.options.showname || "")));
+    }
+  },
+  { immediate: true },
+);
+
+const displayName = (p: Player) =>
+  p.showName || iniNames.value[p.charName] || p.charName || p.name || `Player ${p.id}`;
 const areaName = (p: Player) => state.areas[p.area]?.name ?? `Area ${p.area}`;
 
 // Voice chat reports speakers through a callback; mirror it reactively.
