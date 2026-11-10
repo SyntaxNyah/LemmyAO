@@ -7,11 +7,14 @@ import chatboxStyles from "../../constants/chatboxes";
 import { version } from "../../version";
 import { voiceUi, toggleVoice, toggleTalk, setOpenMic, setVoiceMuted, chooseDevice, setVoiceVolume } from "../../voice/voiceUI";
 import TabOrderSettings from "./TabOrderSettings.vue";
-import { applyUpdate, install, installable, installed, iosInstallSteps, updateReady } from "../pwa";
+import { state } from "../../core/state";
+import queryParser from "../../utils/queryParser";
+import LinkifiedText from "../components/LinkifiedText.vue";
 
 // Bound, not a literal src: the template compiler would turn a literal into an import.
 const logo = "logo-new.png";
-const serverName = document.title;
+const { serverName, connect } = queryParser();
+const address = connect.replace(/^wss?:\/\//, "");
 const query = ref("");
 
 /** Each section's searchable words; a section shows when the query matches any. */
@@ -23,8 +26,7 @@ const SECTIONS: Record<string, string> = {
   chat: "chat callwords mention modcall sound",
   layout: "layout tabs tab order",
   log: "log chat log download export transcript txt html",
-  app: "app install home screen update pwa",
-  server: "server list leave disconnect exit",
+  server: "server name address software version players description list leave disconnect exit",
   advanced: "advanced reset defaults",
   about: "about version credits lemmyao webao",
 };
@@ -113,9 +115,26 @@ const checkbox = (key: SettingKey) => ({
     <input v-model="query" class="input" type="search" placeholder="Search settings…" aria-label="Search settings" />
     <p v-if="!anyVisible" class="empty">No settings match.</p>
 
-    <section v-show="visible('server')" class="section server">
-      <span>Connected to <strong>{{ serverName }}</strong></span>
-      <div><a class="btn" href="index.html">← Server list</a></div>
+    <section v-show="visible('server')" class="section">
+      <h3>Server</h3>
+      <dl class="info">
+        <dt>Name</dt>
+        <dd>{{ serverName }}</dd>
+        <template v-if="address">
+          <dt>Address</dt>
+          <dd>{{ address }}</dd>
+        </template>
+        <template v-if="state.server.software">
+          <dt>Software</dt>
+          <dd>{{ state.server.software }} {{ state.server.version }}</dd>
+        </template>
+        <template v-if="state.server.maxPlayers">
+          <dt>Players</dt>
+          <dd>{{ state.server.playerCount }} / {{ state.server.maxPlayers }}</dd>
+        </template>
+      </dl>
+      <p v-if="state.server.description" class="description"><LinkifiedText :text="state.server.description" /></p>
+      <div><a class="btn" href="index.html">Back to server list</a></div>
     </section>
 
     <section v-show="visible('audio')" class="section">
@@ -289,18 +308,6 @@ const checkbox = (key: SettingKey) => ({
       <div class="buttons">
         <button class="btn" @click="exportLog('txt')">Download as text</button>
         <button class="btn" @click="exportLog('html')">Download as HTML</button>
-      </div>
-    </section>
-
-    <section v-show="visible('app')" class="section">
-      <h3>App</h3>
-      <p v-if="installed" class="muted">LemmyAO is installed on this device.</p>
-      <div v-else-if="installable"><button class="btn btn-primary" @click="install">Install LemmyAO</button></div>
-      <p v-else-if="iosInstallSteps" class="muted">To install: {{ iosInstallSteps }}</p>
-      <p v-else class="muted">This browser doesn't offer to install LemmyAO. Chrome, Edge and Safari do.</p>
-      <div v-if="updateReady" class="buttons">
-        <span class="muted">A new version is ready. Reloading disconnects you.</span>
-        <button class="btn" @click="applyUpdate">Reload now</button>
       </div>
     </section>
 
@@ -537,6 +544,29 @@ h3 {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.info {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.info dt {
+  color: var(--text-muted);
+}
+
+.info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.description {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .talking {
