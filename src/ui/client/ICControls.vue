@@ -28,7 +28,12 @@ const showname = computed({
     setSetting("showname", v);
   },
 });
-draft.showname = settings.showname;
+// Follows the setting, including a reset to defaults.
+watch(
+  () => settings.showname,
+  (name) => (draft.showname = name),
+  { immediate: true },
+);
 
 const POSITIONS: [Side | "", string][] = [
   ["", "Default"],

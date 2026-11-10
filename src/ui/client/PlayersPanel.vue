@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from "vue";
 import { state, type Player } from "../../core/state";
-import { callMod, pairWith, removePlayer } from "../../core/commands";
+import { callMod, draft, pairWith, removePlayer, unpair } from "../../core/commands";
 import { characterFolder, loadCharIni } from "../../core/character";
 import { pairMentions } from "../../core/log";
 import { getLocalPlayerID, getSpeakingUids, isLocalSpeaking, isVoiceAvailable, onSpeakingChange } from "../../voice/voice";
@@ -65,9 +65,8 @@ onUnmounted(stopSpeaking);
 // Briefly highlight players an OOC message mentions pairing with.
 const flashing = ref(new Set<number>());
 watch(
-  () => state.oocLog.length,
-  () => {
-    const last = state.oocLog.at(-1);
+  () => state.oocLog.at(-1),
+  (last) => {
     const ids = last?.kind === "chat" ? pairMentions(last.message) : null;
     if (!ids?.length) return;
     flashing.value = new Set(ids);
@@ -157,7 +156,8 @@ function confirmModeration() {
             </span>
           </span>
           <span v-if="p.id !== state.server.playerId" class="actions">
-            <button v-if="p.area === state.self.areaId" class="btn" @click="pairWith(p.id)">Pair</button>
+            <button v-if="p.charId >= 0 && p.charId === draft.pair.charId" class="btn" @click="unpair">Unpair</button>
+            <button v-else-if="p.area === state.self.areaId" class="btn" @click="pairWith(p.id)">Pair</button>
             <template v-if="state.self.moderator">
               <button class="btn" @click="openModeration(p.id, false)">Kick</button>
               <button class="btn danger" @click="openModeration(p.id, true)">Ban</button>

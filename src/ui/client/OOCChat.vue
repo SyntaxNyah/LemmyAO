@@ -8,7 +8,7 @@ import downloadFile from "../../services/downloadFile";
 import LinkifiedText from "../components/LinkifiedText.vue";
 import { useStickyScroll } from "./useStickyScroll";
 
-const { el, onScroll, onVisible } = useStickyScroll(() => state.oocLog.length);
+const { el, onScroll, onVisible } = useStickyScroll(() => state.oocLog.at(-1));
 defineExpose({ onVisible });
 
 oocName();

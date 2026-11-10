@@ -15,7 +15,7 @@ import { logIC, logNotice, logOOC, matchesCallword } from "./log";
 import { settings } from "./settings";
 import { emit } from "./events";
 import { setAssetHost } from "./assetHost";
-import { loadOwnCharacter } from "./character";
+import { loadOwnCharacter, setPosition } from "./character";
 
 type S2C = packets.S2COutputs;
 
@@ -314,6 +314,7 @@ export function coreHandlers(conn: Connection): CoreHandlers {
 
     SP: (p) => {
       state.self.side = p.side;
+      setPosition(p.side);
     },
 
     JD: (p) => {

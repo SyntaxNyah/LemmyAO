@@ -27,6 +27,7 @@ import {
   setMuted,
   resetDraftAfterSend,
   pairWith,
+  unpair,
 } from "../core/commands";
 import { settings, setSetting } from "../core/settings";
 import { icLogAsText, pairMentions } from "../core/log";
@@ -453,6 +454,35 @@ describe("pairing", () => {
     pairWith(4);
     expect(outbound.at(-1)).toMatchObject({ $header: "CT", message: "/pair 4" });
     expect(draft.pair.charId).toBe(1);
+  });
+
+  test("unpair asks the server and clears the partner", () => {
+    receive("SC#Phoenix#Edgeworth#%");
+    conn.clientSession.send.PR({ id: 4, type: PlayerListUpdate.add });
+    conn.clientSession.send.PU({ id: 4, type: PlayerDataType.char_name, data: "Edgeworth" });
+    pairWith(4);
+    unpair();
+    expect(outbound.at(-1)).toMatchObject({ $header: "CT", message: "/unpair" });
+    expect(draft.pair.charId).toBe(-1);
+  });
+
+  test("pairing ends when the partner leaves or switches character", () => {
+    receive("SC#Phoenix#Edgeworth#%");
+    conn.clientSession.send.PR({ id: 4, type: PlayerListUpdate.add });
+    conn.clientSession.send.PU({ id: 4, type: PlayerDataType.char_name, data: "Edgeworth" });
+    pairWith(4);
+    conn.clientSession.send.PU({ id: 4, type: PlayerDataType.char_name, data: "Phoenix" });
+    expect(draft.pair.charId).toBe(-1);
+    pairWith(4);
+    expect(draft.pair.charId).toBe(0);
+    conn.clientSession.send.PR({ id: 4, type: PlayerListUpdate.remove });
+    expect(draft.pair.charId).toBe(-1);
+  });
+
+  test("a position set by the server becomes our side", () => {
+    receive("SP#jud#%");
+    expect(state.self.position).toBe(Side.jud);
+    expect(draft.side).toBe(Side.jud);
   });
 });
 

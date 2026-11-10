@@ -4,7 +4,7 @@ import { messageText, speakerName } from "../../core/log";
 import { useStickyScroll } from "./useStickyScroll";
 import { RAINBOW, TEXT_COLORS } from "../textColors";
 
-const { el, onScroll, onVisible } = useStickyScroll(() => state.icLog.length);
+const { el, onScroll, onVisible } = useStickyScroll(() => state.icLog.at(-1));
 defineExpose({ onVisible });
 
 const clock = (time: number) =>

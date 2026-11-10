@@ -1,6 +1,6 @@
 import { nextTick, onMounted, ref, watch, type WatchSource } from "vue";
 
-/** Keeps a scroll container pinned to the bottom as `source` grows, unless the reader scrolled up. */
+/** Keeps a scroll container pinned to the bottom as `source` changes, unless the reader scrolled up. */
 export function useStickyScroll(source: WatchSource<unknown>) {
   const el = ref<HTMLElement>();
   let pinned = true;

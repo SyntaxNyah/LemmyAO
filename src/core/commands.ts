@@ -1,4 +1,4 @@
-import { reactive } from "@vue/reactivity";
+import { effect, reactive } from "@vue/reactivity";
 import {
   EmoteModifier,
   Flip,
@@ -213,6 +213,17 @@ export function pairWith(playerId: number) {
   const charId = state.players[playerId]?.charId ?? -1;
   if (charId >= 0) draft.pair.charId = charId;
 }
+
+export function unpair() {
+  sendOOC("/unpair");
+  draft.pair.charId = -1;
+}
+
+// Stop pairing once nobody plays that character: they left, switched, or we reconnected.
+effect(() => {
+  const { charId } = draft.pair;
+  if (charId >= 0 && !Object.values(state.players).some((p) => p.charId === charId)) draft.pair.charId = -1;
+});
 
 /** Kicks when `minutes` is 0, bans otherwise. */
 export function removePlayer(playerId: number, reason: string, minutes = 0) {
