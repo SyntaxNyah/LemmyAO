@@ -31,5 +31,8 @@ jobs:
         run: bun run build
       - name: Install Chrome
         run: bunx puppeteer browsers install chrome
+      # Ubuntu 24.04 blocks the unprivileged user namespaces Chrome's sandbox needs.
+      - name: Allow Chrome's sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: End-to-end tests
         run: bun test ./e2e/viewport.e2e.ts
