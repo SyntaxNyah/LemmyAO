@@ -8,7 +8,7 @@ import { characterFolder, selectEmote, setPosition } from "../../core/character"
 import { changeCharacter } from "../../dom/changeCharacter";
 import { RAINBOW, TEXT_COLORS } from "../textColors";
 import EmoteTile from "./EmoteTile.vue";
-import PickList, { type PickItem } from "../components/PickList.vue";
+import ComboBox, { type ComboItem } from "../components/ComboBox.vue";
 import AssetImage from "./AssetImage.vue";
 
 const character = computed(() => state.self.character);
@@ -89,10 +89,9 @@ function menu(action: () => void) {
 const muteQuery = ref("");
 const muteResults = computed(() => {
   const q = muteQuery.value.trim().toLowerCase();
-  if (!q) return [];
-  const out: PickItem[] = [];
+  const out: ComboItem[] = [];
   state.characters.forEach((c, id) => {
-    if (out.length < 8 && c?.name.toLowerCase().includes(q)) {
+    if (out.length < 50 && c?.name.toLowerCase().includes(q)) {
       const muted = state.self.muted.includes(id);
       out.push({ key: id, label: c.name, hint: muted ? "Unmute" : "Mute", selected: muted });
     }
@@ -251,21 +250,15 @@ const muteResults = computed(() => {
     <section class="group">
       <h3>Mute</h3>
       <div class="mute">
-        <input
+        <ComboBox
           v-model="muteQuery"
-          class="input"
-          type="search"
-          placeholder="Search characters to mute…"
-          aria-label="Search characters to mute"
-          autocomplete="off"
-        />
-        <PickList
-          v-if="muteResults.length"
           :items="muteResults"
-          label="Matching characters"
+          label="Characters to mute"
+          placeholder="Search characters to mute…"
+          empty-text="No characters match."
+          stay-open
           @pick="(item) => setMuted(Number(item.key), !item.selected)"
         />
-        <p v-else-if="muteQuery.trim()" class="muted">No characters match.</p>
         <div v-if="state.self.muted.length" class="chips" aria-label="Muted characters">
           <button v-for="id in state.self.muted" :key="id" class="chip-muted" :title="`Unmute ${state.characters[id]?.name}`" @click="setMuted(id, false)">
             {{ state.characters[id]?.name ?? `#${id}` }} <span aria-hidden="true">×</span>

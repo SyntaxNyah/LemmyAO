@@ -3,7 +3,7 @@ import { computed, ref } from "vue";
 import { state } from "../../core/state";
 import { backgrounds, searchBackgrounds } from "../../core/backgrounds";
 import { changeBackground } from "../../core/commands";
-import PickList, { type PickItem } from "../components/PickList.vue";
+import ComboBox, { type ComboItem } from "../components/ComboBox.vue";
 import AssetImage from "./AssetImage.vue";
 
 const BG_EXTENSIONS = [".png", ".gif", ".webp", ".apng"];
@@ -13,9 +13,9 @@ const current = computed(() => state.court.background);
 const previewBase = (name: string) =>
   `${state.server.assetHost}background/${encodeURI(name.toLowerCase())}/defenseempty`;
 
-const results = computed<PickItem[]>(() => {
+const results = computed<ComboItem[]>(() => {
   const isCurrent = (name: string) => name.toLowerCase() === current.value.toLowerCase();
-  const items: PickItem[] = searchBackgrounds(backgrounds.names, query.value).map((name) => ({
+  const items: ComboItem[] = searchBackgrounds(backgrounds.names, query.value).map((name) => ({
     key: name,
     label: name,
     hint: isCurrent(name) ? "Current" : undefined,
@@ -28,7 +28,7 @@ const results = computed<PickItem[]>(() => {
   return items;
 });
 
-function pick(item: PickItem) {
+function pick(item: ComboItem) {
   changeBackground(String(item.key).replace(/^typed:/, ""));
   query.value = "";
 }
@@ -55,17 +55,14 @@ function pick(item: PickItem) {
     <section>
       <h3>Change background</h3>
       <div class="search">
-        <input
+        <ComboBox
           v-model="query"
-          class="input"
-          type="search"
+          :items="results"
+          label="Backgrounds"
           placeholder="Search backgrounds…"
-          aria-label="Search backgrounds"
-          autocomplete="off"
+          :empty-text="backgrounds.loading ? 'Loading backgrounds…' : 'No backgrounds found.'"
+          @pick="pick"
         />
-        <PickList v-if="results.length" :items="results" label="Backgrounds" @pick="pick" />
-        <p v-else-if="backgrounds.loading" class="muted">Loading backgrounds…</p>
-        <p v-else class="muted">No backgrounds found. Type a background's folder name to use it.</p>
       </div>
     </section>
   </div>
