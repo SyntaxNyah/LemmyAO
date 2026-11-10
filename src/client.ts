@@ -21,7 +21,6 @@ import { loadResources } from "./client/loadResources";
 import { AO_HOST } from "./client/aoHost";
 import { installVoiceUI } from "./voice/voiceUI";
 import {
-  fetchBackgroundList,
   fetchEvidenceList,
   fetchCharacterList,
 } from "./client/fetchLists";
@@ -298,7 +297,6 @@ class Client {
   resetAreaList() {
     this.areas = [];
     document.getElementById("areas").innerHTML = "";
-    fetchBackgroundList();
     fetchEvidenceList();
     fetchCharacterList();
   }

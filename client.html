@@ -668,46 +668,9 @@
       <!-- Areas section -->
       <span class="menu_content active" id="content_1">
         <meta name="frame-title" lang="en" content="Areas" />
-        <div id="areas"></div>
+        <!-- Legacy area buttons; the Areas tab replaces them but legacy code still writes here. -->
+        <div id="areas" hidden></div>
         <br />
-        <fieldset style="text-align: left">
-          <legend>Current Area Background</legend>
-          <span>
-            <img
-              id="bg_preview"
-              src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-              alt="Background Preview"
-              data-action="imgError" data-event="error"
-            />
-          </span>
-          <span style="display: inline-block">
-            <label for="bg_filename">Background:</label>
-            <br />
-            <select
-              id="bg_select"
-              name="bg_select"
-              data-action="updateBackgroundPreview" data-event="change"
-              style="margin-top: 10px"
-            ></select>
-            <br />
-            <input
-              id="bg_filename"
-              name="bg_filename"
-              type="text"
-              style="margin-top: 10px"
-            />
-            <br />
-            <br />
-            <button
-              id="bg_change"
-              alt="Change"
-              class="client_button hover_button"
-              data-action="changeBackgroundOOC"
-            >
-              Change
-            </button>
-          </span>
-        </fieldset>
         <fieldset style="text-align: left; display: none">
           <legend>Timers</legend>
           <span id="client_timer0">00:00:00</span>

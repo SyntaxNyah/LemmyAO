@@ -35,8 +35,6 @@ import {
   showKickScreen,
 } from "./client/handleBans";
 
-// Background change
-import { applyBackgroundChange } from "./viewport/utils/setSide";
 
 // Character downloads
 import {
@@ -145,7 +143,7 @@ export function registerProtocol(
   on("AUTH", applyModAuth);
   on("BB", showBlockingAlert);
   on("BD", showBanDialog);
-  on("BN", applyBackgroundChange);
+  on("BN");
   on("CASEA");
   on("CHECK");
   on("CharsCheck", applyCharacterAvailability);

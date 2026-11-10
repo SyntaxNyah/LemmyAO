@@ -6,9 +6,9 @@ import { settings, setSetting } from "../../core/settings";
 import { draft, changeHealth, playTestimony, sendOOC, setMuted } from "../../core/commands";
 import { characterFolder, selectEmote, setPosition } from "../../core/character";
 import { changeCharacter } from "../../dom/changeCharacter";
-import { openBackgroundList } from "../../dom/backgroundList";
 import { RAINBOW, TEXT_COLORS } from "../textColors";
 import EmoteTile from "./EmoteTile.vue";
+import PickList, { type PickItem } from "../components/PickList.vue";
 import AssetImage from "./AssetImage.vue";
 
 const character = computed(() => state.self.character);
@@ -90,10 +90,11 @@ const muteQuery = ref("");
 const muteResults = computed(() => {
   const q = muteQuery.value.trim().toLowerCase();
   if (!q) return [];
-  const out: { id: number; name: string; muted: boolean }[] = [];
+  const out: PickItem[] = [];
   state.characters.forEach((c, id) => {
     if (out.length < 8 && c?.name.toLowerCase().includes(q)) {
-      out.push({ id, name: c.name, muted: state.self.muted.includes(id) });
+      const muted = state.self.muted.includes(id);
+      out.push({ key: id, label: c.name, hint: muted ? "Unmute" : "Mute", selected: muted });
     }
   });
   return out;
@@ -111,7 +112,6 @@ const muteResults = computed(() => {
       <div v-if="menuOpen" class="menu" role="menu">
         <button role="menuitem" @click="menu(openCharacterSelect)">Change character</button>
         <button role="menuitem" @click="menu(() => sendOOC('/randomchar'))">Random character</button>
-        <button role="menuitem" @click="menu(openBackgroundList)">Backgrounds</button>
       </div>
     </div>
 
@@ -259,14 +259,12 @@ const muteResults = computed(() => {
           aria-label="Search characters to mute"
           autocomplete="off"
         />
-        <ul v-if="muteResults.length" class="mute-results" role="listbox" aria-label="Matching characters">
-          <li v-for="r in muteResults" :key="r.id">
-            <button role="option" :aria-selected="r.muted" @click="setMuted(r.id, !r.muted)">
-              <span>{{ r.name }}</span>
-              <span class="muted">{{ r.muted ? "Unmute" : "Mute" }}</span>
-            </button>
-          </li>
-        </ul>
+        <PickList
+          v-if="muteResults.length"
+          :items="muteResults"
+          label="Matching characters"
+          @pick="(item) => setMuted(Number(item.key), !item.selected)"
+        />
         <p v-else-if="muteQuery.trim()" class="muted">No characters match.</p>
         <div v-if="state.self.muted.length" class="chips" aria-label="Muted characters">
           <button v-for="id in state.self.muted" :key="id" class="chip-muted" :title="`Unmute ${state.characters[id]?.name}`" @click="setMuted(id, false)">
@@ -482,38 +480,6 @@ const muteResults = computed(() => {
   max-width: 360px;
 }
 
-.mute-results {
-  margin: 0;
-  padding: 4px;
-  list-style: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-}
-
-.mute-results button {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 36px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 4px;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.mute-results button:hover {
-  background: var(--surface-hover);
-}
-
-.mute-results button[aria-selected="true"] span:first-child {
-  text-decoration: line-through;
-  color: var(--text-muted);
-}
 
 .chips {
   display: flex;

@@ -165,6 +165,11 @@ export function playMusic(track: string) {
   server().MC({ name: track, char_id: state.self.charId });
 }
 
+/** Asks the server to change the area's background. */
+export function changeBackground(name: string) {
+  sendOOC(`/bg ${name}`);
+}
+
 export function callMod(reason: string) {
   server().ZZ({ reason });
 }

@@ -11,6 +11,8 @@ import { client } from "../../client";
 import { draft, sendIC } from "../../core/commands";
 import { getPairOrder } from "../../dom/pairOrder";
 import OOCChat from "./OOCChat.vue";
+import BackgroundPanel from "./BackgroundPanel.vue";
+import AreasPanel from "./AreasPanel.vue";
 
 // Landscape: the stage with the first tab under it, beside a column for the
 // other tabs. Portrait: the stage, the message bar, then every tab.
@@ -112,7 +114,9 @@ onUnmounted(() => landscapeQuery.removeEventListener("change", onOrientation));
       <ICControls v-if="t.id === 'emotes'" />
       <ICLog v-else-if="t.id === 'log'" :ref="keepRef('log')" />
       <OOCChat v-else-if="t.id === 'ooc'" :ref="keepRef('ooc')" />
+      <AreasPanel v-else-if="t.id === 'areas'" />
       <LegacyPanel v-else-if="t.id === 'music'" template="music" />
+      <BackgroundPanel v-else-if="t.id === 'background'" />
       <LegacyPanel v-else-if="t.id === 'players'" template="players" />
       <LegacyPanel v-else template="mainmenu" />
     </div>

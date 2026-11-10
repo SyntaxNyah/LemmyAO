@@ -1,5 +1,4 @@
 import vanilla_evidence_arr from "../constants/evidence";
-import vanilla_background_arr from "../constants/backgrounds";
 import { changeMusicVolume } from "../dom/changeMusicVolume";
 import { setChatbox } from "../dom/setChatbox";
 import { changeSFXVolume } from "../dom/changeVolume";
@@ -32,14 +31,6 @@ import { client } from "../client";
 export function loadResources() {
   document.getElementById("client_version")!.innerText = `version ${version}`;
   (document.getElementById("mod_ui") as HTMLLinkElement).href = "styles/nomod.css";
-  // Load background array to select
-  const background_select = <HTMLSelectElement>(
-    document.getElementById("bg_select")
-  );
-  background_select.add(new Option("Custom", "0"));
-  vanilla_background_arr.forEach((background) => {
-    background_select.add(new Option(background));
-  });
 
   // Load evidence array to select
   const evidence_select = <HTMLSelectElement>(
