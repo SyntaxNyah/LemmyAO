@@ -40,8 +40,6 @@ const reachable = computed(() => visible.value.filter((s) => transportFor(s, loc
 const desktopOnly = computed(() => visible.value.filter((s) => !transportFor(s, location.protocol)));
 const playerTotal = computed(() => directory.servers.reduce((n, s) => n + s.players, 0));
 
-const offlineUrl = new URL("client.html?mode=replay", page).href;
-const localhostUrl = clientUrl("ws://127.0.0.1:50001", { name: "Localhost", page });
 
 function connectDirect() {
   const socket = parseDirectConnect(direct.value, location.protocol);
@@ -79,10 +77,6 @@ onMounted(() => {
         <p class="muted">
           {{ directory.servers.length }} servers · {{ playerTotal }} players online
         </p>
-      </div>
-      <div class="quick">
-        <a class="btn" :href="offlineUrl">Practice offline</a>
-        <a class="btn" :href="localhostUrl" title="ws://127.0.0.1:50001">Localhost</a>
       </div>
     </section>
 
@@ -220,11 +214,6 @@ h1 {
   margin: 2px 0 0;
 }
 
-.quick {
-  display: flex;
-  gap: 8px;
-}
-
 .card {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -347,14 +336,6 @@ h1 {
 
   h1 {
     font-size: 24px;
-  }
-
-  .quick {
-    width: 100%;
-  }
-
-  .quick .btn {
-    flex: 1;
   }
 
   .toolbar {
