@@ -25,7 +25,6 @@ import type { CoreHandlers } from "./core/protocol";
 // Assets
 import { applyAssetOrigin } from "./client/aoHost";
 
-import { showBlockingAlert } from "./client/handleBans";
 
 
 // Character downloads
@@ -116,7 +115,7 @@ export function registerProtocol(
   on("ARUP");
   on("ASS", applyAssetOrigin);
   on("AUTH", applyModAuth);
-  on("BB", showBlockingAlert);
+  on("BB");
   on("BD");
   on("BN");
   on("CASEA");

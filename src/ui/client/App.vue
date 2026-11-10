@@ -21,6 +21,7 @@ import OffsetGhost from "./OffsetGhost.vue";
 import CharacterSelect from "./CharacterSelect.vue";
 import LoadingOverlay from "./LoadingOverlay.vue";
 import ConnectionOverlay from "./ConnectionOverlay.vue";
+import ServerAlert from "./ServerAlert.vue";
 import { offsetPreview } from "./offsetPreview";
 
 // Landscape: the stage with the first tab under it, beside a column for the
@@ -187,6 +188,7 @@ onUnmounted(() => {
     <CharacterSelect />
     <LoadingOverlay />
     <ConnectionOverlay />
+    <ServerAlert />
   </div>
 </template>
 

@@ -97,6 +97,8 @@ export interface State {
     /** Whether we ever finished joining; tells "disconnected" from "could not connect". */
     wasJoined: boolean;
   };
+  /** BB warnings from the server, oldest first, until dismissed. */
+  alerts: string[];
   server: {
     playerId: number;
     software: string;
@@ -149,6 +151,7 @@ export const LOG_LIMIT = 1000;
 export function initialState(assetHost = ""): State {
   return {
     connection: { status: "idle", closeCode: null, removal: null, wasJoined: false },
+    alerts: [],
     server: {
       playerId: -1,
       software: "",

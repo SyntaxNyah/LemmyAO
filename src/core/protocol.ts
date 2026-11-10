@@ -324,6 +324,10 @@ export function coreHandlers(conn: Connection): CoreHandlers {
       state.self.moderator = p.auth_state === AuthState.success;
     },
 
+    BB: (p) => {
+      state.alerts.push(p.message);
+    },
+
     BD: (p) => {
       state.connection.removal = { kind: "banned", reason: p.reason };
     },

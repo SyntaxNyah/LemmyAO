@@ -167,6 +167,8 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
     broadcast((s) => s.send.MS(packet as never));
   });
   session.on.CT((packet) => {
+    const message = (packet as { message: string }).message;
+    if (message.startsWith("/bb ")) return session.send.BB({ message: message.slice(4) } as never);
     const me = players.get(session);
     const name = (packet as { name: string }).name;
     if (me && me.name !== name) {

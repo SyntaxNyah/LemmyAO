@@ -195,6 +195,12 @@ describe("server notices", () => {
     receive("KB#for real#%");
     expect(state.connection.removal).toEqual({ kind: "banned", reason: "for real" });
   });
+
+  test("server warnings queue until dismissed", () => {
+    receive("BB#Read the rules#%");
+    receive("BB#Second#%");
+    expect(state.alerts).toEqual(["Read the rules", "Second"]);
+  });
 });
 
 describe("court and logs", () => {
