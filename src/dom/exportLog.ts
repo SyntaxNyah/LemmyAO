@@ -1,5 +1,4 @@
 import { state } from "../core/state";
-import { settings } from "../core/settings";
 import { icLogAsText } from "../core/log";
 import { safeHtmlTags } from "../escaping";
 
@@ -7,7 +6,7 @@ import { safeHtmlTags } from "../escaping";
 export function exportLog(format: string) {
   const timestamp = new Date().toISOString().replace(/[T:.]/g, "-").slice(0, 19);
   const filename = `lemmyao-log-${timestamp}`;
-  const text = icLogAsText(state.icLog, settings.shownamesEnabled);
+  const text = icLogAsText(state.icLog, true);
 
   if (format === "txt") {
     downloadBlob(text, `${filename}.txt`, "text/plain;charset=utf-8");

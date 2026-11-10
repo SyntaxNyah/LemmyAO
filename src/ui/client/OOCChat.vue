@@ -20,7 +20,7 @@ const message = ref("");
 
 function saveChatlog() {
   const day = new Date().toISOString().slice(0, 10);
-  downloadFile(icLogAsText(state.icLog, settings.shownamesEnabled), `chatlog-${day}.txt`);
+  downloadFile(icLogAsText(state.icLog, true), `chatlog-${day}.txt`);
 }
 
 const LOCAL_COMMANDS: Record<string, () => void> = { "/save_chatlog": saveChatlog };

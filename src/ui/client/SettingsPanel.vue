@@ -19,9 +19,8 @@ const SECTIONS: Record<string, string> = {
   voice: "voice chat microphone mic push to talk ptt",
   appearance: "appearance theme dark light accent colour color chatbox style font dialogue",
   courtroom: "courtroom 16:9 widescreen aspect chatbox inset offset pan tilt desks",
-  chat: "chat shownames showname callwords mention modcall sound",
+  chat: "chat callwords mention modcall sound",
   layout: "layout tabs tab order",
-  iniswap: "iniswap iniedit character experimental",
   log: "log chat log download export transcript txt html",
   advanced: "advanced disconnect reset defaults",
   about: "about version credits lemmyao webao",
@@ -63,21 +62,26 @@ const VOLUMES = [
   { key: "blipVolume", mute: "blipMuted", label: "Blips" },
 ] as const;
 
-const callwords = computed({
-  get: () => settings.callwords.join("\n"),
-  set: (v: string) =>
-    setSetting(
-      "callwords",
-      v.split("\n").map((w) => w.trim()).filter(Boolean),
-    ),
-});
+const newCallword = ref("");
+function addCallword() {
+  const word = newCallword.value.trim();
+  if (word && !settings.callwords.some((w) => w.toLowerCase() === word.toLowerCase())) {
+    setSetting("callwords", [...settings.callwords, word]);
+  }
+  newCallword.value = "";
+}
+const removeCallword = (word: string) =>
+  setSetting(
+    "callwords",
+    settings.callwords.filter((w) => w !== word),
+  );
 
 const DEFAULT_ACCENT = "#6d8cff";
 
 // Voice, OOC name, favorites and saved lists survive a reset, as before.
 const RESET_KEYS: SettingKey[] = [
   "chatbox", "font", "customFont", "musicVolume", "sfxVolume", "blipVolume", "blipPitch",
-  "musicMuted", "sfxMuted", "blipMuted", "callwords", "showname", "shownamesEnabled",
+  "musicMuted", "sfxMuted", "blipMuted", "callwords", "showname",
   "panTilt", "hideDesks", "widescreen", "chatOffset", "preanimGlow", "preanimGlowColor",
   "preanimGlowIntensity", "theme", "accent", "tabOrder",
 ];
@@ -149,6 +153,7 @@ const checkbox = (key: SettingKey) => ({
           <span class="field-label">Chatbox style</span>
           <select class="input" :value="settings.chatbox" @change="setSetting('chatbox', ($event.target as HTMLSelectElement).value)">
             <option value="dynamic">Each character's own</option>
+            <option value="default">LemmyAO default</option>
             <option v-for="c in chatboxes" :key="c" :value="c">{{ CHATBOX_LABELS[c] }}</option>
           </select>
         </label>
@@ -193,22 +198,24 @@ const checkbox = (key: SettingKey) => ({
 
     <section v-show="visible('chat')" class="section">
       <h3>Chat</h3>
-      <label class="check"><input type="checkbox" v-bind="checkbox('shownamesEnabled')" /> Show others' shownames</label>
-      <label class="field narrow">
-        <span class="field-label">Callwords (one per line; a sound plays when a message contains one)</span>
-        <textarea v-model.lazy="callwords" class="input textarea" rows="3"></textarea>
-      </label>
+      <span class="field-label">Callwords: a sound plays when an IC message contains one</span>
+      <ul v-if="settings.callwords.length" class="word-list">
+        <li v-for="word in settings.callwords" :key="word">
+          <span>{{ word }}</span>
+          <button class="link-btn danger-text" :aria-label="`Remove ${word}`" @click="removeCallword(word)">Remove</button>
+        </li>
+      </ul>
+      <p v-else class="muted">No callwords yet.</p>
+      <form class="add-callword" @submit.prevent="addCallword">
+        <input v-model="newCallword" class="input" placeholder="e.g. your name" aria-label="New callword" />
+        <button class="btn" type="submit" :disabled="!newCallword.trim()">Add callword</button>
+      </form>
       <div><button class="btn" @click="modcall_test">Test mod call sound</button></div>
     </section>
 
     <section v-show="visible('layout')" class="section">
       <h3>Layout</h3>
       <TabOrderSettings />
-    </section>
-
-    <section v-show="visible('iniswap')" class="section">
-      <h3>Iniswap (experimental)</h3>
-      <LegacyPanel template="iniswap" class="legacy-block" />
     </section>
 
     <section v-show="visible('log')" class="section">
@@ -394,10 +401,37 @@ h3 {
   gap: 6px;
 }
 
-.textarea {
-  min-height: 72px;
-  padding: 8px 12px;
-  resize: vertical;
+.word-list {
+  max-width: 420px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.word-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 4px 0 12px;
+  overflow-wrap: anywhere;
+}
+
+.word-list li + li {
+  border-top: 1px solid var(--border);
+}
+
+.danger-text {
+  color: var(--danger);
+}
+
+.add-callword {
+  display: flex;
+  gap: 6px;
+  max-width: 420px;
 }
 
 .danger {

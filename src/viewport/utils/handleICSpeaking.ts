@@ -24,7 +24,6 @@ import { renderGroupPeers, membersFromAdditionalChars } from "../groupRender";
 import { getMmdController } from "../mmd";
 import { setupCharacterSlot } from "../mmd/applyEmote";
 import type { Model3dInfo } from "../mmd/types";
-import { settings } from "../../core/settings";
 
 const SOUND_SENTINELS = new Set(["", "0", "1"]);
 const BAD_EFFECTS = new Set(["", "-", "none"]);
@@ -383,7 +382,7 @@ const renderICMessage = (chatmsg: ChatMsg) => {
   const chatBoxInner = document.getElementById("client_inner_chat")!;
 
   const displayname =
-    settings.shownamesEnabled && chatmsg.showname !== ""
+    chatmsg.showname !== ""
       ? chatmsg.showname
       : chatmsg.nameplate;
 

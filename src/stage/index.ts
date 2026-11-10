@@ -1,8 +1,6 @@
 import { client } from "../client";
 import { AO_HOST } from "../client/aoHost";
-import { effect } from "@vue/reactivity";
 import { on } from "../core/events";
-import { settings } from "../core/settings";
 import { playICMessage } from "../viewport/utils/handleICSpeaking";
 import { showBackground } from "../viewport/utils/setSide";
 import { playMusicTrack, seekMusic } from "../viewport/utils/playMusic";
@@ -33,11 +31,9 @@ export function mountStage(host: HTMLElement) {
   host.innerHTML = STAGE_HTML;
   followSettings();
 
-  // The nameplate shows the sender's showname, or their character name.
-  effect(() => {
-    const link = document.getElementById("nameplate_setting") as HTMLLinkElement | null;
-    if (link) link.href = `styles/${settings.shownamesEnabled ? "shownames" : "nameplates"}.css`;
-  });
+  // The nameplate shows the sender's showname when they set one.
+  const nameplates = document.getElementById("nameplate_setting") as HTMLLinkElement | null;
+  if (nameplates) nameplates.href = "styles/shownames.css";
 
   on("icMessage", playICMessage);
   on("background", showBackground);

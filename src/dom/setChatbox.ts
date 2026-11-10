@@ -15,7 +15,7 @@ export function setChatbox(setstyle: string) {
     if (chatbox_arr.includes(style)) {
       chatbox_theme.href = `styles/chatbox/${style}.css`;
     } else {
-      chatbox_theme.href = "styles/chatbox/aa.css";
+      chatbox_theme.href = "styles/chatbox/default.css";
     }
   } else {
     chatbox_theme.href = `styles/chatbox/${CHATBOX}.css`;

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { state, type ICEntry } from "../../core/state";
-import { settings } from "../../core/settings";
 import { messageText, speakerName } from "../../core/log";
 import { useStickyScroll } from "./useStickyScroll";
 import { RAINBOW, TEXT_COLORS } from "../textColors";
@@ -22,7 +21,7 @@ const showTime = (i: number) => {
   return true;
 };
 
-const speaker = (e: Extract<ICEntry, { kind: "message" }>) => speakerName(e, settings.shownamesEnabled);
+const speaker = (e: Extract<ICEntry, { kind: "message" }>) => speakerName(e, true);
 </script>
 
 <template>
