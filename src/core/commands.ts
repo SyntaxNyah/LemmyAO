@@ -6,6 +6,7 @@ import {
   ShoutModifier,
   Side,
   TextColor,
+  msToTicks,
   type DeskModifier,
   type RTAnimation,
 } from "aolib-ts";
@@ -114,7 +115,8 @@ export function sendIC(): boolean {
     sfx_name: draft.sendSfx ? emote.sfx : "0",
     emote_modifier: emoteModifier(emote, draft.sendPreanim),
     char_id: state.self.charId,
-    sfx_delay: draft.sendSfx ? emote.sfxDelay : 0,
+    // The wire carries 40 ms ticks.
+    sfx_delay: draft.sendSfx ? msToTicks(emote.sfxDelay) : 0,
     shout_modifier: draft.shout,
     evidence_id: draft.evidence + 1,
     flip: draft.flip ? Flip.horizontal : Flip.none,

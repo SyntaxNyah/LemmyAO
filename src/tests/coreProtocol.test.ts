@@ -327,7 +327,7 @@ describe("commands", () => {
       emote_modifier: "preanim",
       desk_modifier: "hidden",
       sfx_name: "deskslam",
-      sfx_delay: 120,
+      sfx_delay: 3,
       shout_modifier: "take_that",
       evidence_id: 3,
       char_id: 0,
