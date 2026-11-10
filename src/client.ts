@@ -65,9 +65,21 @@ export function setExtraFeatures(val: any) {
 
 const fpPromise = FingerprintJS.load();
 
+// Replay playback lived in the old OOC panel; the code stays until it gets a new UI.
+const replayDisabled = mode === "replay";
+
+if (replayDisabled) {
+  document.getElementById("client_waiting")!.style.display = "none";
+  document.getElementById("client_errortext")!.textContent = "Replay mode is unavailable for now.";
+  document.getElementById("client_error_code")!.style.display = "none";
+  document.getElementById("client_reconnect")!.style.display = "none";
+  document.getElementById("client_error_overlay")!.style.display = "flex";
+}
+
 fpPromise
   .then((fp) => fp.get())
   .then((result) => {
+    if (replayDisabled) return;
     const hdid = result.visitorId;
 
     let connectionString = connect;
