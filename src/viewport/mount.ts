@@ -1,7 +1,7 @@
 import { client } from "../client";
 import { AO_HOST } from "../client/aoHost";
 import { on } from "../core/events";
-import { playICMessage } from "./utils/handleICSpeaking";
+import { playICMessage } from "./playMessage";
 import { showBackground } from "./utils/setSide";
 import { playMusicTrack, seekMusic } from "./utils/playMusic";
 import { showTestimony } from "./utils/initTestimonyUpdater";
