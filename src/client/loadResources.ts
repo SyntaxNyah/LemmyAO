@@ -1,4 +1,4 @@
-import { unlockBlipAudio } from "../viewport/utils/blipAudio";
+import { unlockAudio } from "../viewport/audio";
 
 /**
  * Startup work the viewport still needs. Settings are applied by the viewport
@@ -7,10 +7,10 @@ import { unlockBlipAudio } from "../viewport/utils/blipAudio";
 export function loadResources() {
   (document.getElementById("mod_ui") as HTMLLinkElement).href = "styles/nomod.css";
 
-  // Resume the blip AudioContext on the first user gesture so blips fire
-  // reliably from the first message (browser autoplay policy).
+  // Open the message audio stream on the first gesture (autoplay policy), so
+  // it is awake before the first message.
   const unlock = () => {
-    unlockBlipAudio();
+    unlockAudio();
     document.removeEventListener("pointerdown", unlock);
     document.removeEventListener("keydown", unlock);
   };

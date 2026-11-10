@@ -2,14 +2,14 @@ import { effect } from "@vue/reactivity";
 import { client } from "../client";
 import { settings } from "../core/settings";
 import { on } from "../core/events";
-import { setBlipMuted, setBlipPitch, setBlipVolume } from "./utils/blipAudio";
+import { setBlipMuted, setBlipPitch, setBlipVolume, setSfxMuted, setSfxVolume } from "./audio";
 import { setChatbox } from "../dom/setChatbox";
 import { applyPanTilt } from "../dom/switchPanTilt";
 import { applyHideDesks } from "../dom/switchHideDesks";
 import { applyWidescreen } from "../dom/switchAspectRatio";
 import { applyPreanimGlow } from "../dom/switchPreanimGlow";
 
-const SFX_IDS = ["client_sfxaudio", "client_shoutaudio", "client_testimonyaudio"];
+const SFX_IDS = ["client_sfxaudio", "client_testimonyaudio"];
 
 function applyAudio() {
   const music = document.getElementsByClassName("audioChannel") as HTMLCollectionOf<HTMLAudioElement>;
@@ -24,6 +24,8 @@ function applyAudio() {
       el.muted = settings.sfxMuted;
     }
   }
+  setSfxVolume(settings.sfxVolume);
+  setSfxMuted(settings.sfxMuted);
   setBlipVolume(settings.blipVolume);
   setBlipMuted(settings.blipMuted);
   setBlipPitch(settings.blipPitch);

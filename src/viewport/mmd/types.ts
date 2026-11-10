@@ -5,7 +5,7 @@ export type MmdState = "idle" | "talking" | "preanim";
  * Resolved 3D render data for one IC message, computed during asset preload and
  * stashed on the ChatMsg. Holds the character/emote identity, the emote's clip
  * set (preanim intro, base loop, postanim outro, camera VMD) and the measured
- * preanim length so the chat_tick timeline stays in step with the sprites.
+ * preanim length so the message timeline stays in step with the sprites.
  */
 export interface Model3dInfo {
   charName: string;

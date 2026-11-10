@@ -34,7 +34,7 @@ export function applyCharacterEmote(
 /**
  * Places and shows the 3D model in the active slot (hiding the slot's sprite),
  * or tears down the 3D canvas when the speaker is a 2D character. Called once
- * per message from renderICMessage before the chat_tick timeline starts.
+ * per message from renderICMessage before its timeline starts.
  */
 export function setupCharacterSlot(
   side: Side,

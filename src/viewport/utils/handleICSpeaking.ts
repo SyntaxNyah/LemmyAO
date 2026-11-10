@@ -19,7 +19,9 @@ import {
   Side,
 } from "aolib-ts";
 import preloadMessageAssets from "./preloadMessageAssets";
-import { setBlipUrl } from "./blipAudio";
+import { loadSound } from "../audio";
+import { buildTimeline, type TimelineEvent } from "../timeline";
+import { playTimeline, type MessageSounds } from "../player";
 import { renderGroupPeers, membersFromAdditionalChars } from "../groupRender";
 import { getMmdController } from "../mmd";
 import { setupCharacterSlot } from "../mmd/applyEmote";
@@ -56,19 +58,6 @@ const initAttorneyMarkdown = async () => {
   })();
   return markdownInitPromise;
 };
-
-export let startFirstTickCheck: boolean;
-export function setStartFirstTickCheck(val: boolean) {
-  startFirstTickCheck = val;
-}
-export let startSecondTickCheck: boolean;
-export function setStartSecondTickCheck(val: boolean) {
-  startSecondTickCheck = val;
-}
-export let startThirdTickCheck: boolean;
-export function setStartThirdTickCheck(val: boolean) {
-  startThirdTickCheck = val;
-}
 
 /** Per-axis mirroring CSS transform for a Flip value. */
 const flipTransform = (flip: Flip | undefined): string => {
@@ -203,7 +192,9 @@ const prepare3dModel = async (
  * preload, markdown parsing) and computes derived render-loop flags.
  * No DOM mutation here -- only state on the chatmsg object itself.
  */
-const prepareICMessage = async (packet: aolib.packets.MSToClient): Promise<ChatMsg> => {
+const prepareICMessage = async (
+  packet: aolib.packets.MSToClient,
+): Promise<{ chatmsg: ChatMsg; timeline: TimelineEvent[]; sounds: MessageSounds }> => {
   // By the folder name the message carries, so iniswaps show the swapped character.
   const char = await characterInfo(packet.character);
   const chatmsg = buildChatMsg(packet, char);
@@ -247,7 +238,30 @@ const prepareICMessage = async (packet: aolib.packets.MSToClient): Promise<ChatM
   // typewriter loop. Markdown-aware when available, plain fallback otherwise.
   chatmsg.parsed = await parseContent(chatmsg);
 
-  return chatmsg;
+  const assets = chatmsg.preloadedAssets;
+  const shout = SHOUTS[chatmsg.shout_modifier];
+  const shoutUrl = shout ? assets.shoutSfxUrl || client.resources[shout].sfx : "";
+  const optional = (url: string | null | undefined) => (url ? loadSound(url) : Promise.resolve(null));
+  const [blip, shoutSound, sfx, realization, stab, evidence] = await Promise.all([
+    loadSound(`${AO_HOST}sounds/blips/${encodeURI(chatmsg.blips.toLowerCase())}.opus`),
+    optional(shoutUrl),
+    optional(assets.emoteSfxUrl),
+    optional(assets.realizationSfxUrl),
+    optional(assets.stabSfxUrl),
+    optional(chatmsg.evidence_id > 0 ? `${AO_HOST}sounds/general/sfx-evidenceshoop.opus` : null),
+  ]);
+  const sounds: MessageSounds = { blip, shout: shoutSound, sfx, realization, stab, evidence };
+
+  const timeline = buildTimeline({
+    shoutMs: shout ? client.resources[shout].duration : 0,
+    preanimMs: chatmsg.startspeaking ? 0 : (chatmsg.preanimdelay ?? 0),
+    nonInterrupting: chatmsg.noninterrupting_preanim === true,
+    chars: chatmsg.content.split(""),
+    speedMs: chatmsg.speed,
+    sfxDelayMs: assets.emoteSfxUrl ? aolib.ticksToMs(chatmsg.sfx_delay) : null,
+  });
+
+  return { chatmsg, timeline, sounds };
 };
 
 /**
@@ -257,10 +271,7 @@ const prepareICMessage = async (packet: aolib.packets.MSToClient): Promise<ChatM
  */
 const applyShout = (chatmsg: ChatMsg, chatContainerBox: HTMLElement) => {
   const shout = SHOUTS[chatmsg.shout_modifier];
-  if (!shout) {
-    client.viewport.setShoutTimer(0);
-    return;
-  }
+  if (!shout) return;
 
   const preloaded = chatmsg.preloadedAssets!;
   const shoutSprite = <HTMLImageElement>document.getElementById("client_shout");
@@ -282,18 +293,6 @@ const applyShout = (chatmsg: ChatMsg, chatContainerBox: HTMLElement) => {
     shoutSprite.style.display = "none";
   };
   shoutSprite.style.display = "block";
-
-  // Custom shouts have no default sfx (resources.custom.sfx is ""), so this
-  // can legitimately resolve to nothing. Leave the channel alone in that
-  // case: assigning "" makes the element resolve src against the document
-  // and try to load client.html as audio, which fails forever.
-  const shoutSfx = preloaded.shoutSfxUrl || client.resources[shout].sfx;
-  client.viewport.shoutaudio.pause(); // interrupt the previous shout either way
-  if (shoutSfx) {
-    client.viewport.shoutaudio.src = shoutSfx;
-    client.viewport.shoutaudio.play().catch(() => {});
-  }
-  client.viewport.setShoutTimer(client.resources[shout].duration);
 };
 
 /** Spawns the rain-drop DOM into the foreground layer. */
@@ -334,24 +333,13 @@ const applyEffectsOverlay = (fg: HTMLImageElement, effects: string[]) => {
 };
 
 // ---------------------------------------------------------------------------
-// Phase 3: render (sync; applies the prepared chatmsg to the DOM and
-//                  starts the chat_tick animation loop)
+// Phase 3: render (sync; sets the scene up; the player runs the timeline)
 // ---------------------------------------------------------------------------
 
 const renderICMessage = (chatmsg: ChatMsg) => {
   client.viewport.setChatmsg(chatmsg);
   client.viewport.setTextNow("");
-  client.viewport.setSfxPlayed(0);
-  client.viewport.setTickTimer(0);
   client.viewport.setAnimating(true);
-
-  startFirstTickCheck = true;
-  startSecondTickCheck = false;
-  startThirdTickCheck = false;
-  clearTimeout(client.viewport.updater);
-
-  // stop last sfx from looping any longer
-  client.viewport.getSfxAudio().loop = false;
 
   const fg = <HTMLImageElement>document.getElementById("client_fg");
   const gamewindow = document.getElementById("client_gamewindow")!;
@@ -492,10 +480,6 @@ const renderICMessage = (chatmsg: ChatMsg) => {
     }
   }
 
-  setBlipUrl(
-    `${AO_HOST}sounds/blips/${encodeURI(chatmsg.blips.toLowerCase())}.opus`,
-  );
-
   // Text alignment: `~~` prefix on the raw message centers the chat.
   // The prefix itself was stripped from `chatmsg.content` in prepare,
   // so we check the unmodified `chatmsg.message` instead.
@@ -506,27 +490,16 @@ const renderICMessage = (chatmsg: ChatMsg) => {
   applyEffectsOverlay(fg, chatmsg.effects);
 
   charLayers.style.opacity = "1";
-
-  client.viewport.chat_tick();
 };
 
-// ---------------------------------------------------------------------------
-// Entry point: orchestrate the three phases.
-// ---------------------------------------------------------------------------
-
-/**
- * Composed pipeline: build + preload + render. Called from receiveMS.
- *
- *   prepareICMessage(packet)  // async: build chatmsg, preload, parse markdown
- *   renderICMessage(chatmsg)  // sync:  apply to DOM, start chat_tick
- */
-export async function handle_ic_speaking(packet: aolib.packets.MSToClient) {
-  const chatmsg = await prepareICMessage(packet);
-  renderICMessage(chatmsg);
-}
+// Messages prepare in parallel but play in the order they arrived.
+let queue: Promise<void> = Promise.resolve();
 
 /** Plays an IC message. Core has already dropped duplicates and muted characters. */
 export function playICMessage(packet: aolib.packets.MSToClient) {
-  handle_ic_speaking(packet);
+  const prepared = prepareICMessage(packet);
+  queue = queue
+    .then(() => prepared)
+    .then(({ chatmsg, timeline, sounds }) => playTimeline(chatmsg, timeline, sounds, () => renderICMessage(chatmsg)))
+    .catch((err) => console.error("Could not play IC message", err));
 }
-
