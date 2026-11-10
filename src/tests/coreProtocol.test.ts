@@ -417,6 +417,38 @@ describe("log", () => {
     expect(state.icLog.map((e) => e.kind === "notice" && e.text)).toEqual(["Connected", "Moved to Courtroom"]);
   });
 
+  test("with a player list, only the server's report moves us", () => {
+    receive("SM#Lobby#Courtroom#Basement#== Music ==#a.opus#%");
+    receive("ID#7#akashi#1.0#%");
+    server().PR({ id: 7, type: PlayerListUpdate.add });
+    receive("DONE#%");
+    const notices = () => state.icLog.flatMap((e) => (e.kind === "notice" ? [e.text] : []));
+
+    changeArea(1);
+    expect(outbound.at(-1)).toMatchObject({ $header: "MC", name: "Courtroom" });
+    expect(state.self.areaId).toBe(0);
+
+    server().PU({ id: 7, type: PlayerDataType.area_id, data: "1" });
+    expect(state.self.areaId).toBe(1);
+
+    // Refused: the server never reports a move.
+    changeArea(2);
+    expect(state.self.areaId).toBe(1);
+
+    // Moved by the server, e.g. by a moderator.
+    server().PU({ id: 7, type: PlayerDataType.area_id, data: "2" });
+    expect(state.self.areaId).toBe(2);
+    expect(notices()).toEqual(["Connected", "Moved to Courtroom", "Moved to Basement"]);
+  });
+
+  test("other players' moves don't move us", () => {
+    receive("SM#Lobby#Courtroom#== Music ==#a.opus#%");
+    receive("ID#7#akashi#1.0#%");
+    server().PR({ id: 3, type: PlayerListUpdate.add });
+    server().PU({ id: 3, type: PlayerDataType.area_id, data: "1" });
+    expect(state.self.areaId).toBe(0);
+  });
+
   test("each character's last showname is remembered, blank included", () => {
     receive("SC#Phoenix#Edgeworth#%");
     const ms = { character: "Edgeworth", emote: "normal", side: Side.pro, char_id: 1 };

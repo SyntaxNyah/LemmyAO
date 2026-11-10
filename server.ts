@@ -57,14 +57,15 @@ const evidence: { name: string; description: string; image: string }[] = [];
 const sendEvidence = () => broadcast((s) => s.send.LE({ evidence: [...evidence] }));
 
 // The player list (PR/PU) every joined client sees.
-const players = new Map<ClientSession, { id: number; name: string; charName: string; showName: string }>();
+type DemoPlayer = { id: number; name: string; charName: string; showName: string; area: number };
+const players = new Map<ClientSession, DemoPlayer>();
 
-function sendPlayer(to: ClientSession, p: { id: number; name: string; charName: string; showName: string }) {
+function sendPlayer(to: ClientSession, p: DemoPlayer) {
   to.send.PR({ id: p.id, type: PlayerListUpdate.add });
   to.send.PU({ id: p.id, type: PlayerDataType.char_name, data: p.charName });
   to.send.PU({ id: p.id, type: PlayerDataType.ooc_name, data: p.name });
   to.send.PU({ id: p.id, type: PlayerDataType.showname, data: p.showName });
-  to.send.PU({ id: p.id, type: PlayerDataType.area_id, data: "0" });
+  to.send.PU({ id: p.id, type: PlayerDataType.area_id, data: String(p.area) });
 }
 
 function updatePlayer(session: ClientSession, type: PlayerDataType, data: string) {
@@ -127,7 +128,7 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
     session.send.BN({ background: BACKGROUND });
     session.send.DONE({});
     session.send.LE({ evidence: [...evidence] });
-    const me = { id: playerId, name: "", charName: "", showName: "" };
+    const me: DemoPlayer = { id: playerId, name: "", charName: "", showName: "", area: 0 };
     for (const other of players.values()) sendPlayer(session, other);
     players.set(session, me);
     broadcast((s) => sendPlayer(s, me));
@@ -184,10 +185,19 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
     }
     broadcast((s) => s.send.CT(packet as never));
   });
-  // MC carrying an area name is a move, not a song; there is only one room to move to.
+  // MC carrying an area name is a move, not a song. Moves are only reported (IC is shared);
+  // the Lobby is locked, to try a refused move.
   session.on.MC((packet) => {
-    if (AREAS.includes((packet as { name: string }).name)) return;
-    broadcast((s) => s.send.MC(packet as never));
+    const area = AREAS.indexOf((packet as { name: string }).name);
+    if (area < 0) return broadcast((s) => s.send.MC(packet as never));
+    const me = players.get(session);
+    if (AREAS[area] === "Lobby") {
+      return session.send.CT({ name: "Server", message: "The Lobby is locked.", is_from_server: true } as never);
+    }
+    if (me && me.area !== area) {
+      me.area = area;
+      updatePlayer(session, PlayerDataType.area_id, String(area));
+    }
   });
 
   return session;

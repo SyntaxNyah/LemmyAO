@@ -158,6 +158,8 @@ export function changeArea(index: number) {
   const area = state.areas[index];
   if (!area) return;
   server().MC({ name: area.name, char_id: state.self.charId });
+  // With a player list, wait for the server to report the move (it may refuse); without one, assume it worked.
+  if (state.players[state.server.playerId]) return;
   state.self.areaId = index;
   logNotice(`Moved to ${area.name}`);
 }

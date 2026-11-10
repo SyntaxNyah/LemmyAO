@@ -214,7 +214,14 @@ export function coreHandlers(conn: Connection): CoreHandlers {
 
     PU: (p) => {
       const player = state.players[p.id];
-      if (player) PLAYER_FIELDS[p.type]?.(player, p.data);
+      if (!player) return;
+      PLAYER_FIELDS[p.type]?.(player, p.data);
+      // AO has no "you moved" packet; our own roster entry is the server's word on where we are.
+      if (p.id === state.server.playerId && p.type === PlayerDataType.area_id && player.area !== state.self.areaId) {
+        state.self.areaId = player.area;
+        const name = state.areas[player.area]?.name;
+        if (name && state.connection.status === "joined") logNotice(`Moved to ${name}`);
+      }
     },
 
     CT: (p) => {
