@@ -189,6 +189,28 @@ a {
   box-shadow: 0 0 0 1px var(--accent);
 }
 
+/* Top is the minimum, bottom the maximum. */
+.range-vertical {
+  writing-mode: vertical-lr;
+  width: 28px;
+  height: 140px;
+}
+
+.range-vertical::-webkit-slider-runnable-track {
+  width: 6px;
+  height: 100%;
+}
+
+.range-vertical::-moz-range-track {
+  width: 6px;
+  height: 100%;
+}
+
+.range-vertical::-webkit-slider-thumb {
+  margin-top: 0;
+  margin-left: -7px;
+}
+
 .muted {
   color: var(--text-muted);
 }
@@ -212,10 +234,20 @@ a {
     height: var(--tap);
   }
 
+  .range-vertical {
+    width: var(--tap);
+    height: 160px;
+  }
+
   .range::-webkit-slider-thumb {
     width: 26px;
     height: 26px;
     margin-top: -10px;
+  }
+
+  .range-vertical::-webkit-slider-thumb {
+    margin-top: 0;
+    margin-left: -10px;
   }
 
   .input {

@@ -29,6 +29,7 @@ const FEATURES = [
   "flipping",
   "looping_sfx",
   "effects",
+  "y_offset",
 ];
 
 const sessions = new Set<ClientSession>();

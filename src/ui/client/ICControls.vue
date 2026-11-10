@@ -66,13 +66,10 @@ const showJudge = computed(
     (state.self.judgeControls === "by_position" && draft.side === Side.jud),
 );
 
-const offsetAxes = computed(() => [
-  { key: "x" as const, label: "Horizontal" },
-  ...(features.value.has("y_offset") ? [{ key: "y" as const, label: "Vertical" }] : []),
-]);
-
+// Scrolling up moves the sprite right, or up for the vertical axis.
 function nudge(axis: "x" | "y", e: WheelEvent) {
-  const next = draft.pair.offset[axis] + (e.deltaY < 0 ? 1 : -1);
+  const toward = (e.deltaY < 0 ? 1 : -1) * (axis === "y" ? -1 : 1);
+  const next = draft.pair.offset[axis] + toward;
   draft.pair.offset[axis] = Math.min(100, Math.max(-100, next));
 }
 
@@ -214,18 +211,29 @@ function toggleMute(e: Event) {
     <section class="group">
       <h3>Position</h3>
       <div class="offsets">
-        <label v-for="axis in offsetAxes" :key="axis.key" class="field">
-          <span class="field-label">
-            {{ axis.label }} offset <span class="value">{{ draft.pair.offset[axis.key] }}%</span>
-          </span>
+        <label class="field horizontal">
+          <span class="field-label">Horizontal <span class="value">{{ draft.pair.offset.x }}%</span></span>
           <input
-            v-model.number="draft.pair.offset[axis.key]"
+            v-model.number="draft.pair.offset.x"
             class="range"
             type="range"
             min="-100"
             max="100"
             step="1"
-            @wheel.prevent="nudge(axis.key, $event)"
+            @wheel.prevent="nudge('x', $event)"
+          />
+        </label>
+        <label v-if="features.has('y_offset')" class="field vertical">
+          <span class="field-label">Vertical <span class="value">{{ draft.pair.offset.y }}%</span></span>
+          <input
+            v-model.number="draft.pair.offset.y"
+            class="range range-vertical"
+            type="range"
+            min="-100"
+            max="100"
+            step="1"
+            aria-orientation="vertical"
+            @wheel.prevent="nudge('y', $event)"
           />
         </label>
         <button class="btn" :disabled="!draft.pair.offset.x && !draft.pair.offset.y" @click="resetOffsets">Reset</button>
@@ -429,8 +437,13 @@ function toggleMute(e: Event) {
   gap: 8px 16px;
 }
 
-.offsets .field {
+.offsets .horizontal {
   flex: 1 1 200px;
+  align-self: center;
+}
+
+.offsets .vertical {
+  align-items: center;
 }
 
 .value {
