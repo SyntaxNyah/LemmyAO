@@ -13,7 +13,6 @@ import { version } from "../../version";
 import ServerRow from "./ServerRow.vue";
 
 const page = location.href;
-const logo = "logo-new.png";
 const query = ref("");
 const tab = ref<"all" | "favourites">("all");
 const direct = ref("");
@@ -40,7 +39,6 @@ const reachable = computed(() => visible.value.filter((s) => transportFor(s, loc
 const desktopOnly = computed(() => visible.value.filter((s) => !transportFor(s, location.protocol)));
 const playerTotal = computed(() => directory.servers.reduce((n, s) => n + s.players, 0));
 
-
 function connectDirect() {
   const socket = parseDirectConnect(direct.value, location.protocol);
   if (!socket) {
@@ -58,33 +56,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <header class="topbar">
-    <a class="brand" href="./">
-      <img :src="logo" alt="" width="28" height="28" />
-      <span>LemmyAO</span>
-    </a>
-    <nav class="links">
-      <a href="https://aceattorneyonline.com/download.html">Download</a>
-      <a href="https://aceattorneyonline.com/support.html">Help</a>
-      <a href="https://discord.gg/wWvQ3pw">Discord</a>
-    </nav>
-  </header>
-
   <main class="page">
-    <section class="intro">
-      <div>
-        <h1>Servers</h1>
-        <p class="muted">
-          {{ directory.servers.length }} servers · {{ playerTotal }} players online
-        </p>
-      </div>
-    </section>
-
     <div class="toolbar">
       <div class="tabs" role="tablist">
         <button role="tab" :aria-selected="tab === 'all'" @click="tab = 'all'">All</button>
         <button role="tab" :aria-selected="tab === 'favourites'" @click="tab = 'favourites'">
-          Favourites
+          Favorites
           <span v-if="favourites.size" class="count">{{ favourites.size }}</span>
         </button>
       </div>
@@ -142,76 +119,26 @@ onMounted(() => {
     </form>
 
     <footer class="footer muted">
-      <span>Client {{ version }}</span>
-      <span v-if="directory.masterVersion">Master server {{ directory.masterVersion }}</span>
-      <a href="https://servers.aceattorneyonline.com/privacy">Privacy</a>
-      <a href="https://discord.gg/9rYQVVQ">Having trouble?</a>
+      <span>{{ directory.servers.length }} servers · {{ playerTotal }} players online</span>
+      <nav class="links">
+        <a href="https://aceattorneyonline.com/download.html">Download</a>
+        <a href="https://aceattorneyonline.com/support.html">Help</a>
+        <a href="https://discord.gg/wWvQ3pw">Discord</a>
+        <a href="https://servers.aceattorneyonline.com/privacy">Privacy</a>
+      </nav>
+      <span>
+        LemmyAO {{ version }}<template v-if="directory.masterVersion"> · master server {{ directory.masterVersion }}</template>
+      </span>
     </footer>
   </main>
 </template>
 
 <style scoped>
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 85%, transparent);
-  backdrop-filter: blur(12px);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text);
-  font-weight: 700;
-  font-size: 17px;
-  text-decoration: none;
-}
-
-.links {
-  display: flex;
-  gap: 18px;
-}
-
-.links a {
-  color: var(--text-muted);
-  text-decoration: none;
-}
-
-.links a:hover {
-  color: var(--text);
-}
 
 .page {
   max-width: 920px;
   margin: 0 auto;
-  padding: 24px 16px max(32px, env(safe-area-inset-bottom));
-}
-
-.intro {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-h1 {
-  margin: 0;
-  font-size: 28px;
-  letter-spacing: -0.02em;
-}
-
-.intro p {
-  margin: 2px 0 0;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
 }
 
 .card {
@@ -329,14 +256,13 @@ h1 {
   color: inherit;
 }
 
-@media (max-width: 560px) {
-  .links {
-    display: none;
-  }
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
 
-  h1 {
-    font-size: 24px;
-  }
+@media (max-width: 560px) {
 
   .toolbar {
     flex-wrap: wrap;

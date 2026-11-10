@@ -26,7 +26,7 @@ const detailsId = computed(() => `server-${props.server.id.replace(/[^a-z0-9]/gi
         class="star"
         :class="{ on: favourite }"
         :aria-pressed="favourite"
-        :aria-label="favourite ? 'Remove from favourites' : 'Add to favourites'"
+        :aria-label="favourite ? 'Remove from favorites' : 'Add to favorites'"
         @click="$emit('toggleFavourite')"
       >
         ★
