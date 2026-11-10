@@ -101,11 +101,10 @@ function confirmModeration() {
               <span v-if="p.id === state.server.playerId" class="tag">You</span>
               <span v-if="speaking.has(p.id)" class="tag talking">Talking</span>
             </span>
-            <span class="detail">
-              <span class="id">[{{ p.id }}]</span>
-              <template v-if="p.charName && p.charName !== displayName(p)"> {{ p.charName }}</template>
-              <template v-if="p.name"> · {{ p.name }}</template>
-              <template v-if="allAreas"> · {{ areaName(p) }}</template>
+            <span class="detail" :title="p.name ? `OOC name: ${p.name}` : undefined">
+              <span class="id">ID: {{ p.id }}</span>
+              <template v-if="p.charName"> · {{ p.charName }}</template>
+              · {{ areaName(p) }}
             </span>
           </span>
           <span v-if="p.id !== state.server.playerId" class="actions">
