@@ -1,11 +1,4 @@
-/**
- * Preanim glow indicator settings.
- *
- * Emotes that ship a preanimation are flagged with a glow on their button
- * (see changeChar.ts + the `[data-preanim]` rule in client.css). These
- * settings let the player turn the glow off and tune its colour and
- * intensity.
- */
+// Preanim glow settings; the emote picker no longer renders the glow but the settings are kept.
 
 import { settings, setSetting } from "../core/settings";
 

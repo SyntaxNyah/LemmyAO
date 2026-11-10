@@ -22,10 +22,6 @@ import { renderPlayerList } from "./dom/renderPlayerList";
 import { loadResources } from "./client/loadResources";
 import { AO_HOST } from "./client/aoHost";
 import { installVoiceUI } from "./voice/voiceUI";
-import {
-  fetchEvidenceList,
-  fetchCharacterList,
-} from "./client/fetchLists";
 const { ip: serverIP, connect, mode, theme, serverName, char: autoChar, area: autoArea, disableJson } = queryParser();
 export { autoChar, autoArea };
 
@@ -70,7 +66,7 @@ const fpPromise = FingerprintJS.load();
 const replayDisabled = mode === "replay";
 
 if (replayDisabled) {
-  document.getElementById("client_waiting")!.style.display = "none";
+  state.connection.status = "disconnected";
   document.getElementById("client_errortext")!.textContent = "Replay mode is unavailable for now.";
   document.getElementById("client_error_code")!.style.display = "none";
   document.getElementById("client_reconnect")!.style.display = "none";
@@ -126,9 +122,6 @@ effect(() => {
 
 onCore("opened", () => {
   document.getElementById("client_error_overlay")!.style.display = "none";
-  document.getElementById("client_waiting")!.style.display = "block";
-  document.getElementById("client_loading")!.style.display = "block";
-  document.getElementById("client_charselect")!.style.display = "none";
 });
 
 onCore("closed", ({ code }) => {
@@ -140,7 +133,6 @@ onCore("closed", ({ code }) => {
     document.getElementById("client_reconnect")!.style.display = "";
   }
   document.getElementById("client_error_overlay")!.style.display = "flex";
-  document.getElementById("client_loading")!.style.display = "none";
   document.getElementById("error_id")!.textContent = String(code);
 });
 
@@ -302,17 +294,7 @@ class Client {
     }
   }
 
-  resetMusicList() {
-    this.musics = [];
-    document.getElementById("client_musiclist").innerHTML = "";
-  }
 
-  resetAreaList() {
-    this.areas = [];
-    document.getElementById("areas").innerHTML = "";
-    fetchEvidenceList();
-    fetchCharacterList();
-  }
 }
 
 export default Client;

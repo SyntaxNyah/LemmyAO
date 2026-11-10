@@ -367,10 +367,3 @@ onUnmounted(() => {
   height: 100%;
 }
 </style>
-
-<style>
-/* The legacy loading/character select overlay is replaced; legacy code still writes into it. */
-#client_waiting {
-  display: none !important;
-}
-</style>

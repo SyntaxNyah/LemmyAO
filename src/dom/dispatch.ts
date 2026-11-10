@@ -1,215 +1,43 @@
 /**
- * DOM -> TS dispatch via `data-action` attributes.
+ * DOM -> TS dispatch via `data-action` attributes, for the markup that is
+ * still plain HTML: the stage, the connection error overlay and voice chat.
  *
- * HTML elements declare their handler with `data-action="<name>"`. The
- * default event is "click"; override with `data-event="change"` etc.
- * Args are read from element-specific data attributes by the action
- * itself (e.g. `data-shout="1"` for `toggleShout`).
- *
- *   <button data-action="addHPP">+</button>
- *   <button data-action="toggleShout" data-shout="1">!</button>
- *   <input data-action="onICEnter" data-event="keypress">
- *
+ * The default event is "click"; override with `data-event="error"` etc.
  * One delegated listener per event type, registered in capture phase so
- * non-bubbling events (`error`, `volumechange`) work the same way.
+ * non-bubbling events (`error`) work the same way.
  */
-import { PenaltyBar, RTAnimation } from "aolib-ts";
-
-import { addEvidence } from "./addEvidence";
-import { applyCustomFont, setFont } from "./setFont";
-import { toggleMuteMusic, toggleMuteSfx, toggleMuteBlips } from "./audioMute";
-import {
-  openBackgroundList,
-  closeBackgroundList,
-  pickBackground,
-  backgroundlist_filter,
-} from "./backgroundList";
-import { callMod } from "./callMod";
-import { cancelCharacterSelect } from "./cancelCharacterSelect";
-import { cancelEvidence } from "./cancelEvidence";
-import { changeBackgroundOOC } from "./changeBackgroundOOC";
-import { changeBlipVolume } from "./changeBlipVolume";
-import { changeCallwords } from "./changeCallwords";
-import { changeCharacter } from "./changeCharacter";
-import { changeMusicVolume } from "./changeMusicVolume";
-import { changeRoleOOC } from "./changeRoleOOC";
-import { changeSFXVolume } from "./changeVolume";
 import { charError } from "./charError";
-import { chartable_filter } from "./charTableFilter";
-import { deleteEvidence } from "./deleteEvidence";
-import { DisconnectButton } from "./disconnectButton";
-import { editEvidence } from "./editEvidence";
-import { exportLog } from "./exportLog";
 import { imgError } from "./imgError";
-import { iniedit } from "./iniEdit";
-import {
-  openIniswapList,
-  closeIniswapList,
-  pickIniswap,
-  iniswaplist_filter,
-} from "./iniswapList";
-import { modcall_test } from "./modCallTest";
-import { musiclist_click } from "./musicListClick";
-import { musiclist_filter } from "./musicListFilter";
-import { mutelist_click } from "./muteListClick";
-import { onICEnter } from "./onICEnter";
-import { onOOCEnter } from "./onOOCEnter";
-import { onReplayGo } from "./onReplayGo";
 import { opusCheck } from "./opusCheck";
-import { resetPairOffsets } from "./pairOffset";
-import { pairOrderFront, pairOrderBack, pairOrderMove } from "./pairOrder";
-import { pickChar } from "./pickChar";
-import { randomCharacterOOC } from "./randomCharacterOOC";
 import { ReconnectButton } from "./reconnectButton";
-import { reloadTheme, importCustomCSS } from "./reloadTheme";
-import { resetSettings } from "./resetSettings";
-import { setChatbox } from "./setChatbox";
-import { showname_click } from "./showNameClick";
-import { switchAspectRatio } from "./switchAspectRatio";
-import { switchChatOffset } from "./switchChatOffset";
-import { switchHideDesks } from "./switchHideDesks";
-import { switchPanTilt } from "./switchPanTilt";
-import {
-  changePreanimGlowColor,
-  changePreanimGlowIntensity,
-  switchPreanimGlow,
-} from "./switchPreanimGlow";
-import { openThemeMaker } from "./themeMaker";
-import { toggleEffect } from "./toggleEffect";
-import { toggleFavourite } from "./toggleFavourite";
-import { toggleElement } from "./toggleElement";
-import { toggleMenu } from "./toggleMenu";
-import { toggleShout } from "./toggleShout";
 import { toggleVoice } from "./toggleVoice";
-import { updateBackgroundPreview } from "./updateBackgroundPreview";
-import { updateEvidenceIcon } from "./updateEvidenceIcon";
-import { updateIniswap } from "./updateIniswap";
-import { changeHealth, playTestimony } from "../core/commands";
-
-const datasetOf = (e: Event) => (e.currentTarget as HTMLElement).dataset;
 
 const actions: Record<string, (e: Event) => void> = {
-  // Trivial inline handlers.
-  guilty: () => playTestimony(RTAnimation.guilty),
-  notguilty: () => playTestimony(RTAnimation.not_guilty),
-  initCE: () => playTestimony(RTAnimation.cross_examination),
-  initWT: () => playTestimony(RTAnimation.witness_testimony),
-  redHPD: () => changeHealth(PenaltyBar.defense, -1),
-  addHPD: () => changeHealth(PenaltyBar.defense, 1),
-  redHPP: () => changeHealth(PenaltyBar.prosecution, -1),
-  addHPP: () => changeHealth(PenaltyBar.prosecution, 1),
-  resetOffset: () => resetPairOffsets(),
-  pairOrderFront: () => pairOrderFront(),
-  pairOrderBack: () => pairOrderBack(),
-  pairOrderMove: (e) => pairOrderMove(e),
-  preventDefault: (e) => e.preventDefault(),
-
-  // No-arg actions.
-  addEvidence: () => addEvidence(),
-  applyCustomFont: () => applyCustomFont(),
-  openBackgroundList: () => openBackgroundList(),
-  closeBackgroundList: () => closeBackgroundList(),
-  callMod: () => callMod(),
-  cancelCharacterSelect: () => cancelCharacterSelect(),
-  cancelEvidence: () => cancelEvidence(),
-  changeBackgroundOOC: () => changeBackgroundOOC(),
-  changeBlipVolume: () => changeBlipVolume(),
-  changeCallwords: () => changeCallwords(),
-  changeCharacter: (e) => changeCharacter(e),
-  changeMusicVolume: () => changeMusicVolume(),
-  changeRoleOOC: () => changeRoleOOC(),
-  changeSFXVolume: () => changeSFXVolume(),
-  deleteEvidence: () => deleteEvidence(),
-  DisconnectButton: () => DisconnectButton(),
-  editEvidence: () => editEvidence(),
-  iniedit: () => iniedit(),
-  openIniswapList: () => openIniswapList(),
-  closeIniswapList: () => closeIniswapList(),
-  modcall_test: () => modcall_test(),
-  openThemeMaker: () => openThemeMaker(),
-  randomCharacterOOC: () => randomCharacterOOC(),
   ReconnectButton: () => ReconnectButton(),
-  reloadTheme: () => reloadTheme(),
-  resetSettings: () => resetSettings(),
-  setFont: () => setFont(),
-  showname_click: (e) => showname_click(e),
-  switchAspectRatio: () => switchAspectRatio(),
-  switchChatOffset: () => switchChatOffset(),
-  switchHideDesks: () => switchHideDesks(),
-  switchPanTilt: () => switchPanTilt(),
-  switchPreanimGlow: () => switchPreanimGlow(),
-  changePreanimGlowColor: () => changePreanimGlowColor(),
-  changePreanimGlowIntensity: () => changePreanimGlowIntensity(),
-  toggleMuteBlips: () => toggleMuteBlips(),
-  toggleMuteMusic: () => toggleMuteMusic(),
-  toggleMuteSfx: () => toggleMuteSfx(),
   toggleVoice: () => toggleVoice(),
-  updateBackgroundPreview: () => updateBackgroundPreview(),
-  updateEvidenceIcon: () => updateEvidenceIcon(),
-  updateIniswap: () => updateIniswap(),
-
-  // Event-taking actions.
-  chartable_filter: (e) => chartable_filter(e),
-  iniswaplist_filter: (e) => iniswaplist_filter(e),
-  backgroundlist_filter: (e) => backgroundlist_filter(e),
-  importCustomCSS: (e) => importCustomCSS(e),
-  musiclist_click: (e) => musiclist_click(e),
-  musiclist_filter: (e) => musiclist_filter(e),
-  mutelist_click: (e) => mutelist_click(e),
-  onICEnter: (e) => onICEnter(e as KeyboardEvent),
-  onOOCEnter: (e) => onOOCEnter(e as KeyboardEvent),
-  onReplayGo: (e) => onReplayGo(e),
-
-  // Element/dataset-reading actions.
   imgError: (e) => imgError(e.currentTarget as HTMLImageElement),
   charError: (e) => charError(e.currentTarget as HTMLImageElement),
   opusCheck: (e) => opusCheck(e.currentTarget as HTMLAudioElement),
-  toggleEffect: (e) => toggleEffect(e.currentTarget as HTMLElement),
-  setChatbox: (e) => setChatbox((e.currentTarget as HTMLSelectElement).value),
-  pickChar: (e) => pickChar(Number(datasetOf(e).char)),
-  pickIniswap: (e) => pickIniswap(datasetOf(e).iniswap!),
-  pickBackground: (e) => pickBackground(datasetOf(e).background!),
-  toggleShout: (e) => toggleShout(Number(datasetOf(e).shout)),
-  toggleMenu: (e) => toggleMenu(Number(datasetOf(e).menu)),
-  toggleElement: (e) => toggleElement(datasetOf(e).element!),
-  exportLog: (e) => exportLog(datasetOf(e).format!),
-  toggleFavourite: (e) => {
-    const slot = (e.currentTarget as HTMLElement).closest<HTMLElement>(".char-slot");
-    if (slot) toggleFavourite(Number(slot.dataset.charid), e);
-  },
 };
 
-const EVENT_TYPES = [
-  "click",
-  "change",
-  "input",
-  "keypress",
-  "submit",
-  "error",
-  "volumechange",
-] as const;
-
-for (const type of EVENT_TYPES) {
+for (const type of ["click", "error"] as const) {
   document.addEventListener(
     type,
     (e) => {
       const target = e.target as Element | null;
       if (!target || typeof target.closest !== "function") return;
       const el = target.closest<HTMLElement>("[data-action]");
-      if (!el) return;
-      const wantEvent = el.dataset.event ?? "click";
-      if (wantEvent !== type) return;
-      const action = el.dataset.action!;
-      const fn = actions[action];
+      if (!el || (el.dataset.event ?? "click") !== type) return;
+      const fn = actions[el.dataset.action!];
       if (!fn) {
-        console.warn(`Unknown data-action: ${action}`);
+        console.warn(`Unknown data-action: ${el.dataset.action}`);
         return;
       }
-      // Ensure currentTarget reads point at the element with data-action,
-      // even when the event fired on a descendant (closest matched up).
+      // currentTarget should be the element carrying data-action, even when
+      // the event fired on a descendant.
       Object.defineProperty(e, "currentTarget", { value: el, configurable: true });
       fn(e);
     },
-    true, // capture phase: catches non-bubbling events too
+    true,
   );
 }

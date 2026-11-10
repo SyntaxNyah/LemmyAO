@@ -30,8 +30,9 @@ function applyAudio() {
 }
 
 function applyLook() {
-  // "dynamic" follows each speaker, so only re-skin now when it's fixed.
-  if (settings.chatbox !== "dynamic") setChatbox("");
+  // "dynamic" follows each speaker, so only re-skin now when it's fixed or nobody has spoken yet.
+  const skin = document.getElementById("chatbox_theme") as HTMLLinkElement | null;
+  if (settings.chatbox !== "dynamic" || skin?.href.startsWith("data:")) setChatbox("");
   const font = settings.font === "custom" ? settings.customFont.trim() || "sans-serif" : settings.font;
   const chat = document.getElementById("client_chatcontainer");
   if (chat) chat.style.fontFamily = font;

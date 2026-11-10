@@ -14,7 +14,6 @@
 import { client } from "../client";
 import { state } from "../core/state";
 import { setAOhost } from "../client/aoHost";
-import { buildCharGrid } from "../client/fetchLists";
 import { setupCharacterBasic } from "../client/handleCharacterInfo";
 import queryParser from "../utils/queryParser";
 
@@ -52,24 +51,11 @@ async function runServerMode(): Promise<void> {
   }
 
   if (names.length > 0) {
-    const muteSelect = document.getElementById("mute_select") as HTMLSelectElement | null;
-    const pairSelect = document.getElementById("pair_select") as HTMLSelectElement | null;
-    if (muteSelect) muteSelect.innerHTML = "";
-    if (pairSelect) pairSelect.innerHTML = "";
     client.chars = [];
     client.char_list_length = names.length;
-    buildCharGrid(names.length);
     names.forEach((name, i) => setupCharacterBasic([name, "", "", ""], i));
     state.characters = names.map((name) => ({ name, description: "", evidence: "", taken: false }));
   }
-
-  // Replace the replay playback controls with the normal OOC input.
-  const replayControls = document.getElementById("client_replaycontrols");
-  const oocInput = document.getElementById("client_oocinput");
-  if (replayControls) replayControls.style.display = "none";
-  if (oocInput) oocInput.style.display = "";
-
-  document.getElementById("client_charselect")!.style.display = "block";
 }
 
 if (mode === "server") {
