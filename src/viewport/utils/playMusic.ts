@@ -1,3 +1,4 @@
+import { els } from "../elements";
 import { client } from "../../client";
 import { AO_HOST } from "../../client/aoHost";
 import { MusicChannel } from "aolib-ts";
@@ -20,7 +21,7 @@ export function playMusicTrack(packet: aolib.packets.MCToClient) {
   } else {
     music.removeAttribute("src");
   }
-  document.getElementById("client_trackstatustext")!.innerText = packet.name;
+  els.trackStatusText.innerText = packet.name;
 }
 
 /** RMC (undocumented): seek the music channel to `toTime` seconds. */

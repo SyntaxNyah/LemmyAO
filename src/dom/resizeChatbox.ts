@@ -1,25 +1,24 @@
+import { els } from "../viewport/elements";
 import { CHATBOX } from "../client";
 /**
  * Set the font size for the chatbox
  */
 export function resizeChatbox() {
-  const chatContainerBox = document.getElementById("client_chatcontainer");
-  const clockBox = document.getElementById("client_clock");
-  const trackstatusBox = document.getElementById("client_trackstatus");
+  const chatContainerBox = els.chatContainer;
+  const clockBox = els.clock;
+  const trackstatusBox = els.trackStatus;
 
-  const gameHeight = document.getElementById("client_background")!.offsetHeight;
+  const gameHeight = els.background.offsetHeight;
 
   chatContainerBox.style.fontSize = `${(gameHeight * 0.0521).toFixed(1)}px`;
   clockBox.style.fontSize = `${(gameHeight * 0.0521).toFixed(1)}px`;
   trackstatusBox.style.fontSize = `${(gameHeight * 0.0521).toFixed(1)}px`;
 
-  const trackstatus = <HTMLMarqueeElement>(
-    document.getElementById("client_trackstatustext")
-  );
+  const trackstatus = els.trackStatusText;
   trackstatus.style.width = trackstatus.offsetWidth - 1 + "px";
 
   //name spacing
-  const namePlate = document.getElementById("client_name");
+  const namePlate = els.name;
   if (CHATBOX == "aa" && namePlate.innerText.length < 5) {
     namePlate.style.letterSpacing = "0.2em";
   } else {
@@ -51,21 +50,21 @@ export function resizeChatbox() {
     "November",
     "December",
   ];
-  document.getElementById("client_clock_month")!.innerText =
+  els.clockMonth.innerText =
     month[now.getMonth()];
   if (CHATBOX == "acww") {
     weekday = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-    document.getElementById("client_clock_weekday")!.innerText =
+    els.clockWeekday.innerText =
       weekday[now.getDay()];
-    document.getElementById("client_clock_date")!.innerText =
+    els.clockDate.innerText =
       now.getDay() + "/" + now.getMonth();
-    document.getElementById("client_clock_time")!.innerText =
+    els.clockTime.innerText =
       now.getHours() + ":" + now.getMinutes();
   } else if (CHATBOX == "key") {
     weekday = ["Sun.", "Mon.", "Tue.", "Wed.", "Thu.", "Fri.", "Sat."];
-    document.getElementById("client_clock_weekday")!.innerText =
+    els.clockWeekday.innerText =
       weekday[now.getDay()];
-    document.getElementById("client_clock_date")!.innerText = String(
+    els.clockDate.innerText = String(
       now.getDate(),
     );
   }

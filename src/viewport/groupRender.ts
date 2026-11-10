@@ -73,7 +73,7 @@ function syncLayerCount(n: number): GroupLayer[] {
 }
 
 // Build the idle-sprite URL for a group member. The GP roster carries the
-// character folder + idle emote; the `(a)` idle-frame prefix matches setEmote.
+// character folder + idle emote; the `(a)` idle-frame prefix matches the viewport.
 function setGroupSprite(img: HTMLImageElement, m: GPMember): void {
   const urls = buildEmoteUrls(
     AO_HOST,

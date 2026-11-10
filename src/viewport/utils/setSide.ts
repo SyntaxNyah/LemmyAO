@@ -1,4 +1,5 @@
 import { positions } from "../constants/positions";
+import { element, els } from "../elements";
 import { AO_HOST } from "../../client/aoHost";
 import { client } from "../../client";
 import { isFullView, Side } from "aolib-ts";
@@ -20,9 +21,9 @@ export async function setBackgroundImage(elementid: string, bgname: string, bgpa
     }
   }
   if (success)
-    (<HTMLImageElement>document.getElementById(elementid)).src = url;
+    element<HTMLImageElement>(elementid).src = url;
   else
-    (<HTMLImageElement>document.getElementById(elementid)).src = transparentPng;
+    element<HTMLImageElement>(elementid).src = transparentPng;
   return success;
 }
 
@@ -41,19 +42,11 @@ export async function set_side({
   showSpeedLines: boolean;
   showDesk: boolean;
 }) {
-  const view = document.getElementById("client_fullview")!;
+  const view = els.fullView;
   const fullView = isFullView(position);
 
-  const bench = <HTMLImageElement>(
-    document.getElementById(
-      fullView ? `client_${position}_bench` : "client_bench_classic",
-    )
-  );
-  const court = <HTMLImageElement>(
-    document.getElementById(
-      fullView ? `client_court_${position}` : "client_court_classic",
-    )
-  );
+  const bench = element<HTMLImageElement>(fullView ? `client_${position}_bench` : "client_bench_classic");
+  const court = element<HTMLImageElement>(fullView ? `client_court_${position}` : "client_court_classic");
 
   let bg;
   let desk;
@@ -104,7 +97,7 @@ export async function set_side({
 
   if (fullView) {
     view.style.display = "";
-    document.getElementById("client_classicview")!.style.display = "none";
+    els.classicView.style.display = "none";
     switch (position) {
       case Side.def:
         view.style.left = "0";
@@ -118,7 +111,7 @@ export async function set_side({
     }
   } else {
     view.style.display = "none";
-    document.getElementById("client_classicview").style.display = "";
+    els.classicView.style.display = "";
   }
 }
 
@@ -142,7 +135,7 @@ export function showBackground(background: string) {
   setBackgroundImage("client_court_prot", packet.background, "transition_pro");
   setBackgroundImage("client_court", packet.background, "court");
 
-  if ((<HTMLImageElement>document.getElementById("client_court")).src !== transparentPng) {
+  if (els.court.src !== transparentPng) {
     if (settings.panTilt) applyPanTilt(true);
   }
 

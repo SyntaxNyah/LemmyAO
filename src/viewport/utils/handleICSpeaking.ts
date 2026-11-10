@@ -14,7 +14,6 @@ import {
   DeskModifier,
   EmoteModifier,
   Flip,
-  isFullView,
   ShoutModifier,
   Side,
 } from "aolib-ts";
@@ -27,6 +26,7 @@ import { getMmdController } from "../mmd";
 import { setupCharacterSlot } from "../mmd/applyEmote";
 import type { Model3dInfo } from "../mmd/types";
 import { characterInfo, type CharacterInfo } from "../../core/character";
+import { charLayer, els } from "../elements";
 
 const SOUND_SENTINELS = new Set(["", "0", "1"]);
 const BAD_EFFECTS = new Set(["", "-", "none"]);
@@ -274,7 +274,7 @@ const applyShout = (chatmsg: ChatMsg, chatContainerBox: HTMLElement) => {
   if (!shout) return;
 
   const preloaded = chatmsg.preloadedAssets!;
-  const shoutSprite = <HTMLImageElement>document.getElementById("client_shout");
+  const shoutSprite = els.shout;
   chatContainerBox.style.opacity = "0";
 
   // Prefer the preloaded per-character bubble; fall back to the default
@@ -341,32 +341,25 @@ const renderICMessage = (chatmsg: ChatMsg) => {
   client.viewport.setTextNow("");
   client.viewport.setAnimating(true);
 
-  const fg = <HTMLImageElement>document.getElementById("client_fg");
-  const gamewindow = document.getElementById("client_gamewindow")!;
-  const waitingBox = document.getElementById("client_chatwaiting")!;
+  const fg = els.foreground;
+  const gamewindow = els.gameWindow;
+  const waitingBox = els.chatWaiting;
   gamewindow.style.animation = "";
   waitingBox.style.opacity = "0";
 
-  const eviBox = document.getElementById("client_evi")!;
+  const eviBox = els.evidence;
   if (client.viewport.getLastEvidence() !== chatmsg.evidence_id) {
     eviBox.style.opacity = "0";
     eviBox.style.height = "0%";
   }
   client.viewport.setLastEvidence(chatmsg.evidence_id);
 
-  // Full-view sides get the pan-camera layers (`client_<side>_char`);
-  // everything else uses the single shared `client_char` layer.
-  const fullView = isFullView(chatmsg.side);
-  const charLayers = document.getElementById(
-    fullView ? `client_${chatmsg.side}_char` : "client_char",
-  )!;
-  const pairLayers = document.getElementById(
-    fullView ? `client_${chatmsg.side}_pair_char` : "client_pair_char",
-  )!;
+  const charLayers = charLayer(chatmsg.side).container;
+  const pairLayers = charLayer(chatmsg.side, true).container;
 
-  const chatContainerBox = document.getElementById("client_chatcontainer")!;
-  const nameBoxInner = document.getElementById("client_inner_name")!;
-  const chatBoxInner = document.getElementById("client_inner_chat")!;
+  const chatContainerBox = els.chatContainer;
+  const nameBoxInner = els.innerName;
+  const chatBoxInner = els.innerChat;
 
   const displayname =
     chatmsg.showname !== ""

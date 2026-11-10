@@ -8,6 +8,7 @@ import { set_side } from "./utils/setSide";
 import { audioNow, audioReady, cancelScheduled, outputLatency, schedule } from "./audio";
 import type { ChatMsg } from "./interfaces/ChatMsg";
 import type { TimelineEvent } from "./timeline";
+import { charLayer, els } from "./elements";
 
 /** Decoded sounds a message can play; null when missing. */
 export interface MessageSounds {
@@ -26,8 +27,6 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 let playing = 0;
 let releaseQueue = () => {};
 
-const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-
 function scheduleSounds(events: TimelineEvent[], chatmsg: ChatMsg, sounds: MessageSounds, start: number) {
   const at = (ms: number) => start + ms / 1000;
   for (const e of events) {
@@ -44,36 +43,30 @@ function scheduleSounds(events: TimelineEvent[], chatmsg: ChatMsg, sounds: Messa
   }
 }
 
-function charLayer(chatmsg: ChatMsg, pair: boolean) {
-  const fullView = chatmsg.side === Side.def || chatmsg.side === Side.pro || chatmsg.side === Side.wit;
-  const prefix = fullView ? `client_${chatmsg.side}_` : "client_";
-  return el<HTMLImageElement>(`${prefix}${pair ? "pair_" : ""}char`);
-}
-
 const shake = () => {
-  const game = el("client_gamewindow");
+  const game = els.gameWindow;
   game.style.animation = "shake 0.2s 1";
   setTimeout(() => game.style.removeProperty("animation"), 200);
 };
 
 const flash = () => {
-  const fg = el("client_fg");
+  const fg = els.foreground;
   fg.style.animation = "flash 0.4s 1";
   setTimeout(() => fg.style.removeProperty("animation"), 400);
 };
 
 function showChatbox(chatmsg: ChatMsg) {
-  if (chatmsg.chatbox !== "" && chatmsg.content.trim() !== "") el("client_chatcontainer").style.opacity = "1";
+  if (chatmsg.chatbox !== "" && chatmsg.content.trim() !== "") els.chatContainer.style.opacity = "1";
 }
 
 function hideShout() {
-  const shout = el<HTMLImageElement>("client_shout");
+  const shout = els.shout;
   shout.style.display = "none";
   shout.style.animation = "";
 }
 
 function showEvidence(chatmsg: ChatMsg) {
-  const box = el<HTMLImageElement>("client_evi");
+  const box = els.evidence;
   const evidence = state.evidence[chatmsg.evidence_id - 1];
   box.src = evidence ? evidenceUrl(evidence.image) : "";
   box.style.width = "auto";
@@ -101,7 +94,7 @@ function apply(e: TimelineEvent, chatmsg: ChatMsg) {
         hideShout();
         applyCharacterEmote("preanim", assets.preanimUrl, false, chatmsg.side);
       }
-      charLayer(chatmsg, true).style.opacity = chatmsg.paired_name ? "1" : "0";
+      charLayer(chatmsg.side, true).container.style.opacity = chatmsg.paired_name ? "1" : "0";
       break;
     }
     case "chatbox":
@@ -109,24 +102,24 @@ function apply(e: TimelineEvent, chatmsg: ChatMsg) {
       break;
     case "talk": {
       if (chatmsg.evidence_id > 0) showEvidence(chatmsg);
-      el("client_inner_chat").className = `text_${chatmsg.text_color}`;
+      els.innerChat.className = `text_${chatmsg.text_color}`;
       hideShout();
       const desk = DESK_DURING_TALK[chatmsg.desk_modifier];
       if (desk !== undefined) set_side({ position: chatmsg.side, showSpeedLines: false, showDesk: desk });
       if (chatmsg.paired_name) {
         setEmoteFromUrl(assets.pairIdleUrl, true, chatmsg.side);
-        charLayer(chatmsg, true).style.opacity = "1";
+        charLayer(chatmsg.side, true).container.style.opacity = "1";
       }
       applyCharacterEmote("talking", assets.talkingUrl, false, chatmsg.side);
-      charLayer(chatmsg, false).style.opacity = "1";
+      charLayer(chatmsg.side).container.style.opacity = "1";
       showChatbox(chatmsg);
       break;
     }
     case "char": {
       const span = chatmsg.parsed?.[e.index];
-      if (span) el("client_inner_chat").appendChild(span);
+      if (span) els.innerChat.appendChild(span);
       client.viewport.setTextNow(chatmsg.content.substring(0, e.index + 1));
-      const box = el("client_chat");
+      const box = els.chat;
       box.scrollTop = box.scrollHeight;
       break;
     }
@@ -139,8 +132,8 @@ function apply(e: TimelineEvent, chatmsg: ChatMsg) {
     case "idle":
       hideShout();
       applyCharacterEmote("idle", assets.idleUrl, false, chatmsg.side);
-      charLayer(chatmsg, false).style.opacity = "1";
-      el("client_chatwaiting").style.opacity = "1";
+      charLayer(chatmsg.side).container.style.opacity = "1";
+      els.chatWaiting.style.opacity = "1";
       client.viewport.setAnimating(false);
       break;
   }

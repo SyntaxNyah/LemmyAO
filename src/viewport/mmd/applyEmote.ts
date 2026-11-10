@@ -1,9 +1,10 @@
 import { client } from "../../client";
 import setEmoteFromUrl from "../../client/setEmoteFromUrl";
 import transparentPng from "../../constants/transparentPng";
-import { isFullView, Side } from "aolib-ts";
+import { Side } from "aolib-ts";
 import { getMmdController, existingMmdController } from "./index";
 import { MmdState, Model3dInfo } from "./types";
+import { charLayer } from "../elements";
 
 /**
  * Applies one emote phase to the main (non-pair) character slot. For a 3D
@@ -48,14 +49,9 @@ export function setupCharacterSlot(
   }
   getMmdController().then(async (controller) => {
     if (!controller) return;
-    const slotId = isFullView(side) ? `client_${side}_char` : "client_char";
-    const container = document.getElementById(slotId);
-    const img = document.getElementById(
-      isFullView(side) ? `client_${side}_char_img` : "client_char_img",
-    ) as HTMLImageElement | null;
-    if (!container) return;
+    const { container, img } = charLayer(side);
     // Blank the sprite so it doesn't show behind the model.
-    if (img) img.src = transparentPng;
+    img.src = transparentPng;
     controller.place(container);
     // Await show() first: it resets the active camera to the default, so
     // playEmote (which sets the emote's camera) must run after it, not race it.
