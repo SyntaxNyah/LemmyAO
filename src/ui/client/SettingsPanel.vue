@@ -18,8 +18,8 @@ const query = ref("");
 const SECTIONS: Record<string, string> = {
   audio: "audio volume music sfx sound effects blips mute",
   voice: "voice chat microphone mic push to talk ptt",
-  appearance: "appearance theme modern classic accent colour color chatbox style font dialogue",
-  courtroom: "courtroom 16:9 widescreen aspect chatbox inset offset pan tilt desks",
+  appearance:
+    "appearance theme modern classic accent colour color chatbox style font dialogue courtroom 16:9 widescreen aspect inset offset pan tilt desks",
   chat: "chat callwords mention modcall sound",
   layout: "layout tabs tab order",
   log: "log chat log download export transcript txt html",
@@ -131,6 +131,75 @@ const checkbox = (key: SettingKey) => ({
       </div>
     </section>
 
+    <section v-show="visible('appearance')" class="section">
+      <h3>Appearance</h3>
+      <div class="grid">
+        <label class="field">
+          <span class="field-label">Theme</span>
+          <select
+            class="input"
+            :value="settings.theme === 'classic' ? 'classic' : 'modern'"
+            @change="setSetting('theme', ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="modern">Modern</option>
+            <option value="classic">Classic</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Accent color</span>
+          <span class="inline">
+            <input
+              class="color"
+              type="color"
+              :value="settings.accent || DEFAULT_ACCENT"
+              @input="setSetting('accent', ($event.target as HTMLInputElement).value)"
+            />
+            <button class="link-btn" :disabled="!settings.accent" @click="setSetting('accent', '')">Default</button>
+          </span>
+        </label>
+        <label class="field">
+          <span class="field-label">Chatbox style</span>
+          <select class="input" :value="settings.chatbox" @change="setSetting('chatbox', ($event.target as HTMLSelectElement).value)">
+            <option value="dynamic">Each character's own</option>
+            <option value="default">LemmyAO default</option>
+            <option v-for="c in chatboxes" :key="c" :value="c">{{ CHATBOX_LABELS[c] }}</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Dialogue font</span>
+          <select class="input" :value="settings.font" @change="setSetting('font', ($event.target as HTMLSelectElement).value)">
+            <option v-for="[value, label] in FONTS" :key="value" :value="value">{{ label }}</option>
+          </select>
+        </label>
+        <label v-if="settings.font === 'custom'" class="field">
+          <span class="field-label">Custom font name</span>
+          <input
+            class="input"
+            :value="settings.customFont"
+            placeholder="e.g. Verdana"
+            @change="setSetting('customFont', ($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </div>
+      <div class="checks">
+        <label class="check"><input type="checkbox" v-bind="checkbox('widescreen')" /> 16:9 stage</label>
+        <label class="check"><input type="checkbox" v-bind="checkbox('panTilt')" /> Pan between positions</label>
+        <label class="check"><input type="checkbox" v-bind="checkbox('hideDesks')" /> Hide desks</label>
+      </div>
+      <label v-if="settings.widescreen" class="field narrow">
+        <span class="field-label">Chatbox inset <span class="value">{{ settings.chatOffset }}%</span></span>
+        <input
+          class="range"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          :value="settings.chatOffset"
+          @input="setSetting('chatOffset', Number(($event.target as HTMLInputElement).value))"
+        />
+      </label>
+    </section>
+
     <section v-show="visible('voice')" class="section">
       <h3>Voice chat</h3>
       <p v-if="!voiceUi.available" class="muted">This server doesn't have voice chat.</p>
@@ -185,79 +254,6 @@ const checkbox = (key: SettingKey) => ({
           Speaking: {{ voiceUi.speakers.length ? voiceUi.speakers.map((sp) => sp.label).join(", ") : "nobody" }}
         </p>
       </template>
-    </section>
-
-    <section v-show="visible('appearance')" class="section">
-      <h3>Appearance</h3>
-      <div class="grid">
-        <label class="field">
-          <span class="field-label">Theme</span>
-          <select
-            class="input"
-            :value="settings.theme === 'classic' ? 'classic' : 'modern'"
-            @change="setSetting('theme', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="modern">Modern</option>
-            <option value="classic">Classic</option>
-          </select>
-        </label>
-        <label class="field">
-          <span class="field-label">Accent color</span>
-          <span class="inline">
-            <input
-              class="color"
-              type="color"
-              :value="settings.accent || DEFAULT_ACCENT"
-              @input="setSetting('accent', ($event.target as HTMLInputElement).value)"
-            />
-            <button class="link-btn" :disabled="!settings.accent" @click="setSetting('accent', '')">Default</button>
-          </span>
-        </label>
-        <label class="field">
-          <span class="field-label">Chatbox style</span>
-          <select class="input" :value="settings.chatbox" @change="setSetting('chatbox', ($event.target as HTMLSelectElement).value)">
-            <option value="dynamic">Each character's own</option>
-            <option value="default">LemmyAO default</option>
-            <option v-for="c in chatboxes" :key="c" :value="c">{{ CHATBOX_LABELS[c] }}</option>
-          </select>
-        </label>
-        <label class="field">
-          <span class="field-label">Dialogue font</span>
-          <select class="input" :value="settings.font" @change="setSetting('font', ($event.target as HTMLSelectElement).value)">
-            <option v-for="[value, label] in FONTS" :key="value" :value="value">{{ label }}</option>
-          </select>
-        </label>
-        <label v-if="settings.font === 'custom'" class="field">
-          <span class="field-label">Custom font name</span>
-          <input
-            class="input"
-            :value="settings.customFont"
-            placeholder="e.g. Verdana"
-            @change="setSetting('customFont', ($event.target as HTMLInputElement).value)"
-          />
-        </label>
-      </div>
-    </section>
-
-    <section v-show="visible('courtroom')" class="section">
-      <h3>Courtroom</h3>
-      <div class="checks">
-        <label class="check"><input type="checkbox" v-bind="checkbox('widescreen')" /> 16:9 stage</label>
-        <label class="check"><input type="checkbox" v-bind="checkbox('panTilt')" /> Pan between positions</label>
-        <label class="check"><input type="checkbox" v-bind="checkbox('hideDesks')" /> Hide desks</label>
-      </div>
-      <label v-if="settings.widescreen" class="field narrow">
-        <span class="field-label">Chatbox inset <span class="value">{{ settings.chatOffset }}%</span></span>
-        <input
-          class="range"
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          :value="settings.chatOffset"
-          @input="setSetting('chatOffset', Number(($event.target as HTMLInputElement).value))"
-        />
-      </label>
     </section>
 
     <section v-show="visible('chat')" class="section">
