@@ -85,31 +85,17 @@ function toggleMute(e: Event) {
 
 <template>
   <div class="ic-controls">
-    <div class="identity">
-      <div class="who">
-        <button class="chip" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
-          <AssetImage
-            v-if="character"
-            class="chip-icon"
-            :base="`${characterFolder(character.name)}char_icon`"
-            :alt="''"
-          />
-          <span>{{ character?.showname ?? "Spectating" }}</span>
-          <span aria-hidden="true" class="caret">▾</span>
-        </button>
-        <div v-if="menuOpen" class="menu" role="menu">
-          <button role="menuitem" @click="menu(openCharacterSelect)">Change character</button>
-          <button role="menuitem" @click="menu(() => sendOOC('/randomchar'))">Random character</button>
-          <button role="menuitem" @click="menu(openBackgroundList)">Backgrounds</button>
-        </div>
+    <div class="who">
+      <button class="chip" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
+        <AssetImage v-if="character" class="chip-icon" :base="`${characterFolder(character.name)}char_icon`" alt="" />
+        <span>{{ character?.showname ?? "Spectating" }}</span>
+        <span aria-hidden="true" class="caret">▾</span>
+      </button>
+      <div v-if="menuOpen" class="menu" role="menu">
+        <button role="menuitem" @click="menu(openCharacterSelect)">Change character</button>
+        <button role="menuitem" @click="menu(() => sendOOC('/randomchar'))">Random character</button>
+        <button role="menuitem" @click="menu(openBackgroundList)">Backgrounds</button>
       </div>
-      <input
-        v-model.lazy="showname"
-        class="input showname"
-        placeholder="Showname"
-        aria-label="Showname"
-        maxlength="30"
-      />
     </div>
 
     <div v-if="character" class="emotes" role="listbox" aria-label="Emotes">
@@ -123,102 +109,116 @@ function toggleMute(e: Event) {
       />
     </div>
 
+    <div class="name-row">
+      <label class="field grow">
+        <span class="field-label">Showname</span>
+        <input v-model.lazy="showname" class="input" placeholder="Shown instead of your character's name" maxlength="30" />
+      </label>
+      <label class="check">
+        <input
+          type="checkbox"
+          :checked="settings.shownamesEnabled"
+          @change="setSetting('shownamesEnabled', ($event.target as HTMLInputElement).checked)"
+        />
+        Show others' shownames
+      </label>
+    </div>
+
+    <div class="fields">
+      <label class="field">
+        <span class="field-label">Text colour</span>
+        <span class="color-select" :class="{ rainbow: draft.color === TextColor.rainbow }">
+          <span class="dot" :style="{ background: dotFor(draft.color) }" aria-hidden="true"></span>
+          <select v-model="draft.color" class="input select" :style="{ color: TEXT_COLORS[draft.color].css }">
+            <option v-for="c in colors" :key="c" :value="c" :style="{ color: TEXT_COLORS[c].css }">
+              {{ TEXT_COLORS[c].label }}
+            </option>
+          </select>
+        </span>
+      </label>
+      <label class="field">
+        <span class="field-label">Position</span>
+        <select class="input select" :value="state.self.position" @change="choosePosition">
+          <option v-for="[value, label] in POSITIONS" :key="value" :value="value">{{ label }}</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="field-label">Shout</span>
+        <select v-model="draft.shout" class="input select">
+          <option :value="ShoutModifier.none">None</option>
+          <option :value="ShoutModifier.hold_it">Hold it!</option>
+          <option :value="ShoutModifier.objection">Objection!</option>
+          <option :value="ShoutModifier.take_that">Take that!</option>
+          <option v-if="hasCustomShout" :value="ShoutModifier.custom">Custom</option>
+        </select>
+      </label>
+      <label v-if="features.has('effects')" class="field">
+        <span class="field-label">Effect</span>
+        <select
+          class="input select"
+          :value="`${draft.effect.name}|${draft.effect.folder}|${draft.effect.sound}`"
+          @change="
+            ([draft.effect.name, draft.effect.folder, draft.effect.sound] = ($event.target as HTMLSelectElement).value.split('|'))
+          "
+        >
+          <option value="||">None</option>
+          <option value="realization||sfx-realization">Realization</option>
+          <option value="confetti||sfx-gallerycheer">Confetti</option>
+          <option value="rain-weak||sfx-rain">Weak rain</option>
+          <option value="rain||sfx-rain">Rain</option>
+          <option value="rain-strong||sfx-rain">Strong rain</option>
+        </select>
+      </label>
+    </div>
+
     <div class="options">
       <label class="check"><input v-model="draft.sendPreanim" type="checkbox" /> Preanim</label>
       <label class="check"><input v-model="draft.sendSfx" type="checkbox" /> SFX</label>
       <label class="check"><input v-model="draft.flip" type="checkbox" /> Flip</label>
       <label class="check"><input v-model="draft.flash" type="checkbox" /> Flash</label>
       <label class="check"><input v-model="draft.screenshake" type="checkbox" /> Shake</label>
+      <label class="check"><input v-model="draft.nonInterrupting" type="checkbox" /> Non-interrupting preanim</label>
+      <label class="check"><input v-model="draft.loopSfx" type="checkbox" /> Looping SFX</label>
+      <label v-if="features.has('effects')" class="check"><input v-model="draft.additive" type="checkbox" /> Additive</label>
     </div>
 
-    <div class="options">
-      <label class="color-select" :class="{ rainbow: draft.color === TextColor.rainbow }">
-        <span class="dot" :style="{ background: dotFor(draft.color) }" aria-hidden="true"></span>
-        <select v-model="draft.color" class="input select" :style="{ color: TEXT_COLORS[draft.color].css }" aria-label="Text colour">
-          <option v-for="c in colors" :key="c" :value="c" :style="{ color: TEXT_COLORS[c].css }">
-            {{ TEXT_COLORS[c].label }}
+    <section v-if="showJudge" class="group">
+      <h3>Judge</h3>
+      <div class="judge">
+        <button class="btn" @click="playTestimony(RTAnimation.witness_testimony)">Witness testimony</button>
+        <button class="btn" @click="playTestimony(RTAnimation.cross_examination)">Cross-examination</button>
+        <button class="btn" @click="playTestimony(RTAnimation.not_guilty)">Not guilty</button>
+        <button class="btn" @click="playTestimony(RTAnimation.guilty)">Guilty</button>
+        <span class="hp">
+          Defense
+          <button class="btn" aria-label="Lower defense health" @click="changeHealth(PenaltyBar.defense, -1)">−</button>
+          <button class="btn" aria-label="Raise defense health" @click="changeHealth(PenaltyBar.defense, 1)">+</button>
+        </span>
+        <span class="hp">
+          Prosecution
+          <button class="btn" aria-label="Lower prosecution health" @click="changeHealth(PenaltyBar.prosecution, -1)">−</button>
+          <button class="btn" aria-label="Raise prosecution health" @click="changeHealth(PenaltyBar.prosecution, 1)">+</button>
+        </span>
+      </div>
+    </section>
+
+    <section class="group">
+      <h3>Pairing</h3>
+      <LegacyPanel template="pairing" />
+    </section>
+
+    <section class="group">
+      <h3>Mute</h3>
+      <label class="field">
+        <span class="field-label">Hide a character's messages</span>
+        <select class="input select" value="-1" @change="toggleMute">
+          <option value="-1">Choose a character…</option>
+          <option v-for="(c, id) in state.characters" :key="id" :value="id">
+            {{ c.name }}{{ state.self.muted.includes(id) ? " (muted)" : "" }}
           </option>
         </select>
       </label>
-      <select class="input select" :value="state.self.position" aria-label="Position" @change="choosePosition">
-        <option v-for="[value, label] in POSITIONS" :key="value" :value="value">{{ label }}</option>
-      </select>
-      <select v-model="draft.shout" class="input select" aria-label="Shout">
-        <option :value="ShoutModifier.none">No shout</option>
-        <option :value="ShoutModifier.hold_it">Hold it!</option>
-        <option :value="ShoutModifier.objection">Objection!</option>
-        <option :value="ShoutModifier.take_that">Take that!</option>
-        <option v-if="hasCustomShout" :value="ShoutModifier.custom">Custom</option>
-      </select>
-    </div>
-
-    <div v-if="showJudge" class="judge">
-      <button class="btn" @click="playTestimony(RTAnimation.witness_testimony)">Witness testimony</button>
-      <button class="btn" @click="playTestimony(RTAnimation.cross_examination)">Cross-examination</button>
-      <button class="btn" @click="playTestimony(RTAnimation.not_guilty)">Not guilty</button>
-      <button class="btn" @click="playTestimony(RTAnimation.guilty)">Guilty</button>
-      <span class="hp">
-        Defense
-        <button class="btn" aria-label="Lower defense health" @click="changeHealth(PenaltyBar.defense, -1)">−</button>
-        <button class="btn" aria-label="Raise defense health" @click="changeHealth(PenaltyBar.defense, 1)">+</button>
-      </span>
-      <span class="hp">
-        Prosecution
-        <button class="btn" aria-label="Lower prosecution health" @click="changeHealth(PenaltyBar.prosecution, -1)">−</button>
-        <button class="btn" aria-label="Raise prosecution health" @click="changeHealth(PenaltyBar.prosecution, 1)">+</button>
-      </span>
-    </div>
-
-    <details class="more">
-      <summary>More options</summary>
-      <div class="more-body">
-        <label class="check">
-          <input
-            type="checkbox"
-            :checked="settings.shownamesEnabled"
-            @change="setSetting('shownamesEnabled', ($event.target as HTMLInputElement).checked)"
-          />
-          Show others' shownames
-        </label>
-        <label class="check"><input v-model="draft.nonInterrupting" type="checkbox" /> Non-interrupting preanim</label>
-        <label class="check"><input v-model="draft.loopSfx" type="checkbox" /> Looping SFX</label>
-        <template v-if="features.has('effects')">
-          <label class="check"><input v-model="draft.additive" type="checkbox" /> Additive</label>
-          <label class="field">
-            Effect
-            <select
-              class="input select"
-              :value="`${draft.effect.name}|${draft.effect.folder}|${draft.effect.sound}`"
-              @change="
-                ([draft.effect.name, draft.effect.folder, draft.effect.sound] = (
-                  $event.target as HTMLSelectElement
-                ).value.split('|'))
-              "
-            >
-              <option value="||">None</option>
-              <option value="realization||sfx-realization">Realization</option>
-              <option value="confetti||sfx-gallerycheer">Confetti</option>
-              <option value="rain-weak||sfx-rain">Weak rain</option>
-              <option value="rain||sfx-rain">Rain</option>
-              <option value="rain-strong||sfx-rain">Strong rain</option>
-            </select>
-          </label>
-        </template>
-        <label class="field">
-          Mute
-          <select class="input select" value="-1" @change="toggleMute">
-            <option value="-1">Choose a character…</option>
-            <option v-for="(c, id) in state.characters" :key="id" :value="id">
-              {{ c.name }}{{ state.self.muted.includes(id) ? " (muted)" : "" }}
-            </option>
-          </select>
-        </label>
-        <section class="pairing">
-          <h3>Pairing</h3>
-          <LegacyPanel template="pairing" />
-        </section>
-      </div>
-    </details>
+    </section>
   </div>
 </template>
 
@@ -230,15 +230,10 @@ function toggleMute(e: Event) {
   padding: 10px 12px 16px;
 }
 
-.identity {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
 
 .who {
   position: relative;
-  flex: none;
+  align-self: flex-start;
 }
 
 .chip {
@@ -306,10 +301,6 @@ function toggleMute(e: Event) {
   background: var(--surface-hover);
 }
 
-.showname {
-  flex: 1;
-  min-width: 0;
-}
 
 .emotes {
   display: grid;
@@ -324,8 +315,7 @@ function toggleMute(e: Event) {
   gap: 6px;
 }
 
-.options label,
-.more-body label {
+.options label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -334,7 +324,7 @@ function toggleMute(e: Event) {
 
 .select {
   width: auto;
-  min-height: 34px;
+  min-height: 40px;
   padding: 0 8px;
 }
 
@@ -368,13 +358,58 @@ function toggleMute(e: Event) {
   background: var(--surface);
 }
 
+.name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.field.grow {
+  flex: 1 1 220px;
+}
+
+.field-label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fields .select,
+.fields .color-select {
+  width: 100%;
+}
+
+.group .field {
+  max-width: 360px;
+}
+
+.group h3 {
+  margin: 4px 0 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .judge {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
 }
 
 .hp {
@@ -390,25 +425,7 @@ function toggleMute(e: Event) {
   padding: 0;
 }
 
-.more summary {
-  color: var(--text-muted);
-  cursor: pointer;
-}
 
-.more-body {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  padding-top: 10px;
-}
 
-.field {
-  gap: 8px;
-}
 
-.pairing h3 {
-  margin: 4px 0;
-  font-size: 14px;
-}
 </style>

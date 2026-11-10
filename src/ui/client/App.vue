@@ -1,34 +1,32 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { mountStage } from "../../stage";
 import LegacyPanel from "./LegacyPanel.vue";
 import ICLog from "./ICLog.vue";
 import ICControls from "./ICControls.vue";
+import TabOrderSettings from "./TabOrderSettings.vue";
+import { orderTabs, type TabId } from "./tabs";
+import { settings } from "../../core/settings";
 import { client } from "../../client";
 import { draft, sendIC } from "../../core/commands";
 import { parsePairedCharID } from "../../utils/pairCharID";
 import { getPairOrder } from "../../dom/pairOrder";
 import OOCChat from "./OOCChat.vue";
 
-type Tab = "log" | "ooc" | "emotes" | "music" | "players" | "menu";
+type Tab = TabId;
 
-const TABS: { id: Tab; label: string; mobileOnly?: boolean }[] = [
-  { id: "log", label: "Log" },
-  { id: "emotes", label: "Emotes", mobileOnly: true },
-  { id: "ooc", label: "OOC" },
-  { id: "music", label: "Music" },
-  { id: "players", label: "Players" },
-  { id: "menu", label: "Menu" },
-];
-
-const wide = window.matchMedia("(min-width: 900px)");
-const isDesktop = ref(wide.matches);
+// Landscape: stage and controls beside the chat column. Portrait: stage, message bar, tabs.
+const landscapeQuery = window.matchMedia("(orientation: landscape)");
+const isLandscape = ref(landscapeQuery.matches);
 const onWidth = (e: MediaQueryListEvent) => {
-  isDesktop.value = e.matches;
+  isLandscape.value = e.matches;
   if (e.matches && tab.value === "emotes") tab.value = "log";
 };
 
 const tab = ref<Tab>("log");
+const tabs = computed(() => orderTabs(settings.tabOrder));
+// Legacy panels fill in during their own mount; teleport into them only after that.
+const legacyReady = ref(false);
 
 const legacyNumber = (id: string) =>
   Number((document.getElementById(id) as HTMLInputElement | null)?.value) || 0;
@@ -56,37 +54,39 @@ watch(tab, async (t) => {
 
 onMounted(() => {
   mountStage(stageHost.value!);
-  wide.addEventListener("change", onWidth);
+  legacyReady.value = true;
+  landscapeQuery.addEventListener("change", onWidth);
 });
-onUnmounted(() => wide.removeEventListener("change", onWidth));
+onUnmounted(() => landscapeQuery.removeEventListener("change", onWidth));
 </script>
 
 <template>
-  <div class="shell" :class="isDesktop ? 'desktop' : 'mobile'">
+  <div class="shell" :class="isLandscape ? 'landscape' : 'portrait'">
     <section class="main">
       <div class="stage-frame">
         <div ref="stageHost" class="legacy stage"></div>
-        <form class="ic-input" @submit.prevent="sendMessage">
-          <input
-            id="client_inputbox"
-            v-model="draft.message"
-            class="input"
-            type="text"
-            placeholder="Say something in character…"
-            aria-label="IC message"
-            autocomplete="off"
-            enterkeyhint="send"
-          />
-        </form>
       </div>
-      <div v-show="isDesktop" id="controls-desktop" class="controls"></div>
+      <form class="ic-input" @submit.prevent="sendMessage">
+        <input
+          id="client_inputbox"
+          v-model="draft.message"
+          class="input"
+          type="text"
+          placeholder="Say something in character…"
+          aria-label="IC message"
+          autocomplete="off"
+          enterkeyhint="send"
+        />
+        <button class="btn btn-primary" type="submit">Send</button>
+      </form>
+      <div v-show="isLandscape" id="controls-landscape" class="controls"></div>
     </section>
 
     <section class="side">
       <nav class="tabs" role="tablist">
         <button
-          v-for="t in TABS"
-          v-show="!(t.mobileOnly && isDesktop)"
+          v-for="t in tabs"
+          v-show="!(t.portraitOnly && isLandscape)"
           :key="t.id"
           role="tab"
           :aria-selected="tab === t.id"
@@ -98,7 +98,7 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
 
       <div class="panels">
         <ICLog v-show="tab === 'log'" ref="icLog" class="panel" />
-        <div v-show="tab === 'emotes'" id="controls-mobile" class="panel"></div>
+        <div v-show="tab === 'emotes'" id="controls-portrait" class="panel"></div>
         <OOCChat v-show="tab === 'ooc'" ref="oocChat" class="panel" />
         <LegacyPanel v-show="tab === 'music'" template="music" class="panel" />
         <LegacyPanel v-show="tab === 'players'" template="players" class="panel" />
@@ -106,7 +106,11 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
       </div>
     </section>
 
-    <Teleport defer :to="isDesktop ? '#controls-desktop' : '#controls-mobile'">
+    <Teleport v-if="legacyReady" to="#content_3">
+      <TabOrderSettings />
+    </Teleport>
+
+    <Teleport defer :to="isLandscape ? '#controls-landscape' : '#controls-portrait'">
       <ICControls />
     </Teleport>
   </div>
@@ -119,12 +123,12 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
   background: var(--bg);
 }
 
-.desktop {
+.landscape {
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(340px, 32vw, 480px);
 }
 
-.mobile {
+.portrait {
   display: flex;
   flex-direction: column;
 }
@@ -135,7 +139,7 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
   min-height: 0;
 }
 
-.desktop .main {
+.landscape .main {
   border-right: 1px solid var(--border);
 }
 
@@ -152,9 +156,19 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
   overflow: hidden;
 }
 
-/* Keep the 4:3 stage from pushing the controls off a short desktop screen. */
-.desktop .stage-frame {
-  max-width: calc((100dvh - 260px) * 4 / 3);
+/* Leave room for the message bar and a panel. */
+.portrait .stage-frame {
+  max-width: calc(55dvh * 4 / 3);
+}
+
+/* Keep the 4:3 stage from pushing the controls off screen: tall screens keep
+   260px for them, short ones (landscape phones) give the stage 60%. The
+   message bar matches the stage's width. */
+.landscape .stage-frame,
+.landscape .ic-input {
+  width: 100%;
+  max-width: calc(min(100dvh - 120px, max(60dvh, 100dvh - 260px)) * 4 / 3);
+  margin: 0 auto;
 }
 
 .controls {
@@ -169,7 +183,7 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
   min-height: 0;
 }
 
-.mobile .side {
+.portrait .side {
   flex: 1;
 }
 
@@ -214,11 +228,19 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
 }
 
 .ic-input {
+  display: flex;
+  gap: 6px;
   padding: 6px;
   background: var(--surface);
 }
 
 .ic-input .input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+}
+
+.ic-input .btn {
   min-height: 40px;
 }
 </style>
