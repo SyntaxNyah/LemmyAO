@@ -15,6 +15,7 @@ import { logIC, logNotice, logOOC, matchesCallword } from "./log";
 import { settings } from "./settings";
 import { emit } from "./events";
 import { setAssetHost } from "./assetHost";
+import { loadOwnCharacter } from "./character";
 
 type S2C = packets.S2COutputs;
 
@@ -183,6 +184,7 @@ export function coreHandlers(conn: Connection): CoreHandlers {
 
     PV: (p) => {
       state.self.charId = p.char_id;
+      loadOwnCharacter(p.char_id);
     },
 
     DONE: () => {

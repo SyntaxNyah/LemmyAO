@@ -1,7 +1,7 @@
 import { client } from "../client";
 import { safeHtmlTags } from "../escaping";
-import { parseCharIni, Side } from "aolib-ts";
-import request from "../services/request";
+import { Side } from "aolib-ts";
+import { loadCharIni } from "../core/character";
 import { AO_HOST } from "./aoHost";
 import { observeCharIcon } from "./observeCharIcons";
 
@@ -25,14 +25,8 @@ export function setupCharacterBasic(chargs: string[], charid: number) {
     )}/char_icon${iconExt}`;
     observeCharIcon(img);
 
-    const mute_select = <HTMLSelectElement>(
-      document.getElementById("mute_select")
-    );
-    mute_select.add(new Option(safeHtmlTags(chargs[0]), String(charid)));
-    const pair_select = <HTMLSelectElement>(
-      document.getElementById("pair_select")
-    );
-    pair_select.add(new Option(safeHtmlTags(chargs[0]), String(charid)));
+    const pair_select = document.getElementById("pair_select") as HTMLSelectElement | null;
+    pair_select?.add(new Option(safeHtmlTags(chargs[0]), String(charid)));
 
     // Store defaults — these get replaced with actual ini values by ensureCharIni
     client.chars[charid] = {
@@ -65,22 +59,8 @@ export async function ensureCharIni(charid: number): Promise<any> {
   if (char.inifile) return char.inifile;
 
   const img = <HTMLImageElement>document.getElementById(`demo_${charid}`);
-  let cini: any = {};
-
-  try {
-    const cinidata = await request(
-      `${AO_HOST}characters/${encodeURI(char.name.toLowerCase())}/char.ini`,
-    );
-    cini = parseCharIni(cinidata);
-  } catch (err) {
-    // No char.ini (or unreadable): fall back to a minimal valid CharIni so
-    // downstream option access stays safe. parseCharIni requires an [options]
-    // section with a name and (since 2.5) at least one emote block, so feed a
-    // one-emote stub; the roster name is used for display regardless.
-    cini = parseCharIni("[options]\nname = -\n[emote normal]\nanim = normal.png\n");
-    if (img) img.classList.add("noini");
-    console.warn(`character ${char.name} is missing from webAO`);
-  }
+  const { ini: cini, found } = await loadCharIni(char.name);
+  if (!found && img) img.classList.add("noini");
 
   // parseCharIni already applies AO defaults (side "wit", blips from the
   // obsolete gender key then "male", model ""). Only LemmyAO-specific bits

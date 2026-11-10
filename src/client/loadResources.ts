@@ -3,7 +3,6 @@ import vanilla_background_arr from "../constants/backgrounds";
 import { changeMusicVolume } from "../dom/changeMusicVolume";
 import { setChatbox } from "../dom/setChatbox";
 import { changeSFXVolume } from "../dom/changeVolume";
-import { showname_click } from "../dom/showNameClick";
 import { changeBlipVolume } from "../dom/changeBlipVolume";
 import { unlockBlipAudio } from "../viewport/utils/blipAudio";
 import { reloadTheme } from "../dom/reloadTheme";
@@ -102,12 +101,6 @@ export function loadResources() {
   };
   document.addEventListener("pointerdown", unlock, { once: true });
   document.addEventListener("keydown", unlock, { once: true });
-
-  (<HTMLInputElement>document.getElementById("ic_chat_name")).value =
-    settings.showname;
-  (<HTMLInputElement>document.getElementById("showname")).checked =
-    settings.shownamesEnabled;
-  showname_click(null);
 
   (<HTMLInputElement>document.getElementById("client_callwords")).value =
     settings.callwords.join("\n");

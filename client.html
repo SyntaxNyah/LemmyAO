@@ -537,6 +537,111 @@
     </div>
   </template>
 
+  <template id="pairing">
+    <div id="pairing_settings">
+      <label for="pair_select">Pairing partner:</label>
+      <select name="pair_select" id="pair_select">
+        <option value="-1">None</option>
+      </select>
+      <table
+        style="border: none; margin-left: auto; margin-right: auto"
+      >
+        <tr>
+          <td>
+            <p>Horizontal offset (%):</p>
+          </td>
+          <td>
+            <span aria-hidden="true" style="vertical-align: middle">&larr;</span>
+            <input
+              type="range"
+              id="pair_offset_slider"
+              min="-100"
+              max="100"
+              step="1"
+              value="0"
+              style="vertical-align: middle"
+              aria-label="Horizontal pairing offset slider (negative = left, positive = right)"
+            />
+            <span aria-hidden="true" style="vertical-align: middle">&rarr;</span>
+            <br />
+            <input
+              type="number"
+              name="pair_offset"
+              id="pair_offset"
+              min="-100"
+              max="100"
+              step="1"
+              value="0"
+              title="Horizontal pairing offset in %. Drag the slider, scroll the wheel, or type a value."
+            />
+          </td>
+        </tr>
+        <tr id="y_offset" style="display: none">
+          <td>
+            <p>Vertical offset (%):</p>
+          </td>
+          <td>
+            <span aria-hidden="true" style="vertical-align: middle">&uarr;</span>
+            <input
+              type="range"
+              id="pair_y_offset_slider"
+              min="-100"
+              max="100"
+              step="1"
+              value="0"
+              style="vertical-align: middle"
+              aria-label="Vertical pairing offset slider (negative = up, positive = down)"
+            />
+            <span aria-hidden="true" style="vertical-align: middle">&darr;</span>
+            <br />
+            <input
+              type="number"
+              name="pair_y_offset"
+              id="pair_y_offset"
+              min="-100"
+              max="100"
+              step="1"
+              value="0"
+              title="Vertical pairing offset in %. Drag the slider, scroll the wheel, or type a value."
+            />
+          </td>
+        </tr>
+      </table>
+      <input
+        id="pair_reset"
+        type="button"
+        value="Reset"
+        data-action="resetOffset"
+      />
+      <div id="pair_order" style="margin-top: 8px; text-align: left">
+        <p
+          title="Pair order. On this JSON wire the order is the group roster (additional_chars) — reorder any member to any position."
+        >
+          Pair order:
+        </p>
+        <button
+          id="pair_order_front"
+          type="button"
+          class="client_button"
+          data-action="pairOrderFront"
+          title="Pair order — put yourself in front (classic pair via paired_order, or the front of the group)"
+        >
+          To front
+        </button>
+        <button
+          id="pair_order_back"
+          type="button"
+          class="client_button"
+          data-action="pairOrderBack"
+          title="Pair order — put yourself behind (classic pair via paired_order, or the back of the group)"
+        >
+          To behind
+        </button>
+        <div id="group_order_list"></div>
+      </div>
+    </div>
+  </template>
+
   <template id="mainmenu">
     <meta name="frame-title" lang="en" content="Log" />
     <div id="client_menu">

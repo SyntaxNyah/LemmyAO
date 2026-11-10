@@ -3,6 +3,11 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { mountStage } from "../../stage";
 import LegacyPanel from "./LegacyPanel.vue";
 import ICLog from "./ICLog.vue";
+import ICControls from "./ICControls.vue";
+import { client } from "../../client";
+import { draft, sendIC } from "../../core/commands";
+import { parsePairedCharID } from "../../utils/pairCharID";
+import { getPairOrder } from "../../dom/pairOrder";
 import OOCChat from "./OOCChat.vue";
 
 type Tab = "log" | "ooc" | "emotes" | "music" | "players" | "menu";
@@ -24,6 +29,21 @@ const onWidth = (e: MediaQueryListEvent) => {
 };
 
 const tab = ref<Tab>("log");
+
+const legacyNumber = (id: string) =>
+  Number((document.getElementById(id) as HTMLInputElement | null)?.value) || 0;
+
+/** Evidence and pairing still live in legacy panels; copy them into the draft, then send. */
+function sendMessage() {
+  draft.evidence = client.evidence;
+  const partner = document.getElementById("pair_select") as HTMLSelectElement | null;
+  draft.pair = {
+    charId: parsePairedCharID(partner?.value ?? ""),
+    order: getPairOrder(),
+    offset: { x: legacyNumber("pair_offset"), y: legacyNumber("pair_y_offset") },
+  };
+  sendIC();
+}
 const stageHost = ref<HTMLElement>();
 const icLog = ref<InstanceType<typeof ICLog>>();
 const oocChat = ref<InstanceType<typeof OOCChat>>();
@@ -46,20 +66,19 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
     <section class="main">
       <div class="stage-frame">
         <div ref="stageHost" class="legacy stage"></div>
-        <form class="ic-input" data-action="preventDefault" data-event="submit">
+        <form class="ic-input" @submit.prevent="sendMessage">
           <input
             id="client_inputbox"
+            v-model="draft.message"
             class="input"
             type="text"
-            data-action="onICEnter"
-            data-event="keypress"
             placeholder="Say something in character…"
             aria-label="IC message"
             autocomplete="off"
             enterkeyhint="send"
           />
         </form>
-        <div id="client_bars" class="legacy">
+        <div v-show="isDesktop" id="client_bars" class="legacy">
           <span id="client_defense_hp" class="health-box"><div class="health-bar"></div></span>
           <span id="client_prosecutor_hp" class="health-box"><div class="health-bar"></div></span>
         </div>
@@ -92,7 +111,7 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
     </section>
 
     <Teleport defer :to="isDesktop ? '#controls-desktop' : '#controls-mobile'">
-      <LegacyPanel template="icoptions" class="icoptions" />
+      <ICControls />
     </Teleport>
   </div>
 </template>

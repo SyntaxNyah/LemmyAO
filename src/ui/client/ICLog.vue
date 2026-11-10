@@ -31,7 +31,7 @@ const speaker = (e: Extract<ICEntry, { kind: "message" }>) => speakerName(e, set
       <div v-if="e.kind === 'notice'" class="notice"><span>{{ e.text }}</span></div>
       <div v-else class="entry" :class="{ callword: e.kind === 'message' && e.callword }">
         <template v-if="e.kind === 'message'">
-          <span class="name">{{ speaker(e) }}</span>
+          <span class="name">{{ speaker(e) }}:</span>
           <span class="text" :class="`color-${e.color}`">{{ messageText(e.message) }}</span>
         </template>
         <span v-else class="music">

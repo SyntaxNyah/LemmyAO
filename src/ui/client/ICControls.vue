@@ -1,0 +1,422 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
+import { PenaltyBar, RTAnimation, ShoutModifier, Side, TextColor } from "aolib-ts";
+import { state } from "../../core/state";
+import { settings, setSetting } from "../../core/settings";
+import { draft, changeHealth, playTestimony, sendOOC, setMuted } from "../../core/commands";
+import { characterFolder, selectEmote, setPosition } from "../../core/character";
+import { changeCharacter } from "../../dom/changeCharacter";
+import { openBackgroundList } from "../../dom/backgroundList";
+import LegacyPanel from "./LegacyPanel.vue";
+import EmoteTile from "./EmoteTile.vue";
+import AssetImage from "./AssetImage.vue";
+
+const character = computed(() => state.self.character);
+const features = computed(() => new Set(state.server.features));
+
+const showname = computed({
+  get: () => draft.showname,
+  set: (v: string) => {
+    draft.showname = v;
+    setSetting("showname", v);
+  },
+});
+draft.showname = settings.showname;
+
+const POSITIONS: [Side | "", string][] = [
+  ["", "Default"],
+  [Side.def, "Defense"],
+  [Side.pro, "Prosecution"],
+  [Side.jud, "Judge"],
+  [Side.wit, "Witness"],
+  [Side.hld, "Helper defense"],
+  [Side.hlp, "Helper prosecution"],
+  [Side.jur, "Jury"],
+  [Side.sea, "Seance"],
+];
+
+function choosePosition(e: Event) {
+  const position = (e.target as HTMLSelectElement).value as Side | "";
+  setPosition(position);
+  if (position) sendOOC(`/pos ${position}`);
+}
+
+const colors = Object.values(TextColor);
+
+const hasCustomShout = ref(false);
+watch(
+  () => character.value?.name,
+  (name) => {
+    hasCustomShout.value = false;
+    if (!name) return;
+    const folder = characterFolder(name);
+    for (const ext of [".gif", ".webp", ".apng", ".png"]) {
+      const probe = new Image();
+      probe.onload = () => (hasCustomShout.value = true);
+      probe.src = `${folder}custom${ext}`;
+    }
+  },
+  { immediate: true },
+);
+
+const showJudge = computed(
+  () =>
+    state.self.judgeControls === "shown" ||
+    (state.self.judgeControls === "by_position" && draft.side === Side.jud),
+);
+
+const openCharacterSelect = () => changeCharacter(new Event("click"));
+
+const menuOpen = ref(false);
+function menu(action: () => void) {
+  menuOpen.value = false;
+  action();
+}
+
+function toggleMute(e: Event) {
+  const select = e.target as HTMLSelectElement;
+  const id = Number(select.value);
+  if (id >= 0) setMuted(id, !state.self.muted.includes(id));
+  select.value = "-1";
+}
+</script>
+
+<template>
+  <div class="ic-controls">
+    <div class="identity">
+      <div class="who">
+        <button class="chip" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
+          <AssetImage
+            v-if="character"
+            class="chip-icon"
+            :base="`${characterFolder(character.name)}char_icon`"
+            :alt="''"
+          />
+          <span>{{ character?.showname ?? "Spectating" }}</span>
+          <span aria-hidden="true" class="caret">▾</span>
+        </button>
+        <div v-if="menuOpen" class="menu" role="menu">
+          <button role="menuitem" @click="menu(openCharacterSelect)">Change character</button>
+          <button role="menuitem" @click="menu(() => sendOOC('/randomchar'))">Random character</button>
+          <button role="menuitem" @click="menu(openBackgroundList)">Backgrounds</button>
+        </div>
+      </div>
+      <input
+        v-model.lazy="showname"
+        class="input showname"
+        placeholder="Showname"
+        aria-label="Showname"
+        maxlength="30"
+      />
+    </div>
+
+    <div v-if="character" class="emotes" role="listbox" aria-label="Emotes">
+      <EmoteTile
+        v-for="(emote, i) in character.emotes"
+        :key="emote.index"
+        :character="character.name"
+        :emote="emote"
+        :selected="state.self.emoteIndex === i"
+        @select="selectEmote(i)"
+      />
+    </div>
+
+    <div class="options">
+      <label><input v-model="draft.sendPreanim" type="checkbox" /> Preanim</label>
+      <label><input v-model="draft.sendSfx" type="checkbox" /> SFX</label>
+      <label><input v-model="draft.flip" type="checkbox" /> Flip</label>
+      <label><input v-model="draft.flash" type="checkbox" /> Flash</label>
+      <label><input v-model="draft.screenshake" type="checkbox" /> Shake</label>
+    </div>
+
+    <div class="options">
+      <div class="colors" role="radiogroup" aria-label="Text colour">
+        <button
+          v-for="c in colors"
+          :key="c"
+          class="swatch"
+          :class="`swatch-${c}`"
+          role="radio"
+          :aria-checked="draft.color === c"
+          :title="c"
+          @click="draft.color = c"
+        ></button>
+      </div>
+      <select class="input select" :value="state.self.position" aria-label="Position" @change="choosePosition">
+        <option v-for="[value, label] in POSITIONS" :key="value" :value="value">{{ label }}</option>
+      </select>
+      <select v-model="draft.shout" class="input select" aria-label="Shout">
+        <option :value="ShoutModifier.none">No shout</option>
+        <option :value="ShoutModifier.hold_it">Hold it!</option>
+        <option :value="ShoutModifier.objection">Objection!</option>
+        <option :value="ShoutModifier.take_that">Take that!</option>
+        <option v-if="hasCustomShout" :value="ShoutModifier.custom">Custom</option>
+      </select>
+    </div>
+
+    <div v-if="showJudge" class="judge">
+      <button class="btn" @click="playTestimony(RTAnimation.witness_testimony)">Witness testimony</button>
+      <button class="btn" @click="playTestimony(RTAnimation.cross_examination)">Cross-examination</button>
+      <button class="btn" @click="playTestimony(RTAnimation.not_guilty)">Not guilty</button>
+      <button class="btn" @click="playTestimony(RTAnimation.guilty)">Guilty</button>
+      <span class="hp">
+        Defense
+        <button class="btn" aria-label="Lower defense health" @click="changeHealth(PenaltyBar.defense, -1)">−</button>
+        <button class="btn" aria-label="Raise defense health" @click="changeHealth(PenaltyBar.defense, 1)">+</button>
+      </span>
+      <span class="hp">
+        Prosecution
+        <button class="btn" aria-label="Lower prosecution health" @click="changeHealth(PenaltyBar.prosecution, -1)">−</button>
+        <button class="btn" aria-label="Raise prosecution health" @click="changeHealth(PenaltyBar.prosecution, 1)">+</button>
+      </span>
+    </div>
+
+    <details class="more">
+      <summary>More options</summary>
+      <div class="more-body">
+        <label>
+          <input
+            type="checkbox"
+            :checked="settings.shownamesEnabled"
+            @change="setSetting('shownamesEnabled', ($event.target as HTMLInputElement).checked)"
+          />
+          Show others' shownames
+        </label>
+        <label><input v-model="draft.nonInterrupting" type="checkbox" /> Non-interrupting preanim</label>
+        <label><input v-model="draft.loopSfx" type="checkbox" /> Looping SFX</label>
+        <template v-if="features.has('effects')">
+          <label><input v-model="draft.additive" type="checkbox" /> Additive</label>
+          <label class="field">
+            Effect
+            <select
+              class="input select"
+              :value="`${draft.effect.name}|${draft.effect.folder}|${draft.effect.sound}`"
+              @change="
+                ([draft.effect.name, draft.effect.folder, draft.effect.sound] = (
+                  $event.target as HTMLSelectElement
+                ).value.split('|'))
+              "
+            >
+              <option value="||">None</option>
+              <option value="realization||sfx-realization">Realization</option>
+              <option value="confetti||sfx-gallerycheer">Confetti</option>
+              <option value="rain-weak||sfx-rain">Weak rain</option>
+              <option value="rain||sfx-rain">Rain</option>
+              <option value="rain-strong||sfx-rain">Strong rain</option>
+            </select>
+          </label>
+        </template>
+        <label class="field">
+          Mute
+          <select class="input select" value="-1" @change="toggleMute">
+            <option value="-1">Choose a character…</option>
+            <option v-for="(c, id) in state.characters" :key="id" :value="id">
+              {{ c.name }}{{ state.self.muted.includes(id) ? " (muted)" : "" }}
+            </option>
+          </select>
+        </label>
+        <section class="pairing">
+          <h3>Pairing</h3>
+          <LegacyPanel template="pairing" />
+        </section>
+      </div>
+    </details>
+  </div>
+</template>
+
+<style scoped>
+.ic-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 16px;
+}
+
+.identity {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.who {
+  position: relative;
+  flex: none;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+  min-height: 40px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface);
+}
+
+.caret {
+  color: var(--text-muted);
+}
+
+.menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.menu button {
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu button:hover {
+  background: var(--surface-hover);
+}
+
+.showname {
+  flex: 1;
+  min-width: 0;
+}
+
+.emotes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 6px;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+}
+
+.options label,
+.more-body label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.select {
+  width: auto;
+  min-height: 34px;
+  padding: 0 8px;
+}
+
+.colors {
+  display: flex;
+  gap: 6px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.swatch[aria-checked="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.swatch-white { background: #f2f2f2; }
+.swatch-green { background: #4ade80; }
+.swatch-red { background: #f87171; }
+.swatch-orange { background: #fb923c; }
+.swatch-blue { background: #60a5fa; }
+.swatch-yellow { background: #facc15; }
+.swatch-pink { background: #f472b6; }
+.swatch-cyan { background: #22d3ee; }
+.swatch-grey { background: #9ca3af; }
+.swatch-rainbow { background: conic-gradient(#f87171, #facc15, #4ade80, #60a5fa, #f472b6, #f87171); }
+
+.judge {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.hp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  color: var(--text-muted);
+}
+
+.hp .btn {
+  min-width: 36px;
+  padding: 0;
+}
+
+.more summary {
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.more-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.field {
+  gap: 8px;
+}
+
+.pairing h3 {
+  margin: 4px 0;
+  font-size: 14px;
+}
+</style>

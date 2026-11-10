@@ -12,7 +12,6 @@ import { switchChatOffset } from "./switchChatOffset";
 import { switchHideDesks } from "./switchHideDesks";
 import { restorePreanimGlow } from "./switchPreanimGlow";
 import { resetThemeMaker } from "./themeMaker";
-import { showname_click } from "./showNameClick";
 import { applyMusicMute, applySfxMute, applyBlipMute } from "./audioMute";
 
 // Voice, OOC name and blip pitch survive a reset, as they always have.
@@ -121,15 +120,6 @@ export function resetSettings() {
   const callwords = <HTMLTextAreaElement>document.getElementById("client_callwords");
   if (callwords) callwords.value = settings.callwords.join("\n");
   client.callwords = [...settings.callwords];
-
-  // --- Custom showname ---
-  const icChatName = <HTMLInputElement>document.getElementById("ic_chat_name");
-  if (icChatName) icChatName.value = settings.showname;
-  const shownameCheckbox = <HTMLInputElement>document.getElementById("showname");
-  if (shownameCheckbox) {
-    shownameCheckbox.checked = settings.shownamesEnabled;
-    showname_click(null);
-  }
 
   // --- Pan-tilt ---
   const pantilt = <HTMLInputElement>document.getElementById("client_pantilt");

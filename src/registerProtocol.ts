@@ -7,7 +7,7 @@
  * `src/client/handleCharacterInfo.ts`, etc.); this file is just the
  * wiring layer that hooks them up to the aolib session at startup.
  *
- * The `on("MS", handleChatMessage)` form checks
+ * The `on("CT", appendOOCMessage)` form checks
  * the handler signature against the schema at compile time. Wrong-
  * direction registrations are caught both statically (aolib's mapped
  * types) and at runtime (aolib throws a role-aware error). Wire-format
@@ -65,11 +65,7 @@ import { finishServerJoin } from "./client/handshake";
 // Health bars
 import { applyHealthBar } from "./dom/healthBar";
 
-// In-character chat
-import { handleChatMessage } from "./viewport/utils/handleICSpeaking";
 
-// Judge panel + side change
-import { applyCharacterSide, toggleJudgePanel } from "./dom/updateActionCommands";
 
 // Mod authentication
 import { applyModAuth } from "./dom/applyModAuth";
@@ -166,12 +162,12 @@ export function registerProtocol(
   on("FM", applyFullMusicList);
   on("HP", applyHealthBar);
   on("ID");
-  on("JD", toggleJudgePanel);
+  on("JD");
   on("KB", showKickAndBanScreen);
   on("KK", showKickScreen);
   on("LE", applyEvidenceList);
   on("MC");
-  on("MS", handleChatMessage);
+  on("MS");
   on("PN");
   on("PR", applyPlayerRosterChange);
   on("PU", applyPlayerFieldUpdate);
@@ -181,7 +177,7 @@ export function registerProtocol(
   on("SC", applyFullCharacterList);
   on("SI", applyServerCounts);
   on("SM", applyMusicListBatch);
-  on("SP", applyCharacterSide);
+  on("SP");
   on("TI", applyTimerUpdate);
   // VS_* are a LemmyAO transport extension, not part of the meta spec, so they
   // ride aolib-ts's custom channel (codecs in ./voice/vsPackets).

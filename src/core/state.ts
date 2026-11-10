@@ -1,5 +1,5 @@
 import { reactive } from "@vue/reactivity";
-import type { JudgeState, RTAnimation, Side, TextColor } from "aolib-ts";
+import type { DeskModifier, EmoteModifier, JudgeState, RTAnimation, Side, TextColor } from "aolib-ts";
 
 export type ConnectionStatus =
   | "idle"
@@ -21,6 +21,26 @@ export interface CharacterEntry {
   description: string;
   evidence: string;
   taken: boolean;
+}
+
+/** One emote of our character, in button order. */
+export interface Emote {
+  /** 1-based, as the emotions/buttonN_off files are numbered. */
+  index: number;
+  label: string;
+  preanim: string;
+  anim: string;
+  modifier: EmoteModifier;
+  deskModifier: DeskModifier;
+  sfx: string;
+  sfxDelay: number;
+}
+
+export interface OwnCharacter {
+  name: string;
+  showname: string;
+  side: Side;
+  emotes: Emote[];
 }
 
 export interface Evidence {
@@ -107,6 +127,12 @@ export interface State {
   self: {
     charId: number;
     areaId: number;
+    /** Loaded char.ini data for `charId`, or null while loading / spectating. */
+    character: OwnCharacter | null;
+    /** Index into `character.emotes`. */
+    emoteIndex: number;
+    /** Chosen position; "" speaks from the character's own side. */
+    position: Side | "";
     /** Position confirmed by the server (SP); null until it sends one. */
     side: Side | null;
     /** JD: whether the judge buttons show; "by_position" means only as judge. */
@@ -150,7 +176,7 @@ export function initialState(assetHost = ""): State {
       timers: {},
       music: {},
     },
-    self: { charId: -1, areaId: 0, side: null, judgeControls: "by_position", moderator: false, muted: [] },
+    self: { charId: -1, areaId: 0, character: null, emoteIndex: 0, position: "", side: null, judgeControls: "by_position", moderator: false, muted: [] },
   };
 }
 
