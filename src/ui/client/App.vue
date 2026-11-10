@@ -14,6 +14,8 @@ import { getPairOrder } from "../../dom/pairOrder";
 import OOCChat from "./OOCChat.vue";
 import BackgroundPanel from "./BackgroundPanel.vue";
 import AreasPanel from "./AreasPanel.vue";
+import OffsetGhost from "./OffsetGhost.vue";
+import { offsetPreview } from "./offsetPreview";
 
 // Landscape: the stage with the first tab under it, beside a column for the
 // other tabs. Portrait: the stage, the message bar, then every tab.
@@ -104,6 +106,7 @@ onUnmounted(() => {
   <div class="shell" :class="isLandscape ? 'landscape' : 'portrait'">
     <div class="stage-frame">
       <div ref="stageHost" class="legacy stage"></div>
+      <OffsetGhost v-if="offsetPreview" />
     </div>
 
     <form class="ic-input" @submit.prevent="sendMessage">
@@ -200,6 +203,7 @@ onUnmounted(() => {
 
 .stage-frame {
   grid-area: stage;
+  position: relative;
   width: 100%;
   margin: 0 auto;
   background: #000;

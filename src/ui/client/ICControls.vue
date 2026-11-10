@@ -9,6 +9,7 @@ import { changeCharacter } from "../../dom/changeCharacter";
 import { RAINBOW, TEXT_COLORS } from "../textColors";
 import EmoteTile from "./EmoteTile.vue";
 import { focusICInput } from "./focus";
+import { holdOffsetPreview, pulseOffsetPreview } from "./offsetPreview";
 import ComboBox, { type ComboItem } from "../components/ComboBox.vue";
 
 const character = computed(() => state.self.character);
@@ -77,6 +78,7 @@ function nudge(axis: "x" | "y", e: WheelEvent) {
   const toward = (e.deltaY < 0 ? 1 : -1) * (axis === "y" ? -1 : 1);
   const next = draft.pair.offset[axis] + toward;
   draft.pair.offset[axis] = Math.min(100, Math.max(-100, next));
+  pulseOffsetPreview();
 }
 
 function resetOffsets() {
@@ -217,6 +219,8 @@ const muteResults = computed(() => {
             max="100"
             step="1"
             aria-orientation="vertical"
+            @pointerdown="holdOffsetPreview"
+            @input="pulseOffsetPreview"
             @wheel.prevent="nudge('y', $event)"
           />
         </label>
@@ -229,6 +233,8 @@ const muteResults = computed(() => {
             min="-100"
             max="100"
             step="1"
+            @pointerdown="holdOffsetPreview"
+            @input="pulseOffsetPreview"
             @wheel.prevent="nudge('x', $event)"
           />
         </label>
