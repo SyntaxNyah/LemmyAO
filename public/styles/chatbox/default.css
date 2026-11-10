@@ -61,8 +61,9 @@
   max-width: 70%;
   margin: 0;
   padding: 0.08em 0.55em 0.1em;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 0.6em;
-  background: rgba(109, 140, 255, 0.95);
+  background: var(--accent, #6d8cff);
   color: #fff;
   font-size: 0.75em;
   font-weight: 600;
