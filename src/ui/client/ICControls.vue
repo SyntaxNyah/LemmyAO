@@ -135,7 +135,7 @@ const muteResults = computed(() => {
         </span>
       </label>
       <label class="field">
-        <span class="field-label">Position</span>
+        <span class="field-label">Side</span>
         <select class="input select" :value="state.self.position" @change="choosePosition">
           <option v-for="[value, label] in POSITIONS" :key="value" :value="value">{{ label }}</option>
         </select>
