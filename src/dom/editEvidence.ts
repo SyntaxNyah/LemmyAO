@@ -1,5 +1,6 @@
 import { client } from "../client";
 import { cancelEvidence } from "./cancelEvidence";
+import { editEvidence as sendEditEvidence } from "../core/commands";
 
 /**
  * Edit selected evidence.
@@ -9,8 +10,7 @@ export function editEvidence() {
     document.getElementById("evi_select")
   );
   const id = client.selectedEvidence;
-  client.server.send.EE({
-    id,
+  sendEditEvidence(id, {
     name: (<HTMLInputElement>document.getElementById("evi_name")).value,
     description: (<HTMLInputElement>document.getElementById("evi_desc")).value,
     image:

@@ -13,7 +13,6 @@
  * One delegated listener per event type, registered in capture phase so
  * non-bubbling events (`error`, `volumechange`) work the same way.
  */
-import { client } from "../client";
 import { PenaltyBar, RTAnimation } from "aolib-ts";
 
 import { addEvidence } from "./addEvidence";
@@ -85,19 +84,20 @@ import { toggleVoice } from "./toggleVoice";
 import { updateBackgroundPreview } from "./updateBackgroundPreview";
 import { updateEvidenceIcon } from "./updateEvidenceIcon";
 import { updateIniswap } from "./updateIniswap";
+import { changeHealth, playTestimony } from "../core/commands";
 
 const datasetOf = (e: Event) => (e.currentTarget as HTMLElement).dataset;
 
 const actions: Record<string, (e: Event) => void> = {
   // Trivial inline handlers.
-  guilty: () => client.server.send.RT({ animation: RTAnimation.guilty }),
-  notguilty: () => client.server.send.RT({ animation: RTAnimation.not_guilty }),
-  initCE: () => client.server.send.RT({ animation: RTAnimation.cross_examination }),
-  initWT: () => client.server.send.RT({ animation: RTAnimation.witness_testimony }),
-  redHPD: () => client.server.send.HP({ bar: PenaltyBar.defense, value: client.hp[0] - 1 }),
-  addHPD: () => client.server.send.HP({ bar: PenaltyBar.defense, value: client.hp[0] + 1 }),
-  redHPP: () => client.server.send.HP({ bar: PenaltyBar.prosecution, value: client.hp[1] - 1 }),
-  addHPP: () => client.server.send.HP({ bar: PenaltyBar.prosecution, value: client.hp[1] + 1 }),
+  guilty: () => playTestimony(RTAnimation.guilty),
+  notguilty: () => playTestimony(RTAnimation.not_guilty),
+  initCE: () => playTestimony(RTAnimation.cross_examination),
+  initWT: () => playTestimony(RTAnimation.witness_testimony),
+  redHPD: () => changeHealth(PenaltyBar.defense, -1),
+  addHPD: () => changeHealth(PenaltyBar.defense, 1),
+  redHPP: () => changeHealth(PenaltyBar.prosecution, -1),
+  addHPP: () => changeHealth(PenaltyBar.prosecution, 1),
   resetOffset: () => resetPairOffsets(),
   pairOrderFront: () => pairOrderFront(),
   pairOrderBack: () => pairOrderBack(),

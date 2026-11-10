@@ -1,12 +1,15 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import {
   AuthState,
+  DeskModifier,
+  EmoteModifier,
   JudgeState,
   MusicChannel,
   PenaltyBar,
   PlayerDataType,
   PlayerListUpdate,
   RTAnimation,
+  ShoutModifier,
   Side,
   TimerCommand,
   type packets,
@@ -14,17 +17,32 @@ import {
 import { Connection } from "../core/connection";
 import { coreHandlers } from "../core/protocol";
 import { state, LOG_LIMIT } from "../core/state";
+import {
+  draft,
+  sendIC,
+  sendOOC,
+  pickCharacter,
+  changeArea,
+  changeHealth,
+  setMuted,
+  resetDraftAfterSend,
+} from "../core/commands";
+import { settings } from "../core/settings";
 import { on } from "../core/events";
 
 type C2S = keyof packets.C2SOutputs;
 const REPLIES: C2S[] = ["HI", "ID", "askchaa", "RC", "RM", "RD", "CH"];
+const COMMANDS: C2S[] = ["MS", "CC", "MC", "CT", "HP", "RT", "ZZ", "MA", "PE", "EE", "DE"];
 
 let sent: string[];
+/** Decoded packets the commands sent, in order. */
+let outbound: { $header: string; [field: string]: unknown }[];
 let conn: Connection;
 
 /** A local-mode connection with only the core handlers, recording what it sends. */
 function connect() {
   sent = [];
+  outbound = [];
   conn = new Connection({
     url: "",
     local: true,
@@ -40,6 +58,11 @@ function connect() {
       for (const header of REPLIES) {
         (clientSession.on as unknown as Record<string, (h: () => void) => void>)[header](() =>
           sent.push(header),
+        );
+      }
+      for (const header of COMMANDS) {
+        (clientSession.on as unknown as Record<string, (h: (p: never) => void) => void>)[header](
+          (p) => outbound.push(p),
         );
       }
     },
@@ -254,5 +277,111 @@ describe("court and logs", () => {
     for (let i = 0; i < LOG_LIMIT + 5; i++) server().CT({ name: "a", message: String(i), is_from_server: false });
     expect(state.oocLog).toHaveLength(LOG_LIMIT);
     expect(state.oocLog[0]).toMatchObject({ message: "5" });
+  });
+});
+
+describe("commands", () => {
+  const joinAs = (charId: number) => {
+    receive("SC#Phoenix#Edgeworth#%");
+    receive("SM#Lobby#Courtroom#== Music ==#a.opus#%");
+    receive("PV#1#CID#" + charId + "#%");
+  };
+
+  beforeEach(() => {
+    resetDraftAfterSend();
+    Object.assign(draft, {
+      emote: {
+        preanim: "think",
+        anim: "normal",
+        modifier: EmoteModifier.preanim,
+        deskModifier: DeskModifier.hidden,
+        sfx: "deskslam",
+        sfxDelay: 120,
+      },
+      side: Side.def,
+      evidence: -1,
+    });
+  });
+
+  test("sendIC builds MS from the draft", () => {
+    joinAs(0);
+    Object.assign(draft, { message: "Take that!", shout: ShoutModifier.take_that, evidence: 2, sendSfx: true, sendPreanim: true });
+    expect(sendIC()).toBe(true);
+    expect(outbound.at(-1)).toMatchObject({
+      $header: "MS",
+      character: "Phoenix",
+      emote: "normal",
+      message: "Take that!",
+      side: "def",
+      emote_modifier: "preanim",
+      desk_modifier: "hidden",
+      sfx_name: "deskslam",
+      sfx_delay: 120,
+      shout_modifier: "take_that",
+      evidence_id: 3,
+      char_id: 0,
+    });
+  });
+
+  test("the preanim toggle only flips plain emotes", () => {
+    joinAs(0);
+    sendIC();
+    expect(outbound.at(-1)).toMatchObject({ emote_modifier: "no_preanim", sfx_name: "0", sfx_delay: 0 });
+
+    draft.emote!.modifier = EmoteModifier.zoom;
+    draft.sendPreanim = true;
+    sendIC();
+    expect(outbound.at(-1)).toMatchObject({ emote_modifier: "zoom" });
+  });
+
+  test("sendIC refuses without a character or emote", () => {
+    expect(sendIC()).toBe(false);
+    joinAs(0);
+    draft.emote = null;
+    expect(sendIC()).toBe(false);
+    expect(outbound.filter((p) => p.$header === "MS")).toHaveLength(0);
+  });
+
+  test("our own echoed message clears the per-message draft", () => {
+    joinAs(1);
+    Object.assign(draft, { message: "hi", flash: true, shout: ShoutModifier.objection, flip: true });
+    conn.clientSession.send.MS({ character: "Edgeworth", emote: "normal", message: "hi", side: Side.pro, char_id: 1 });
+    expect(draft).toMatchObject({ message: "", flash: false, shout: "none", flip: true });
+  });
+
+  test("other players' messages leave the draft alone", () => {
+    joinAs(1);
+    draft.message = "typing";
+    conn.clientSession.send.MS({ character: "Phoenix", emote: "normal", message: "hey", side: Side.def, char_id: 0 });
+    expect(draft.message).toBe("typing");
+  });
+
+  test("muted characters are not logged or staged", () => {
+    joinAs(1);
+    setMuted(0, true);
+    conn.clientSession.send.MS({ character: "Phoenix", emote: "normal", message: "spam", side: Side.def, char_id: 0 });
+    expect(state.icLog).toHaveLength(0);
+    setMuted(0, false);
+    expect(state.self.muted).toEqual([]);
+  });
+
+  test("simple commands send what the server expects", () => {
+    joinAs(1);
+    pickCharacter(0);
+    changeArea(1);
+    changeArea(9);
+    sendOOC("/roll", "Maya");
+    expect(outbound.map((p) => p.$header)).toEqual(["CC", "MC", "CT"]);
+    expect(outbound[0]).toMatchObject({ char_id: 0, char_password: "none" });
+    expect(outbound[1]).toMatchObject({ name: "Courtroom", char_id: 1 });
+    expect(state.self.areaId).toBe(1);
+    expect(settings.oocName).toBe("Maya");
+  });
+
+  test("health changes are clamped", () => {
+    changeHealth(PenaltyBar.defense, 1);
+    conn.clientSession.send.HP({ bar: PenaltyBar.prosecution, value: 0 });
+    changeHealth(PenaltyBar.prosecution, -1);
+    expect(outbound.map((p) => p.value)).toEqual([10, 0]);
   });
 });

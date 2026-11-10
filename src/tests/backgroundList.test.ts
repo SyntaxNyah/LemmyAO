@@ -30,6 +30,20 @@ mock.module("../dom/updateBackgroundPreview", () => ({
   default: async (url: string) => `resolved:${url}`,
 }));
 
+const { Connection } = await import("../core/connection");
+new Connection({
+  url: "",
+  local: true,
+  disableJson: true,
+  hdid: "",
+  software: "",
+  version: "",
+  register: (_server, clientSession) => {
+    clientSession.on.HI(() => {});
+    clientSession.on.CT((p) => ctMock({ name: p.name, message: p.message }));
+  },
+}).connect();
+
 const {
   openBackgroundList,
   closeBackgroundList,

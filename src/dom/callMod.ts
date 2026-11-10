@@ -1,5 +1,5 @@
-import { client } from "../client";
 import { extrafeatures } from "../client";
+import { callMod as sendModcall } from "../core/commands";
 /**
  * Call mod.
  */
@@ -11,6 +11,6 @@ export function callMod() {
   if (modcall == null || modcall === "") {
     // cancel
   } else {
-    client.server.send.ZZ({ reason: modcall });
+    sendModcall(modcall);
   }
 }

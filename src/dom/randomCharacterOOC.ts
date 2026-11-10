@@ -1,8 +1,8 @@
-import { client } from "../client";
+import { sendOOC } from "../core/commands";
 /**
  * Random character via OOC.
  */
 export function randomCharacterOOC() {
   const name = (<HTMLInputElement>document.getElementById("OOC_name")).value;
-  client.server.send.CT({ name, message: `/randomchar` });
+  sendOOC("/randomchar", name);
 }

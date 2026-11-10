@@ -15,6 +15,12 @@ export interface ConnectionOptions {
 }
 
 const OPEN_TIMEOUT_MS = 5000;
+
+let current: Connection | undefined;
+
+/** The connection commands go through: the one most recently connected. */
+export const currentConnection = () => current;
+const makeCurrent = (conn: Connection) => (current = conn);
 const KEEPALIVE_MS = 5000;
 
 const sessionHooks = (role: string) => ({
@@ -43,6 +49,7 @@ export class Connection {
   constructor(readonly options: ConnectionOptions) {}
 
   connect() {
+    makeCurrent(this);
     this.teardown();
     resetSessionState();
     const abort = new AbortController();

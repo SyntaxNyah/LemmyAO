@@ -6,6 +6,7 @@
 import { client, autoChar, autoArea } from "../client";
 import { area_click } from "../dom/areaClick";
 import queryParser from "../utils/queryParser";
+import { pickCharacter } from "../core/commands";
 
 const { mode } = queryParser();
 
@@ -41,7 +42,7 @@ export function finishServerJoin() {
       (c: any) => c && c.name.toLowerCase() === autoChar.toLowerCase(),
     );
     if (charIndex !== -1) {
-      client.server.send.CC({ player_id: client.playerID, char_id: charIndex });
+      pickCharacter(charIndex);
     }
   }
 }

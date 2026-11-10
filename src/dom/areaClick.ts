@@ -1,12 +1,12 @@
 import { client } from "../client";
 import { renderPlayerList } from "./renderPlayerList";
+import { changeArea } from "../core/commands";
 /**
  * Triggered when an item on the area list is clicked.
  * @param {HTMLElement} el
  */
 export function area_click(el: HTMLElement) {
-  const area = client.areas[el.id.substring(4)].name;
-  client.server.send.MC({ name: area, char_id: client.charID });
+  changeArea(Number(el.id.substring(4)));
 
   const areaHr = document.createElement("div");
   areaHr.className = "hrtext";

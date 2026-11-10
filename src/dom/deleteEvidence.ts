@@ -1,11 +1,12 @@
 import { client } from "../client";
 import { cancelEvidence } from "./cancelEvidence";
+import { deleteEvidence as sendDeleteEvidence } from "../core/commands";
 
 /**
  * Delete selected evidence.
  */
 export function deleteEvidence() {
   const id = client.selectedEvidence;
-  client.server.send.DE({ id });
+  sendDeleteEvidence(id);
   cancelEvidence();
 }

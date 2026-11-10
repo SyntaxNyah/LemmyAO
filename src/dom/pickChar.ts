@@ -1,6 +1,7 @@
 import { client } from "../client";
 import { CharAvailability } from "aolib-ts";
 import type * as aolib from "aolib-ts";
+import { pickCharacter } from "../core/commands";
 
 /**
  * Requests to play as a character.
@@ -14,12 +15,7 @@ export function pickChar(ccharacter: number) {
     document.getElementById("client_waiting")!.style.display = "none";
     document.getElementById("client_charselect")!.style.display = "none";
   }
-  client.server.send.CC({
-    player_id: client.playerID,
-    char_id: ccharacter,
-    // Some servers reject "" as a char_password — send a non-empty sentinel.
-    char_password: "none",
-  });
+  pickCharacter(ccharacter);
 }
 
 /** CharsCheck: server reports which character slots are taken vs free. */

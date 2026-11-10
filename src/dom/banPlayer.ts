@@ -1,4 +1,4 @@
-import { client } from "../client";
+import { removePlayer } from "../core/commands";
 
 /**
  * Tries to ban a player from the playerlist
@@ -8,7 +8,7 @@ export function banPlayer(id: number) {
   const reason = prompt("Please enter the reason", "Being annoying");
   const duration = Number(prompt("Please enter the ban duration in minutes", "60"));
 
-  client.server.send.MA({ player_id: id, duration_minutes: duration, reason });
+  removePlayer(id, reason, duration);
 }
 
 /**
@@ -18,5 +18,5 @@ export function banPlayer(id: number) {
 export function kickPlayer(id: number) {
   const reason = prompt("Please enter the reason", "Being annoying");
 
-  client.server.send.MA({ player_id: id, duration_minutes: 0, reason });
+  removePlayer(id, reason);
 }

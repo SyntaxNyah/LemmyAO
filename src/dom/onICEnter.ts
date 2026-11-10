@@ -3,6 +3,7 @@ import * as aolib from "aolib-ts";
 import { enumByNumber } from "../utils/aoEnum";
 import { parsePairedCharID } from "../utils/pairCharID";
 import { getPairOrder } from "./pairOrder";
+import { draft, sendIC } from "../core/commands";
 
 const input = (id: string) =>
   document.getElementById(id) as HTMLInputElement;
@@ -11,68 +12,62 @@ const isToggled = (id: string) =>
 
 /**
  * Triggered when the Return key is pressed on the in-character chat input box.
+ * Copies the legacy controls into the core draft and sends it.
  */
 export function onICEnter(event: KeyboardEvent) {
   if (event.key !== "Enter") return false;
 
   const my_char = client.character;
   const my_emote = client.emote;
-  const sendSfx = input("sendsfx").checked;
-  const sendPreanim = input("sendpreanim").checked;
+  if (!my_char || !my_emote) return false;
 
-  // char.ini modifier is numeric (0/1/5/6); the sendpreanim toggle only flips
-  // between no_preanim and preanim, leaving zoom/objection variants alone.
-  let modN = Number(my_emote.zoom);
-  if (!Number.isInteger(modN)) modN = 0;
-  if (sendPreanim && modN === 0) modN = 1;
-  else if (!sendPreanim && modN === 1) modN = 0;
-  const emote_modifier = enumByNumber(aolib.EmoteModifier, modN);
+  // aolib's parseCharIni already maps legacy numeric modifiers to enum names.
+  draft.emote = {
+    preanim: my_emote.preanim,
+    anim: my_emote.emote,
+    modifier: my_emote.zoom,
+    deskModifier: my_emote.desk_modifier,
+    sfx: my_emote.sfx,
+    sfxDelay: my_emote.sfxdelay,
+  };
 
   const sideStr = input("role_select").value || my_char.side;
-  const side: aolib.Side = (Object.values(aolib.Side) as string[]).includes(sideStr)
+  draft.side = (Object.values(aolib.Side) as string[]).includes(sideStr)
     ? (sideStr as aolib.Side)
     : aolib.Side.wit;
 
   const colorN = Number(input("textcolor").value);
-  const text_color =
+  draft.color =
     Number.isInteger(colorN) && colorN >= 0 && colorN <= 9
       ? enumByNumber(aolib.TextColor, colorN)
       : aolib.TextColor.white;
 
-  const [effName, effFolder, effSound] = input("effect_select").value.split("|");
+  const [name = "", folder = "", sound = ""] = input("effect_select").value.split("|");
 
-  client.server.send.MS({
-    desk_modifier: enumByNumber(aolib.DeskModifier, Number(my_emote.desk_modifier)),
-    preanim: my_emote.preanim,
-    character: my_char.name,
-    emote: my_emote.emote,
+  Object.assign(draft, {
     message: input("client_inputbox").value,
-    side,
-    sfx_name: sendSfx ? my_emote.sfx : "0",
-    emote_modifier,
-    char_id: client.charID,
-    sfx_delay: sendSfx ? my_emote.sfxdelay : 0,
-    shout_modifier: enumByNumber(aolib.ShoutModifier, selectedShout),
-    evidence_id: client.evidence + 1,
-    flip: isToggled("button_flip") ? aolib.Flip.horizontal : aolib.Flip.none,
-    realization: isToggled("button_flash"),
-    text_color,
     showname: input("ic_chat_name").value,
-    paired_charid: parsePairedCharID(input("pair_select").value),
-    paired_order: getPairOrder(),
-    offset: {
-      x: Number(input("pair_offset").value) || 0,
-      y: Number(input("pair_y_offset").value) || 0,
-    },
-    noninterrupting_preanim: input("check_nonint").checked,
-    sfx_looping: input("check_loopsfx").checked,
+    shout: enumByNumber(aolib.ShoutModifier, selectedShout),
+    evidence: client.evidence,
+    flip: isToggled("button_flip"),
+    flash: isToggled("button_flash"),
     screenshake: isToggled("button_shake"),
-    frames_shake: "-",
-    frames_realization: "-",
-    frames_sfx: "-",
+    sendPreanim: input("sendpreanim").checked,
+    sendSfx: input("sendsfx").checked,
+    nonInterrupting: input("check_nonint").checked,
+    loopSfx: input("check_loopsfx").checked,
     additive: input("check_additive").checked,
-    effect: { name: effName ?? "", folder: effFolder ?? "", sound: effSound ?? "" },
+    effect: { name, folder, sound },
+    pair: {
+      charId: parsePairedCharID(input("pair_select").value),
+      order: getPairOrder(),
+      offset: {
+        x: Number(input("pair_offset").value) || 0,
+        y: Number(input("pair_y_offset").value) || 0,
+      },
+    },
   });
 
+  sendIC();
   return false;
 }

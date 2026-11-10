@@ -62,8 +62,8 @@ export async function changeChar(char_id: number) {
           desc: (emote.name ?? "").toLowerCase(),
           preanim: (emote.preanim ?? "-").toLowerCase(),
           emote: (emote.anim ?? "").toLowerCase(),
-          zoom: emote.modifier ?? 0,
-          desk_modifier: emote.deskmod ?? 1,
+          zoom: emote.modifier,
+          desk_modifier: emote.deskmod,
           sfx: (emote.sound ?? "0").toLowerCase(),
           // sounddelayms is [soundt] ticks already converted to ms (aolib-ts
           // TICK_MS == UPDATE_INTERVAL), matching the tickTimer comparison.

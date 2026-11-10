@@ -1,5 +1,6 @@
 import { client } from "../client";
 import { groupPair, onGroupPairChange } from "../groupPair";
+import { sendOOC } from "../core/commands";
 
 /**
  * Pair order — wire-aware, mirroring AsyncAO.
@@ -25,7 +26,7 @@ function inGroup(): boolean {
 
 function sendPairOrder(uid: number, op: string): void {
   const name = (document.getElementById("OOC_name") as HTMLInputElement).value;
-  client.server.send.CT({ name, message: `/pairorder ${uid} ${op}` });
+  sendOOC(`/pairorder ${uid} ${op}`, name);
 }
 
 function updatePairOrderButtons(): void {

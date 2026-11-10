@@ -5,6 +5,7 @@ import queryParser from "../utils/queryParser";
 import { parseBackgroundFolderListing } from "../utils/parseBackgroundFolderListing";
 import tryBackgroundUrls from "./updateBackgroundPreview";
 import transparentPng from "../constants/transparentPng";
+import { sendOOC } from "../core/commands";
 
 const { mode } = queryParser();
 
@@ -88,7 +89,7 @@ export function pickBackground(name: string) {
   if (mode === "join") {
     const oocName = (<HTMLInputElement>document.getElementById("OOC_name"))
       .value;
-    client.server.send.CT({ name: oocName, message: `/bg ${name}` });
+    sendOOC(`/bg ${name}`, oocName);
   } else if (mode === "replay") {
     client.server.receive(`BN#${name}#%`);
   }

@@ -109,6 +109,8 @@ export interface State {
     /** JD: whether the judge buttons show; "by_position" means only as judge. */
     judgeControls: JudgeState;
     moderator: boolean;
+    /** Characters whose IC messages are hidden locally. */
+    muted: number[];
   };
 }
 
@@ -145,7 +147,7 @@ export function initialState(assetHost = ""): State {
       timers: {},
       music: {},
     },
-    self: { charId: -1, areaId: 0, side: null, judgeControls: "by_position", moderator: false },
+    self: { charId: -1, areaId: 0, side: null, judgeControls: "by_position", moderator: false, muted: [] },
   };
 }
 

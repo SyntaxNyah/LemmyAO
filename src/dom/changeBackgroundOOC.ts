@@ -1,5 +1,6 @@
 import queryParser from "../utils/queryParser";
 import { client } from "../client";
+import { sendOOC } from "../core/commands";
 const { mode } = queryParser();
 
 /**
@@ -19,10 +20,7 @@ export function changeBackgroundOOC() {
 
   if (mode === "join") {
     const name = (<HTMLInputElement>document.getElementById("OOC_name")).value;
-    client.server.send.CT({
-      name,
-      message: `/${changeBGCommand.replace("$1", filename)}`,
-    });
+    sendOOC(`/${changeBGCommand.replace("$1", filename)}`, name);
   } else if (mode === "replay") {
     client.server.receive(`BN#${filename}#%`);
   }
