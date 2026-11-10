@@ -1,3 +1,5 @@
+import { client } from "../client";
+import { settings, resetSettings as resetStoredSettings, type SettingKey } from "../core/settings";
 import { changeMusicVolume } from "./changeMusicVolume";
 import { setChatbox } from "./setChatbox";
 import { changeSFXVolume } from "./changeVolume";
@@ -13,22 +15,20 @@ import { resetThemeMaker } from "./themeMaker";
 import { showname_click } from "./showNameClick";
 import { applyMusicMute, applySfxMute, applyBlipMute } from "./audioMute";
 
-const SETTINGS_KEYS = [
-  "theme",
-  "customCSS",
+// Voice, OOC name and blip pitch survive a reset, as they always have.
+const RESET_KEYS: SettingKey[] = [
   "chatbox",
   "musicVolume",
   "sfxVolume",
   "blipVolume",
   "callwords",
-  "ic_chat_name",
   "showname",
-  "selectedFont",
+  "shownamesEnabled",
+  "font",
   "customFont",
-  "themeMakerConfig",
   "hideDesks",
   "panTilt",
-  "preanimGlowEnabled",
+  "preanimGlow",
   "preanimGlowColor",
   "preanimGlowIntensity",
   "chatOffset",
@@ -36,15 +36,16 @@ const SETTINGS_KEYS = [
   "sfxMuted",
   "blipMuted",
 ];
+const LEGACY_THEME_KEYS = ["theme", "customCSS", "themeMakerConfig"];
 
 /**
- * Resets all client settings to their defaults and clears them from localStorage.
+ * Resets client settings to their defaults.
  */
 export function resetSettings() {
   if (!confirm("Reset all settings to defaults? This cannot be undone.")) return;
 
-  // Clear all stored settings
-  SETTINGS_KEYS.forEach((key) => localStorage.removeItem(key));
+  resetStoredSettings(RESET_KEYS);
+  LEGACY_THEME_KEYS.forEach((key) => localStorage.removeItem(key));
 
   // --- Theme Maker ---
   resetThemeMaker();
@@ -65,67 +66,68 @@ export function resetSettings() {
   // --- Chatbox ---
   const chatboxSelect = <HTMLSelectElement>document.getElementById("client_chatboxselect");
   if (chatboxSelect) {
-    chatboxSelect.value = "dynamic";
-    setChatbox("dynamic");
+    chatboxSelect.value = settings.chatbox;
+    setChatbox(settings.chatbox);
   }
 
   // --- Font ---
   const fontSelect = <HTMLSelectElement>document.getElementById("client_fontselect");
   if (fontSelect) {
-    fontSelect.value = "sans-serif";
+    fontSelect.value = settings.font;
     const customFontInput = <HTMLInputElement>document.getElementById("client_customfont");
-    if (customFontInput) customFontInput.value = "";
+    if (customFontInput) customFontInput.value = settings.customFont;
     setFont();
   }
 
   // --- Music volume ---
   const mvolume = <HTMLInputElement>document.getElementById("client_mvolume");
   if (mvolume) {
-    mvolume.value = "1";
+    mvolume.value = String(settings.musicVolume);
     changeMusicVolume();
   }
 
   // --- SFX volume (combined SFX/Shout/Testimony) ---
   const svolume = <HTMLInputElement>document.getElementById("client_svolume");
   if (svolume) {
-    svolume.value = "1";
+    svolume.value = String(settings.sfxVolume);
     changeSFXVolume();
   }
 
   // --- Blip volume ---
   const bvolume = <HTMLInputElement>document.getElementById("client_bvolume");
   if (bvolume) {
-    bvolume.value = "1";
+    bvolume.value = String(settings.blipVolume);
     changeBlipVolume();
   }
 
   // --- Mute toggles ---
   const muteMusic = <HTMLInputElement>document.getElementById("client_mute_music");
   if (muteMusic) {
-    muteMusic.checked = false;
-    applyMusicMute(false);
+    muteMusic.checked = settings.musicMuted;
+    applyMusicMute(settings.musicMuted);
   }
   const muteSfx = <HTMLInputElement>document.getElementById("client_mute_sfx");
   if (muteSfx) {
-    muteSfx.checked = false;
-    applySfxMute(false);
+    muteSfx.checked = settings.sfxMuted;
+    applySfxMute(settings.sfxMuted);
   }
   const muteBlips = <HTMLInputElement>document.getElementById("client_mute_blips");
   if (muteBlips) {
-    muteBlips.checked = false;
-    applyBlipMute(false);
+    muteBlips.checked = settings.blipMuted;
+    applyBlipMute(settings.blipMuted);
   }
 
   // --- Callwords ---
   const callwords = <HTMLTextAreaElement>document.getElementById("client_callwords");
-  if (callwords) callwords.value = "";
+  if (callwords) callwords.value = settings.callwords.join("\n");
+  client.callwords = [...settings.callwords];
 
   // --- Custom showname ---
   const icChatName = <HTMLInputElement>document.getElementById("ic_chat_name");
-  if (icChatName) icChatName.value = "";
+  if (icChatName) icChatName.value = settings.showname;
   const shownameCheckbox = <HTMLInputElement>document.getElementById("showname");
   if (shownameCheckbox) {
-    shownameCheckbox.checked = true;
+    shownameCheckbox.checked = settings.shownamesEnabled;
     showname_click(null);
   }
 
@@ -144,14 +146,14 @@ export function resetSettings() {
     switchAspectRatio();
   }
   if (hdOffset) {
-    hdOffset.value = "0";
+    hdOffset.value = String(settings.chatOffset);
     switchChatOffset();
   }
 
   // --- Hide desks ---
   const hidedesks = <HTMLInputElement>document.getElementById("client_hidedesks");
   if (hidedesks) {
-    hidedesks.checked = false;
+    hidedesks.checked = settings.hideDesks;
     switchHideDesks();
   }
 

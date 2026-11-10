@@ -1,5 +1,6 @@
 import { client } from "../client";
 import { saveChatlogHandle } from "../client/saveChatLogHandle";
+import { setSetting } from "../core/settings";
 
 const OOC_COMMANDS = new Map<string, () => void>([
   ["/save_chatlog", saveChatlogHandle],
@@ -16,7 +17,7 @@ export function onOOCEnter(event: KeyboardEvent) {
   const inputbox = <HTMLInputElement>document.getElementById("client_oocinputbox");
   const message = inputbox.value;
   const name = (<HTMLInputElement>document.getElementById("OOC_name")).value;
-  localStorage.setItem("OOC_name", name);
+  setSetting("oocName", name);
 
   const command = OOC_COMMANDS.get(message.toLowerCase());
   if (command) {

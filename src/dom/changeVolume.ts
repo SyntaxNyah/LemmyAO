@@ -1,3 +1,5 @@
+import { setSetting } from "../core/settings";
+
 const SFX_AUDIO_IDS = [
   "client_sfxaudio",
   "client_shoutaudio",
@@ -13,5 +15,5 @@ export function changeSFXVolume(): void {
     const el = document.getElementById(id) as HTMLAudioElement | null;
     if (el) el.volume = volume;
   }
-  localStorage.setItem("sfxVolume", String(volume));
+  setSetting("sfxVolume", volume);
 }

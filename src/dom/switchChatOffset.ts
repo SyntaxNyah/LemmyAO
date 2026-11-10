@@ -8,7 +8,8 @@
  *   - scroll the mouse wheel over the field (scroll up = wider inset)
  */
 
-const STORAGE_KEY = "chatOffset";
+import { settings, setSetting } from "../core/settings";
+
 const MIN = 0;
 const MAX = 100;
 const STEP = 1;
@@ -22,8 +23,7 @@ const offsetField = () =>
  * The saved per-side inset (%), clamped, defaulting to 0 (no offset).
  */
 export function getChatOffset(): number {
-  const saved = Number(localStorage.getItem(STORAGE_KEY));
-  return Number.isFinite(saved) ? clamp(saved) : MIN;
+  return settings.chatOffset;
 }
 
 /**
@@ -40,7 +40,7 @@ export function applyChatOffset(pct: number) {
   const container = document.getElementById("client_chatcontainer")!;
   container.style.width = `${100 - p}%`;
   container.style.left = `${p / 2}%`;
-  localStorage.setItem(STORAGE_KEY, String(p));
+  setSetting("chatOffset", p);
 }
 
 /**

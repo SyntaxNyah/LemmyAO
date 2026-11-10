@@ -1,4 +1,5 @@
 import { setBlipVolume } from "../viewport/utils/blipAudio";
+import { setSetting } from "../core/settings";
 /**
  * Triggered by the blip volume slider.
  */
@@ -7,5 +8,5 @@ export function changeBlipVolume() {
     document.getElementById("client_bvolume")
   )).value;
   setBlipVolume(Number(blipVolume));
-  localStorage.setItem("blipVolume", blipVolume);
+  setSetting("blipVolume", Number(blipVolume));
 }

@@ -1,14 +1,15 @@
+import { setSetting } from "../core/settings";
 /**
  * Triggered when the showname checkboc is clicked
  * @param {MouseEvent} event
  */
 export function showname_click(_event: Event | null) {
-  localStorage.setItem(
-    "showname",
-    String((<HTMLInputElement>document.getElementById("showname")).checked),
+  setSetting(
+    "shownamesEnabled",
+    (<HTMLInputElement>document.getElementById("showname")).checked,
   );
-  localStorage.setItem(
-    "ic_chat_name",
+  setSetting(
+    "showname",
     (<HTMLInputElement>document.getElementById("ic_chat_name")).value,
   );
 

@@ -8,6 +8,7 @@
 
 import { playBlip, setBlipPitch, setBlipUrl } from "../viewport/utils/blipAudio";
 import { AO_HOST } from "../client/aoHost";
+import { settings, setSetting } from "../core/settings";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -1651,21 +1652,16 @@ function applyThemeMakerCSS(css: string): void {
   if (themeLink) themeLink.disabled = true;
 }
 
-const LS_KEY_BLIP_PITCH = "blipPitch";
-
 /** Apply a blip playbackRate (pitch shifts with rate — preservesPitch is off). */
 export function applyBlipPitch(pitch: number): void {
   const clamped = Math.max(0.5, Math.min(2, Number(pitch) || 1));
   setBlipPitch(clamped);
-  localStorage.setItem(LS_KEY_BLIP_PITCH, String(clamped));
+  setSetting("blipPitch", clamped);
 }
 
-/** Restore blip pitch from localStorage; safe to call before audio elements exist. */
+/** Safe to call before audio elements exist. */
 export function restoreBlipPitch(): void {
-  const raw = localStorage.getItem(LS_KEY_BLIP_PITCH);
-  if (raw == null) return;
-  const v = Number(raw);
-  if (Number.isFinite(v)) applyBlipPitch(v);
+  setBlipPitch(settings.blipPitch);
 }
 
 

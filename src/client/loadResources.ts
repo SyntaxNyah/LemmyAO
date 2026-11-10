@@ -24,6 +24,8 @@ import {
   applyBlipMute,
 } from "../dom/audioMute";
 import { version } from "../version";
+import { settings } from "../core/settings";
+import { client } from "../client";
 
 /**
  * Load game resources and stored settings.
@@ -49,10 +51,8 @@ export function loadResources() {
     evidence_select.add(new Option(evidence));
   });
 
-  // Read local storage and set the UI to its values
   (<HTMLInputElement>document.getElementById("OOC_name")).value =
-    localStorage.getItem("OOC_name") ||
-    `web${String(Math.round(Math.random() * 100 + 10))}`;
+    settings.oocName || `web${String(Math.round(Math.random() * 100 + 10))}`;
 
   const storedTheme = localStorage.getItem("theme") || "default";
 
@@ -65,7 +65,7 @@ export function loadResources() {
   if (themeOption) themeOption.selected = true;
   reloadTheme();
 
-  const storedChatbox = localStorage.getItem("chatbox") || "dynamic";
+  const storedChatbox = settings.chatbox;
 
   (<HTMLOptionElement>(
     document.querySelector(`#client_chatboxselect [value="${storedChatbox}"]`)
@@ -73,13 +73,13 @@ export function loadResources() {
   setChatbox(storedChatbox);
 
   (<HTMLInputElement>document.getElementById("client_mvolume")).value =
-    localStorage.getItem("musicVolume") || "1";
+    String(settings.musicVolume);
   changeMusicVolume();
   (<HTMLInputElement>document.getElementById("client_svolume")).value =
-    localStorage.getItem("sfxVolume") || "1";
+    String(settings.sfxVolume);
   changeSFXVolume();
   (<HTMLInputElement>document.getElementById("client_bvolume")).value =
-    localStorage.getItem("blipVolume") || "1";
+    String(settings.blipVolume);
   changeBlipVolume();
   restoreBlipPitch();
 
@@ -107,13 +107,14 @@ export function loadResources() {
   document.addEventListener("keydown", unlock, { once: true });
 
   (<HTMLInputElement>document.getElementById("ic_chat_name")).value =
-    localStorage.getItem("ic_chat_name");
+    settings.showname;
   (<HTMLInputElement>document.getElementById("showname")).checked =
-    localStorage.getItem("showname") !== "false";
+    settings.shownamesEnabled;
   showname_click(null);
 
   (<HTMLInputElement>document.getElementById("client_callwords")).value =
-    localStorage.getItem("callwords");
+    settings.callwords.join("\n");
+  client.callwords = [...settings.callwords];
 
   // Restore pan-tilt setting (defaults to off)
   const panTiltCheckbox = <HTMLInputElement>document.getElementById("client_pantilt");
@@ -141,7 +142,7 @@ export function loadResources() {
   initPairOrder();
 
   // Restore font setting
-  const storedFont = localStorage.getItem("selectedFont") || "sans-serif";
+  const storedFont = settings.font;
   const fontSelect = <HTMLSelectElement>document.getElementById("client_fontselect");
   if (fontSelect) {
     const fontOption = <HTMLOptionElement>(
@@ -150,7 +151,7 @@ export function loadResources() {
     if (fontOption) fontOption.selected = true;
     const customFontInput = <HTMLInputElement>document.getElementById("client_customfont");
     if (customFontInput) {
-      customFontInput.value = localStorage.getItem("customFont") || "";
+      customFontInput.value = settings.customFont;
     }
     setFont();
   }

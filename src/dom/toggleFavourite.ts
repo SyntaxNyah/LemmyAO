@@ -1,19 +1,8 @@
 import { AO_HOST } from "../client/aoHost";
-
-const getFavKey = () => `favourites_${AO_HOST}`;
+import { getFavourites as getStoredFavourites, setFavourites } from "../core/settings";
 
 export function getFavourites(): Set<number> {
-  try {
-    const raw = localStorage.getItem(getFavKey());
-    if (raw) return new Set(JSON.parse(raw) as number[]);
-  } catch {
-    // ignore parse errors
-  }
-  return new Set();
-}
-
-function saveFavourites(favs: Set<number>) {
-  localStorage.setItem(getFavKey(), JSON.stringify([...favs]));
+  return getStoredFavourites(AO_HOST);
 }
 
 /**
@@ -76,6 +65,6 @@ export function toggleFavourite(charid: number, event: Event) {
     if (btn) btn.classList.add("active");
   }
 
-  saveFavourites(favs);
+  setFavourites(AO_HOST, favs);
   sortFavourites();
 }

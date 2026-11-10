@@ -19,10 +19,10 @@ import {
   setInputDevice,
   getInputDeviceId,
   setOutputVolume,
-  getOutputVolume,
   isVCMuted,
   setVCMuted,
 } from "./voice";
+import { settings, setSetting } from "../core/settings";
 
 let installed = false;
 let menuButton: HTMLElement | null = null;
@@ -276,7 +276,7 @@ async function populateDeviceList(): Promise<void> {
       deviceSelect.add(new Option(label, device.deviceId));
       idx++;
     }
-    const saved = localStorage.getItem("voiceInputDevice");
+    const saved = settings.voiceInputDevice;
     const target = previousValue || saved || getInputDeviceId() || "";
     if (target) {
       const found = Array.from(deviceSelect.options).some(
@@ -331,7 +331,7 @@ export async function toggleVoice(): Promise<void> {
 function onVCMuteClick() {
   const muted = !isVCMuted();
   setVCMuted(muted);
-  localStorage.setItem("vcMuted", muted ? "1" : "0");
+  setSetting("voiceMuted", muted);
   render();
 }
 
@@ -369,7 +369,7 @@ function onWindowBlur() {
 async function onDeviceChange() {
   if (!deviceSelect) return;
   const id = deviceSelect.value;
-  localStorage.setItem("voiceInputDevice", id);
+  setSetting("voiceInputDevice", id);
   try {
     await setInputDevice(id);
   } catch (e) {
@@ -384,7 +384,7 @@ function onOutputVolumeChange() {
   if (!outputVolumeSlider) return;
   const v = Number(outputVolumeSlider.value);
   setOutputVolume(v);
-  localStorage.setItem("voiceOutputVolume", String(v));
+  setSetting("voiceOutputVolume", v);
 }
 
 export function installVoiceUI(): void {
@@ -427,8 +427,7 @@ export function installVoiceUI(): void {
   speakerOverlay = document.getElementById("voice_speaker_overlay");
 
   if (vcMuteButton) {
-    const savedMuted = localStorage.getItem("vcMuted") === "1";
-    if (savedMuted) {
+    if (settings.voiceMuted) {
       setVCMuted(true);
     }
     vcMuteButton.addEventListener("click", onVCMuteClick);
@@ -443,14 +442,13 @@ export function installVoiceUI(): void {
     tapButton.addEventListener("click", onTapButtonClick);
   }
   if (openMicCheck) {
-    const savedOpenMic = localStorage.getItem("voiceOpenMic") === "1";
-    if (savedOpenMic) {
+    if (settings.voiceOpenMic) {
       setLocalOpenMic(true);
     }
     openMicCheck.addEventListener("change", () => {
       const enabled = openMicCheck!.checked;
       setLocalOpenMic(enabled);
-      localStorage.setItem("voiceOpenMic", enabled ? "1" : "0");
+      setSetting("voiceOpenMic", enabled);
       render();
     });
   }
@@ -460,13 +458,8 @@ export function installVoiceUI(): void {
     });
   }
   if (outputVolumeSlider) {
-    const stored = localStorage.getItem("voiceOutputVolume");
-    if (stored) {
-      outputVolumeSlider.value = stored;
-      setOutputVolume(Number(stored));
-    } else {
-      outputVolumeSlider.value = String(getOutputVolume());
-    }
+    outputVolumeSlider.value = String(settings.voiceOutputVolume);
+    setOutputVolume(settings.voiceOutputVolume);
     outputVolumeSlider.addEventListener("input", onOutputVolumeChange);
     outputVolumeSlider.addEventListener("change", onOutputVolumeChange);
   }

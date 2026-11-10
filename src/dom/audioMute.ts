@@ -1,25 +1,25 @@
 /**
  * Audio mute state management.
- * Stores mute toggles in localStorage so they persist across sessions.
  * Uses HTMLAudioElement.muted to silence without changing volume levels.
  */
 
 import { setBlipMuted } from "../viewport/utils/blipAudio";
+import { settings, setSetting } from "../core/settings";
 
 export function isMusicMuted(): boolean {
-  return localStorage.getItem("musicMuted") === "1";
+  return settings.musicMuted;
 }
 
 export function isSfxMuted(): boolean {
-  return localStorage.getItem("sfxMuted") === "1";
+  return settings.sfxMuted;
 }
 
 export function isBlipMuted(): boolean {
-  return localStorage.getItem("blipMuted") === "1";
+  return settings.blipMuted;
 }
 
 export function applyMusicMute(muted: boolean): void {
-  localStorage.setItem("musicMuted", muted ? "1" : "0");
+  setSetting("musicMuted", muted);
   const channels = document.getElementsByClassName(
     "audioChannel",
   ) as HTMLCollectionOf<HTMLAudioElement>;
@@ -29,7 +29,7 @@ export function applyMusicMute(muted: boolean): void {
 }
 
 export function applySfxMute(muted: boolean): void {
-  localStorage.setItem("sfxMuted", muted ? "1" : "0");
+  setSetting("sfxMuted", muted);
   const ids = ["client_sfxaudio", "client_shoutaudio", "client_testimonyaudio"];
   for (const id of ids) {
     const el = document.getElementById(id) as HTMLAudioElement | null;
@@ -38,7 +38,7 @@ export function applySfxMute(muted: boolean): void {
 }
 
 export function applyBlipMute(muted: boolean): void {
-  localStorage.setItem("blipMuted", muted ? "1" : "0");
+  setSetting("blipMuted", muted);
   setBlipMuted(muted);
 }
 
