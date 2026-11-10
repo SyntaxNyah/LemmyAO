@@ -112,15 +112,7 @@ function toggleMute(e: Event) {
     <div class="name-row">
       <label class="field grow">
         <span class="field-label">Showname</span>
-        <input v-model.lazy="showname" class="input" placeholder="Shown instead of your character's name" maxlength="30" />
-      </label>
-      <label class="check">
-        <input
-          type="checkbox"
-          :checked="settings.shownamesEnabled"
-          @change="setSetting('shownamesEnabled', ($event.target as HTMLInputElement).checked)"
-        />
-        Show others' shownames
+        <input v-model.lazy="showname" class="input" placeholder="Pick a name…" maxlength="30" />
       </label>
     </div>
 
