@@ -21,8 +21,6 @@ import type { CoreHandlers } from "./core/protocol";
 // Server -> client handlers.
 // ---------------------------------------------------------------------
 
-// Areas
-import { applyAreaStatus, applyFullAreaList } from "./client/createArea";
 
 // Assets
 import { applyAssetOrigin } from "./client/aoHost";
@@ -65,13 +63,6 @@ import { finishServerJoin } from "./client/handshake";
 
 // Mod authentication
 import { applyModAuth } from "./dom/applyModAuth";
-
-// Music
-import {
-  applyEvidenceListBatch,
-  applyFullMusicList,
-  applyMusicListBatch,
-} from "./client/addTrack";
 
 // Player roster
 import {
@@ -138,7 +129,7 @@ export function registerProtocol(
   registerGroupPairCodec();
 
   // ---- server -> client ----
-  on("ARUP", applyAreaStatus);
+  on("ARUP");
   on("ASS", applyAssetOrigin);
   on("AUTH", applyModAuth);
   on("BB", showBlockingAlert);
@@ -152,10 +143,10 @@ export function registerProtocol(
   on("decryptor");
   on("DONE", finishServerJoin);
   on("EI", applyEvidenceInfo);
-  on("EM", applyEvidenceListBatch);
-  on("FA", applyFullAreaList);
+  on("EM");
+  on("FA");
   on("FL", applyFeatureFlags);
-  on("FM", applyFullMusicList);
+  on("FM");
   on("HP");
   on("ID");
   on("JD");
@@ -172,7 +163,7 @@ export function registerProtocol(
   on("RT");
   on("SC", applyFullCharacterList);
   on("SI", applyServerCounts);
-  on("SM", applyMusicListBatch);
+  on("SM");
   on("SP");
   on("TI", applyTimerUpdate);
   // VS_* are a LemmyAO transport extension, not part of the meta spec, so they

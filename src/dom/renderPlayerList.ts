@@ -10,7 +10,9 @@ import {
 } from "../voice/voice";
 
 export function renderPlayerList() {
-  const list = document.getElementById("client_playerlist") as HTMLTableElement;
+  const list = document.getElementById("client_playerlist") as HTMLTableElement | null;
+  // Called before the client or the Players panel exists on startup.
+  if (!list || !client) return;
   list.innerHTML = "";
 
   const header = list.createTHead().insertRow();

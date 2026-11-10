@@ -14,6 +14,7 @@ import { getPairOrder } from "../../dom/pairOrder";
 import OOCChat from "./OOCChat.vue";
 import BackgroundPanel from "./BackgroundPanel.vue";
 import AreasPanel from "./AreasPanel.vue";
+import MusicPanel from "./MusicPanel.vue";
 import OffsetGhost from "./OffsetGhost.vue";
 import { offsetPreview } from "./offsetPreview";
 
@@ -163,7 +164,7 @@ onUnmounted(() => {
       <ICLog v-else-if="t.id === 'log'" :ref="keepRef('log')" />
       <OOCChat v-else-if="t.id === 'ooc'" :ref="keepRef('ooc')" />
       <AreasPanel v-else-if="t.id === 'areas'" />
-      <LegacyPanel v-else-if="t.id === 'music'" template="music" />
+      <MusicPanel v-else-if="t.id === 'music'" />
       <BackgroundPanel v-else-if="t.id === 'background'" />
       <LegacyPanel v-else-if="t.id === 'players'" template="players" />
       <LegacyPanel v-else template="mainmenu" />

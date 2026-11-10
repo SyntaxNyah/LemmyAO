@@ -17,6 +17,8 @@ import { Connection } from "./core/connection";
 import { coreHandlers } from "./core/protocol";
 import { state } from "./core/state";
 import { on as onCore } from "./core/events";
+import { effect } from "@vue/reactivity";
+import { renderPlayerList } from "./dom/renderPlayerList";
 import { loadResources } from "./client/loadResources";
 import { AO_HOST } from "./client/aoHost";
 import { installVoiceUI } from "./voice/voiceUI";
@@ -116,6 +118,12 @@ export function delay(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
 }
 
+// The legacy player list filters by area; the Areas tab moves through core.
+effect(() => {
+  void state.self.areaId;
+  renderPlayerList();
+});
+
 onCore("opened", () => {
   document.getElementById("client_error_overlay")!.style.display = "none";
   document.getElementById("client_waiting")!.style.display = "block";
@@ -161,6 +169,13 @@ class Client {
     return state.server.playerId;
   }
 
+  get area() {
+    return state.self.areaId;
+  }
+  set area(id: number) {
+    state.self.areaId = id;
+  }
+
   get charID() {
     return state.self.charId;
   }
@@ -178,7 +193,6 @@ class Client {
   chars: any;
   emotes: any;
   evidences: any;
-  area: number;
   areas: any;
   musics: any;
   musics_time: boolean;
@@ -215,7 +229,6 @@ class Client {
     this.chars = [];
     this.emotes = [];
     this.evidences = [];
-    this.area = 0;
     this.areas = [];
     this.musics = [];
     this.musics_time = false;

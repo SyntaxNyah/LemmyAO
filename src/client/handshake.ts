@@ -4,9 +4,9 @@
  */
 
 import { client, autoChar, autoArea } from "../client";
-import { area_click } from "../dom/areaClick";
 import queryParser from "../utils/queryParser";
-import { pickCharacter } from "../core/commands";
+import { changeArea, pickCharacter } from "../core/commands";
+import { state } from "../core/state";
 
 const { mode } = queryParser();
 
@@ -23,13 +23,8 @@ export function finishServerJoin() {
   }
 
   if (autoArea) {
-    const areaIndex = client.areas.findIndex(
-      (a: any) => a && a.name.toLowerCase() === autoArea.toLowerCase(),
-    );
-    if (areaIndex !== -1) {
-      const el = document.getElementById(`area${areaIndex}`);
-      if (el) area_click(el as HTMLElement);
-    }
+    const areaIndex = state.areas.findIndex((a) => a.name.toLowerCase() === autoArea.toLowerCase());
+    if (areaIndex !== -1) changeArea(areaIndex);
   }
 
   if (autoChar) {
