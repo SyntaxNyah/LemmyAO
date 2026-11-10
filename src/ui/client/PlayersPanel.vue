@@ -8,7 +8,6 @@ import { getLocalPlayerID, getSpeakingUids, isLocalSpeaking, isVoiceAvailable, o
 import AssetImage from "./AssetImage.vue";
 
 const allAreas = ref(false);
-const missingIcons = ref(new Set<number>());
 
 const players = computed(() =>
   Object.values(state.players)
@@ -124,12 +123,11 @@ function confirmModeration() {
       >
         <div class="row">
           <span class="avatar">
-            <AssetImage
-              v-if="p.charName && !missingIcons.has(p.id)"
-              :base="`${characterFolder(p.charName)}char_icon`"
-              alt=""
-              @missing="missingIcons = new Set(missingIcons).add(p.id)"
-            />
+            <AssetImage v-if="p.charName" :base="`${characterFolder(p.charName)}char_icon`" alt="">
+              <template #fallback>
+                <span class="initial" aria-hidden="true">{{ displayName(p)[0]?.toUpperCase() }}</span>
+              </template>
+            </AssetImage>
             <span v-else class="initial" aria-hidden="true">{{ displayName(p)[0]?.toUpperCase() }}</span>
           </span>
           <span class="who">

@@ -18,10 +18,10 @@ watch(
 <template>
   <img
     v-if="!failed"
+    loading="lazy"
     :src="src"
     :alt="alt"
     :style="loaded ? undefined : { visibility: 'hidden' }"
-    loading="lazy"
     @load="loaded = true"
     @error="failed = true"
   />

@@ -10,10 +10,21 @@ import { charSelectOpen } from "./overlays";
 const query = ref("");
 const search = ref<HTMLInputElement>();
 const favourites = ref(new Set<number>());
-const missingIcons = ref(new Set<number>());
 
+// Big rosters (thousands) render a first screenful, then the rest once the
+// list is open or typing in the search pauses.
+const FIRST_BATCH = 240;
+const rendered = ref(FIRST_BATCH);
+let fillTimer: ReturnType<typeof setTimeout> | undefined;
+function renderRestSoon(delay: number) {
+  rendered.value = FIRST_BATCH;
+  clearTimeout(fillTimer);
+  fillTimer = setTimeout(() => (rendered.value = Infinity), delay);
+}
+watch(query, () => renderRestSoon(200));
 watch(charSelectOpen, async (open) => {
   if (!open) return;
+  requestAnimationFrame(() => renderRestSoon(0));
   favourites.value = getFavourites(state.server.assetHost);
   query.value = "";
   await nextTick();
@@ -89,7 +100,7 @@ function close() {
       </p>
 
       <ul class="grid" role="listbox" aria-label="Characters">
-        <li v-for="t in tiles" :key="t.id" class="tile" :class="{ taken: t.taken, current: state.self.charId === t.id }">
+        <li v-for="t in tiles.slice(0, rendered)" :key="t.id" class="tile" :class="{ taken: t.taken, current: state.self.charId === t.id }">
           <button
             class="pick"
             role="option"
@@ -100,13 +111,11 @@ function close() {
             @click="pick(t.id)"
           >
             <span class="icon">
-              <AssetImage
-                v-if="!missingIcons.has(t.id)"
-                :base="`${characterFolder(t.name)}char_icon`"
-                alt=""
-                @missing="missingIcons = new Set(missingIcons).add(t.id)"
-              />
-              <span v-else class="initials" aria-hidden="true">{{ initials(t.name) }}</span>
+              <AssetImage :base="`${characterFolder(t.name)}char_icon`" alt="">
+                <template #fallback>
+                  <span class="initials" aria-hidden="true">{{ initials(t.name) }}</span>
+                </template>
+              </AssetImage>
               <span v-if="t.taken" class="badge">Taken</span>
             </span>
             <span class="name">{{ t.name }}</span>
@@ -205,6 +214,9 @@ function close() {
 
 .tile {
   position: relative;
+  /* Rosters can hold thousands; skip layout and paint for tiles off screen. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 110px;
 }
 
 .pick {

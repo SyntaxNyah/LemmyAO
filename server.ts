@@ -23,7 +23,9 @@ const PORT = Number(process.env.PORT ?? 8081);
 // Character roster offered to clients. Names must match character folders
 // (lowercased) under the asset host. The local dev-assets 3D characters
 // plus a couple of vanilla names for 2D testing.
+// ROSTER_SIZE=5000 pads it with generated names, to test large servers.
 const ROSTER = ["Fenomeno3D", "test3d", "1127-cti", "Phoenix", "Edgeworth"];
+for (let i = ROSTER.length; i < Number(process.env.ROSTER_SIZE ?? 0); i++) ROSTER.push(`Extra${String(i).padStart(4, "0")}`);
 // Areas come first in the SM list; everyone shares one room regardless of area.
 const AREAS = ["Demo Area", "Courtroom", "Lobby"];
 const MUSIC = [...AREAS, "=== Music ===", "Trial.opus", "Investigation.opus"];
