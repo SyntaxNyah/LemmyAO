@@ -122,24 +122,9 @@ export async function set_side({
   }
 }
 
-import { getIndexFromSelect } from "../../dom/getIndexFromSelect";
 import { applyPanTilt } from "../../dom/switchPanTilt";
 import { settings } from "../../core/settings";
-import { updateBackgroundPreview } from "../../dom/updateBackgroundPreview";
 import { safeHtmlTags } from "../../escaping";
-import type * as aolib from "aolib-ts";
-
-/** BN: sync the background picker in the settings panel. The stage draws it. */
-export function applyBackgroundChange(packet: aolib.packets.BN) {
-  const name = safeHtmlTags(packet.background);
-  const bg_index = getIndexFromSelect("bg_select", name);
-  (<HTMLSelectElement>document.getElementById("bg_select")).selectedIndex = bg_index;
-  updateBackgroundPreview();
-  if (bg_index === 0) {
-    (<HTMLInputElement>document.getElementById("bg_filename")).value = name;
-  }
-  setBackgroundImage("bg_preview", packet.background, "defenseempty");
-}
 
 /** Swaps every background slot on the stage. */
 export function showBackground(background: string) {

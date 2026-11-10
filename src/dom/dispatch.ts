@@ -1,6 +1,6 @@
 /**
  * DOM -> TS dispatch via `data-action` attributes, for the markup that is
- * still plain HTML: the stage, the connection error overlay and voice chat.
+ * still plain HTML: the stage.
  *
  * The default event is "click"; override with `data-event="error"` etc.
  * One delegated listener per event type, registered in capture phase so
@@ -9,12 +9,8 @@
 import { charError } from "./charError";
 import { imgError } from "./imgError";
 import { opusCheck } from "./opusCheck";
-import { ReconnectButton } from "./reconnectButton";
-import { toggleVoice } from "./toggleVoice";
 
 const actions: Record<string, (e: Event) => void> = {
-  ReconnectButton: () => ReconnectButton(),
-  toggleVoice: () => toggleVoice(),
   imgError: (e) => imgError(e.currentTarget as HTMLImageElement),
   charError: (e) => charError(e.currentTarget as HTMLImageElement),
   opusCheck: (e) => opusCheck(e.currentTarget as HTMLAudioElement),

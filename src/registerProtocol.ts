@@ -7,7 +7,7 @@
  * `src/client/handleCharacterInfo.ts`, etc.); this file is just the
  * wiring layer that hooks them up to the aolib session at startup.
  *
- * The `on("CT", appendOOCMessage)` form checks
+ * The `on("PU", prefetchPlayerCharacter)` form checks
  * the handler signature against the schema at compile time. Wrong-
  * direction registrations are caught both statically (aolib's mapped
  * types) and at runtime (aolib throws a role-aware error). Wire-format
@@ -25,13 +25,7 @@ import type { CoreHandlers } from "./core/protocol";
 // Assets
 import { applyAssetOrigin } from "./client/aoHost";
 
-// Banlist / kick / blocking alerts
-import {
-  showBlockingAlert,
-  showBanDialog,
-  showKickAndBanScreen,
-  showKickScreen,
-} from "./client/handleBans";
+import { showBlockingAlert } from "./client/handleBans";
 
 
 // Character downloads
@@ -44,14 +38,11 @@ import {
 import { applyCharacterPick } from "./client/changeChar";
 
 // Character availability grid
-import { applyCharacterAvailability } from "./dom/pickChar";
 
 // Chat (OOC + modcall)
-import { appendOOCMessage } from "./dom/oocLog";
 
 
 // Feature flags
-import { applyFeatureFlags } from "./client/featureFlags";
 
 // Handshake
 import { finishServerJoin } from "./client/handshake";
@@ -63,10 +54,7 @@ import { finishServerJoin } from "./client/handshake";
 import { applyModAuth } from "./dom/applyModAuth";
 
 // Player roster
-import {
-  applyPlayerFieldUpdate,
-  applyPlayerRosterChange,
-} from "./dom/renderPlayerList";
+import { prefetchPlayerCharacter } from "./client/prefetchPlayerCharacter";
 
 // Server counts (kicks off download)
 import { applyServerCounts } from "./client/fetchLists";
@@ -129,31 +117,31 @@ export function registerProtocol(
   on("ASS", applyAssetOrigin);
   on("AUTH", applyModAuth);
   on("BB", showBlockingAlert);
-  on("BD", showBanDialog);
+  on("BD");
   on("BN");
   on("CASEA");
   on("CHECK");
-  on("CharsCheck", applyCharacterAvailability);
+  on("CharsCheck");
   on("CI", applyCharacterBatch);
-  on("CT", appendOOCMessage);
+  on("CT");
   on("decryptor");
   on("DONE", finishServerJoin);
   on("EI");
   on("EM");
   on("FA");
-  on("FL", applyFeatureFlags);
+  on("FL");
   on("FM");
   on("HP");
   on("ID");
   on("JD");
-  on("KB", showKickAndBanScreen);
-  on("KK", showKickScreen);
+  on("KB");
+  on("KK");
   on("LE");
   on("MC");
   on("MS");
   on("PN");
-  on("PR", applyPlayerRosterChange);
-  on("PU", applyPlayerFieldUpdate);
+  on("PR");
+  on("PU", prefetchPlayerCharacter);
   on("PV", applyCharacterPick);
   on("RMC");
   on("RT");

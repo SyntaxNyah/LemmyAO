@@ -1,4 +1,4 @@
-import { settings, setSetting } from "../core/settings";
+import { settings } from "../core/settings";
 
 /**
  * Returns whether the user has chosen to hide courtroom desks.
@@ -6,18 +6,6 @@ import { settings, setSetting } from "../core/settings";
  */
 export function isHideDesksEnabled(): boolean {
   return settings.hideDesks;
-}
-
-/**
- * Triggered by the hide desks checkbox.
- * Persists the choice and refreshes the current viewport so the change
- * applies immediately without waiting for the next chat message.
- */
-export async function switchHideDesks() {
-  const checkbox = <HTMLInputElement>document.getElementById("client_hidedesks");
-  const enabled = !!checkbox?.checked;
-  setSetting("hideDesks", enabled);
-  applyHideDesks(enabled);
 }
 
 export function applyHideDesks(enabled: boolean) {

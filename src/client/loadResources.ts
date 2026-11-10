@@ -1,5 +1,4 @@
 import { unlockBlipAudio } from "../viewport/utils/blipAudio";
-import { initPairOrder } from "../dom/pairOrder";
 
 /**
  * Startup work the stage still needs. Settings are applied by the stage
@@ -17,7 +16,4 @@ export function loadResources() {
   };
   document.addEventListener("pointerdown", unlock, { once: true });
   document.addEventListener("keydown", unlock, { once: true });
-
-  // Keeps the group pair order in step with GP updates.
-  initPairOrder();
 }

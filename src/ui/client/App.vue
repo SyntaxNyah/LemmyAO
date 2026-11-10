@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from "vue";
 import { focusICInput } from "./focus";
 import { mountStage } from "../../stage";
-import LegacyPanel from "./LegacyPanel.vue";
+import VoiceSpeakers from "./VoiceSpeakers.vue";
 import ICLog from "./ICLog.vue";
 import ICControls from "./ICControls.vue";
 import SettingsPanel from "./SettingsPanel.vue";
@@ -20,6 +20,7 @@ import PlayersPanel from "./PlayersPanel.vue";
 import OffsetGhost from "./OffsetGhost.vue";
 import CharacterSelect from "./CharacterSelect.vue";
 import LoadingOverlay from "./LoadingOverlay.vue";
+import ConnectionOverlay from "./ConnectionOverlay.vue";
 import { offsetPreview } from "./offsetPreview";
 
 // Landscape: the stage with the first tab under it, beside a column for the
@@ -110,6 +111,7 @@ onUnmounted(() => {
     <div class="stage-frame">
       <div ref="stageHost" class="legacy stage"></div>
       <OffsetGhost v-if="offsetPreview" />
+      <VoiceSpeakers />
     </div>
 
     <form class="ic-input" @submit.prevent="sendMessage">
@@ -184,6 +186,7 @@ onUnmounted(() => {
 
     <CharacterSelect />
     <LoadingOverlay />
+    <ConnectionOverlay />
   </div>
 </template>
 

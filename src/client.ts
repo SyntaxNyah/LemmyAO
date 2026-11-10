@@ -16,9 +16,6 @@ import { registerProtocol } from "./registerProtocol";
 import { Connection } from "./core/connection";
 import { coreHandlers } from "./core/protocol";
 import { state } from "./core/state";
-import { on as onCore } from "./core/events";
-import { effect } from "@vue/reactivity";
-import { renderPlayerList } from "./dom/renderPlayerList";
 import { loadResources } from "./client/loadResources";
 import { AO_HOST } from "./client/aoHost";
 import { installVoiceUI } from "./voice/voiceUI";
@@ -50,14 +47,6 @@ export function setSelectedMenu(val: number) {
 }
 // Numeric shout index from the DOM (button_N / data-shout); converted to the
 // aolib ShoutModifier enum only when an MS is built (see onICEnter).
-export let selectedShout = 0;
-export function setSelectedShout(val: number) {
-  selectedShout = val;
-}
-export let extrafeatures: string[] = [];
-export function setExtraFeatures(val: any) {
-  extrafeatures = val;
-}
 
 
 const fpPromise = FingerprintJS.load();
@@ -67,10 +56,6 @@ const replayDisabled = mode === "replay";
 
 if (replayDisabled) {
   state.connection.status = "disconnected";
-  document.getElementById("client_errortext")!.textContent = "Replay mode is unavailable for now.";
-  document.getElementById("client_error_code")!.style.display = "none";
-  document.getElementById("client_reconnect")!.style.display = "none";
-  document.getElementById("client_error_overlay")!.style.display = "flex";
 }
 
 fpPromise
@@ -113,28 +98,6 @@ fpPromise
 export function delay(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
 }
-
-// The legacy player list filters by area; the Areas tab moves through core.
-effect(() => {
-  void state.self.areaId;
-  renderPlayerList();
-});
-
-onCore("opened", () => {
-  document.getElementById("client_error_overlay")!.style.display = "none";
-});
-
-onCore("closed", ({ code }) => {
-  const { removal, wasJoined } = state.connection;
-  if (!removal) {
-    document.getElementById("client_errortext")!.textContent = wasJoined
-      ? "You were disconnected from the server."
-      : "Could not connect to the server.";
-    document.getElementById("client_reconnect")!.style.display = "";
-  }
-  document.getElementById("client_error_overlay")!.style.display = "flex";
-  document.getElementById("error_id")!.textContent = String(code);
-});
 
 export let lastICMessageTime = new Date(0);
 export function setLastICMessageTime(val: Date) {
@@ -196,7 +159,6 @@ class Client {
   viewport: Viewport;
   loadResources: () => void;
   /** Maps player ID to player data */
-  playerlist: Map<number, { charId: number; charName: string; showName: string; name: string; area: number }>;
   charicon_extensions: string[];
   emote_extensions: string[];
   emotions_extensions: string[];
@@ -230,7 +192,6 @@ class Client {
     this.selectedEvidence = -1;
     this.viewport = masterViewport();
     this._lastTimeICReceived = new Date(0);
-    this.playerlist = new Map();
     this.charicon_extensions = [".png", ".webp"];
     this.emote_extensions = [".gif", ".png", ".apng", ".webp", ".webp.static"];
     this.emotions_extensions = [".png", ".webp"];
@@ -249,15 +210,6 @@ class Client {
    */
   get emote() {
     return this.emotes[this.selectedEmote];
-  }
-
-  /**
-   * Gets the current evidence ID unless the player doesn't want to present any evidence
-   */
-  get evidence() {
-    return document.getElementById("button_present").classList.contains("dark")
-      ? this.selectedEvidence
-      : -1;
   }
 
   connect() {

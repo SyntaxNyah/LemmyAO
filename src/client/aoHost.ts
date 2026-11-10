@@ -11,11 +11,9 @@ export function setAOhost(val: string): string {
   return AO_HOST;
 }
 
-import { renderPlayerList } from "../dom/renderPlayerList";
 import type * as aolib from "aolib-ts";
 
 /** ASS: the core already applied the new asset host; sync the legacy copy. */
 export function applyAssetOrigin(_packet: aolib.packets.ASS) {
   AO_HOST = state.server.assetHost;
-  renderPlayerList();
 }

@@ -6,7 +6,7 @@ import { exportLog } from "../../dom/exportLog";
 import { modcall_test } from "../../dom/modCallTest";
 import chatboxStyles from "../../constants/chatboxes";
 import { version } from "../../version";
-import LegacyPanel from "./LegacyPanel.vue";
+import { voiceUi, toggleVoice, toggleTalk, setOpenMic, setVoiceMuted, chooseDevice, setVoiceVolume } from "../../voice/voiceUI";
 import TabOrderSettings from "./TabOrderSettings.vue";
 
 // Bound, not a literal src: the template compiler would turn a literal into an import.
@@ -91,6 +91,14 @@ function reset() {
   confirmReset.value = false;
 }
 
+const micOn = computed(() => voiceUi.joined && !voiceUi.listenOnly);
+const voiceStatus = computed(() => {
+  if (voiceUi.error) return voiceUi.error;
+  if (micOn.value) return voiceUi.pttOnly && !voiceUi.openMic ? "Microphone on: tap to talk or hold V." : "Microphone on: open mic.";
+  if (voiceUi.joined) return voiceUi.muted ? "Listening, with voice audio muted." : "Listening. Turn on your microphone to talk.";
+  return "Joining voice…";
+});
+
 const checkbox = (key: SettingKey) => ({
   checked: settings[key] as boolean,
   onChange: (e: Event) => setSetting(key, (e.target as HTMLInputElement).checked as never),
@@ -123,7 +131,58 @@ const checkbox = (key: SettingKey) => ({
 
     <section v-show="visible('voice')" class="section">
       <h3>Voice chat</h3>
-      <LegacyPanel template="voice" class="legacy-block" />
+      <p v-if="!voiceUi.available" class="muted">This server doesn't have voice chat.</p>
+      <template v-else>
+        <p class="muted" role="status">{{ voiceStatus }}</p>
+        <div class="buttons">
+          <button class="btn" :class="{ 'btn-primary': !micOn }" :disabled="voiceUi.busy" @click="toggleVoice">
+            {{ micOn ? "Turn off microphone" : "Turn on microphone" }}
+          </button>
+          <button
+            v-if="micOn && voiceUi.pttOnly && !voiceUi.openMic"
+            class="btn"
+            :class="{ talking: voiceUi.talking }"
+            :aria-pressed="voiceUi.talking"
+            @click="toggleTalk"
+          >
+            {{ voiceUi.talking ? "Stop talking" : "Tap to talk" }}
+          </button>
+        </div>
+        <div class="checks">
+          <label class="check">
+            <input type="checkbox" :checked="voiceUi.muted" @change="setVoiceMuted(($event.target as HTMLInputElement).checked)" />
+            Mute voice chat
+          </label>
+          <label class="check" title="Transmit whenever the microphone is on, without push to talk.">
+            <input type="checkbox" :checked="voiceUi.openMic" @change="setOpenMic(($event.target as HTMLInputElement).checked)" />
+            Always transmit
+          </label>
+        </div>
+        <div class="grid">
+          <label class="field">
+            <span class="field-label">Microphone</span>
+            <select class="input" :value="voiceUi.device" @change="chooseDevice(($event.target as HTMLSelectElement).value)">
+              <option value="">Default</option>
+              <option v-for="d in voiceUi.devices" :key="d.id" :value="d.id">{{ d.label }}</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Voice volume <span class="value">{{ Math.round(voiceUi.volume * 100) }}%</span></span>
+            <input
+              class="range"
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              :value="voiceUi.volume"
+              @input="setVoiceVolume(Number(($event.target as HTMLInputElement).value))"
+            />
+          </label>
+        </div>
+        <p class="muted">
+          Speaking: {{ voiceUi.speakers.length ? voiceUi.speakers.map((sp) => sp.label).join(", ") : "nobody" }}
+        </p>
+      </template>
     </section>
 
     <section v-show="visible('appearance')" class="section">
@@ -456,7 +515,9 @@ h3 {
   gap: 12px;
 }
 
-.legacy-block {
-  line-height: 2;
+.talking {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
 }
 </style>

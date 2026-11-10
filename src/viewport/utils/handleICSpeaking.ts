@@ -527,7 +527,6 @@ export async function handle_ic_speaking(packet: aolib.packets.MSToClient) {
 }
 
 import { handleCharacterInfo as handleCharacterInfoForChat, ensureCharIni as ensureCharIniForChat } from "../../client/handleCharacterInfo";
-import { resetICParams } from "../../client/resetICParams";
 
 /**
  * Plays an IC message. Core has already dropped duplicates and muted
@@ -552,7 +551,3 @@ export function playICMessage(packet: aolib.packets.MSToClient) {
   handle_ic_speaking(packet);
 }
 
-/** MS: our own message came back, so reset the IC controls. */
-export function handleChatMessage(packet: aolib.packets.MSToClient) {
-  if (packet.char_id === client.charID) resetICParams();
-}
