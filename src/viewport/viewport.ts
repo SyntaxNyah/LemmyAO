@@ -71,6 +71,10 @@ const viewport = (): Viewport => {
   // Milliseconds since the message started, from the clock: counting a fixed
   // amount per tick drifts behind on a busy page, which let long preanims loop.
   let tickStart = performance.now();
+  // When the preanim must give way to talking. It ends a frame early so a
+  // looping animation never shows its first frames again.
+  const PREANIM_MARGIN_MS = 20;
+  let preanimEnd = 0;
   const getTickTimer = () => tickTimer;
   const setTickTimer = (val: number) => {
     tickStart = performance.now() - val;
@@ -298,7 +302,11 @@ const viewport = (): Viewport => {
   const chat_tick = async () => {
     // note: this is called fairly often
     // do not perform heavy operations here
-    await delay(chatmsg.speed);
+    // Near the end of a preanim, wake exactly when it ends rather than a tick later.
+    const elapsed = performance.now() - tickStart;
+    const untilPreanimEnd =
+      startSecondTickCheck && preanimEnd > elapsed ? preanimEnd - elapsed : Infinity;
+    await delay(Math.min(chatmsg.speed, untilPreanimEnd));
     tickTimer = performance.now() - tickStart;
 
     const gamewindow = document.getElementById("client_gamewindow");
@@ -333,8 +341,6 @@ const viewport = (): Viewport => {
 
     // TODO: preanims sometimes play when they're not supposed to
     const isShoutOver = tickTimer >= shoutTimer;
-    const isShoutAndPreanimOver =
-      tickTimer >= shoutTimer + chatmsg.preanimdelay;
     if (isShoutOver && startFirstTickCheck) {
       // Effect stuff
       if (chatmsg.screenshake) {
@@ -351,6 +357,12 @@ const viewport = (): Viewport => {
         playSFX(realizationUrl, false);
         effectlayer.style.animation = "flash 0.4s 1";
       }
+
+      // Without a shout the renderer already put the preanim up at time 0;
+      // otherwise it starts now. Time its end from when it really started.
+      const preanimStart = shoutTimer === 0 ? 0 : tickTimer;
+      preanimEnd =
+        chatmsg.preanimdelay > 0 ? preanimStart + chatmsg.preanimdelay - PREANIM_MARGIN_MS : tickTimer;
 
       // Pre-animation stuff
       if (chatmsg.preanimdelay > 0) {
@@ -383,7 +395,7 @@ const viewport = (): Viewport => {
       const chatContainerBox = document.getElementById("client_chatcontainer");
       chatContainerBox.style.opacity = "1";
       await handleTextTick(charLayers);
-    } else if (isShoutAndPreanimOver && startSecondTickCheck) {
+    } else if (startSecondTickCheck && tickTimer >= preanimEnd) {
       if (chatmsg.startspeaking) {
         chatmsg.startspeaking = false;
 
