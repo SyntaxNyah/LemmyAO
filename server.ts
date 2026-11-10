@@ -11,8 +11,6 @@
  *     tab/browser to see messages relayed between clients.
  */
 
-import index from "./public/index.html";
-import clientHtml from "./public/client.html";
 import { client as aoClient, type ClientSession } from "aolib-ts";
 
 const PORT = Number(process.env.PORT ?? 8081);
@@ -120,8 +118,8 @@ function setupSession(ws: { send(data: string): void }): ClientSession {
 }
 
 const staticFile = async (pathname: string): Promise<Response | null> => {
-  const pub = Bun.file(`./public${pathname}`);
-  if (await pub.exists()) return new Response(pub);
+  const built = Bun.file(`./dist${pathname === "/" ? "/index.html" : pathname}`);
+  if (await built.exists()) return new Response(built);
   const local = Bun.file(`./dev-assets${decodeURIComponent(pathname)}`);
   if (await local.exists()) return new Response(local);
   return null;
@@ -130,11 +128,6 @@ const staticFile = async (pathname: string): Promise<Response | null> => {
 const server = Bun.serve<{ session: ClientSession | null }>({
   port: PORT,
   development: true,
-  routes: {
-    "/": index,
-    "/index.html": index,
-    "/client.html": clientHtml,
-  },
   async fetch(req, srv) {
     // Upgrade AO WebSocket connections.
     if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
