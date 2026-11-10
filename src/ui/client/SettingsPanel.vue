@@ -88,7 +88,7 @@ const RESET_KEYS: SettingKey[] = [
   "chatbox", "font", "customFont", "musicVolume", "sfxVolume", "blipVolume", "blipPitch",
   "musicMuted", "sfxMuted", "blipMuted", "callwords", "showname",
   "panTilt", "hideDesks", "widescreen", "chatOffset", "preanimGlow", "preanimGlowColor",
-  "preanimGlowIntensity", "theme", "accent", "tabOrder",
+  "preanimGlowIntensity", "theme", "accent", "tabOrder", "offsetLockX", "offsetLockY",
 ];
 const confirmReset = ref(false);
 function reset() {

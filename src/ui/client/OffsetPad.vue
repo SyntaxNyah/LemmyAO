@@ -5,14 +5,14 @@ import { holdOffsetPreview, pulseOffsetPreview } from "./offsetPreview";
 // Offsets run -100..100; negative y is up, matching the server's y_offset.
 const x = defineModel<number>("x", { required: true });
 const y = defineModel<number>("y", { required: true });
-const props = defineProps<{ lockY?: boolean }>();
+const props = defineProps<{ lockX?: boolean; lockY?: boolean }>();
 
 const pad = ref<HTMLElement>();
 const clamp = (v: number) => Math.min(100, Math.max(-100, Math.round(v)));
 
 function moveTo(e: PointerEvent) {
   const box = pad.value!.getBoundingClientRect();
-  x.value = clamp(((e.clientX - box.left) / box.width) * 200 - 100);
+  if (!props.lockX) x.value = clamp(((e.clientX - box.left) / box.width) * 200 - 100);
   if (!props.lockY) y.value = clamp(((e.clientY - box.top) / box.height) * 200 - 100);
 }
 
@@ -30,7 +30,7 @@ function move(e: PointerEvent) {
 
 function key(e: KeyboardEvent) {
   const step = e.shiftKey ? 10 : 1;
-  const dx = { ArrowLeft: -step, ArrowRight: step }[e.key] ?? 0;
+  const dx = props.lockX ? 0 : ({ ArrowLeft: -step, ArrowRight: step }[e.key] ?? 0);
   const dy = props.lockY ? 0 : ({ ArrowUp: -step, ArrowDown: step }[e.key] ?? 0);
   if (!dx && !dy) return;
   e.preventDefault();
@@ -39,17 +39,26 @@ function key(e: KeyboardEvent) {
   pulseOffsetPreview();
 }
 
-// Scroll for vertical, shift+scroll for horizontal.
+// Scroll for vertical, shift+scroll for horizontal; a locked axis hands the wheel to the other.
 function wheel(e: WheelEvent) {
   const toward = e.deltaY < 0 ? -1 : 1;
-  if (e.shiftKey || props.lockY) x.value = clamp(x.value - toward);
-  else y.value = clamp(y.value + toward);
+  const horizontal = props.lockY || (e.shiftKey && !props.lockX);
+  if (horizontal && !props.lockX) x.value = clamp(x.value - toward);
+  else if (!horizontal && !props.lockY) y.value = clamp(y.value + toward);
+  else return;
   pulseOffsetPreview();
 }
 
 const dot = computed(() => ({ left: `${(x.value + 100) / 2}%`, top: `${(y.value + 100) / 2}%` }));
-const valueText = computed(() =>
-  props.lockY ? `Horizontal ${x.value}%` : `Horizontal ${x.value}%, vertical ${y.value}%`,
+const valueText = computed(() => `Horizontal ${x.value}%, vertical ${y.value}%`);
+const hint = computed(() =>
+  props.lockX && props.lockY
+    ? "Both axes are locked"
+    : props.lockX
+      ? "Drag to move your sprite up and down"
+      : props.lockY
+        ? "Drag to move your sprite sideways"
+        : "Drag to move your sprite",
 );
 </script>
 
@@ -64,14 +73,16 @@ const valueText = computed(() =>
     aria-valuemax="100"
     :aria-valuenow="x"
     :aria-valuetext="valueText"
-    :title="lockY ? 'Drag to move your sprite sideways' : 'Drag to move your sprite'"
+    :title="hint"
+    :class="{ locked: lockX && lockY }"
     @pointerdown="down"
     @pointermove="move"
     @keydown="key"
     @wheel.prevent="wheel"
   >
-    <span class="axis h" aria-hidden="true"></span>
-    <span v-if="!lockY" class="axis v" aria-hidden="true"></span>
+    <!-- Guide lines along the axes the dot can travel. -->
+    <span v-if="!lockX || lockY" class="axis h" aria-hidden="true"></span>
+    <span v-if="!lockY || lockX" class="axis v" aria-hidden="true"></span>
     <span class="dot" :style="dot" aria-hidden="true"></span>
   </div>
 </template>
@@ -91,6 +102,10 @@ const valueText = computed(() =>
   cursor: crosshair;
   touch-action: none;
   user-select: none;
+}
+
+.pad.locked {
+  cursor: not-allowed;
 }
 
 .pad:focus-visible {

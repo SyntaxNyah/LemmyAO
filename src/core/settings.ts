@@ -74,6 +74,9 @@ const schema = {
 
   panTilt: field("panTilt", flagText, false),
   widescreen: field("widescreen", flagText, false),
+  /** Position pad axes that don't move. */
+  offsetLockX: field("offsetLockX", flagText, false),
+  offsetLockY: field("offsetLockY", flagText, true),
   hideDesks: field("hideDesks", flagText, false),
   chatOffset: field("chatOffset", range(0, 100), 0),
   preanimGlow: field("preanimGlowEnabled", flagText, true),

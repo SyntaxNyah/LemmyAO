@@ -216,17 +216,32 @@ const pickedName = computed(() => state.characters[state.self.charId]?.name ?? "
       <h3>Position</h3>
       <div class="offsets">
         <div class="pad-col">
-          <OffsetPad v-model:x="draft.pair.offset.x" v-model:y="draft.pair.offset.y" :lock-y="!features.has('y_offset')" />
+          <OffsetPad
+            v-model:x="draft.pair.offset.x"
+            v-model:y="draft.pair.offset.y"
+            :lock-x="settings.offsetLockX"
+            :lock-y="settings.offsetLockY || !features.has('y_offset')"
+          />
           <button class="btn" :disabled="!draft.pair.offset.x && !draft.pair.offset.y" @click="resetOffsets">Reset</button>
         </div>
-        <dl class="readout">
-          <dt>Horizontal</dt>
-          <dd>{{ draft.pair.offset.x }}%</dd>
-          <template v-if="features.has('y_offset')">
-            <dt>Vertical</dt>
-            <dd>{{ draft.pair.offset.y }}%</dd>
-          </template>
-        </dl>
+        <div class="pad-side">
+          <dl class="readout">
+            <dt>Horizontal</dt>
+            <dd>{{ draft.pair.offset.x }}%</dd>
+            <template v-if="features.has('y_offset')">
+              <dt>Vertical</dt>
+              <dd>{{ draft.pair.offset.y }}%</dd>
+            </template>
+          </dl>
+          <label class="check">
+            <input type="checkbox" :checked="settings.offsetLockX" @change="setSetting('offsetLockX', ($event.target as HTMLInputElement).checked)" />
+            Lock X
+          </label>
+          <label v-if="features.has('y_offset')" class="check">
+            <input type="checkbox" :checked="settings.offsetLockY" @change="setSetting('offsetLockY', ($event.target as HTMLInputElement).checked)" />
+            Lock Y
+          </label>
+        </div>
       </div>
     </section>
 
@@ -386,6 +401,13 @@ const pickedName = computed(() => state.characters[state.self.charId]?.name ?? "
 .pad-col {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.pad-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
 }
 
