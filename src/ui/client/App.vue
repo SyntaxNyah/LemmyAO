@@ -16,6 +16,8 @@ import BackgroundPanel from "./BackgroundPanel.vue";
 import AreasPanel from "./AreasPanel.vue";
 import MusicPanel from "./MusicPanel.vue";
 import OffsetGhost from "./OffsetGhost.vue";
+import CharacterSelect from "./CharacterSelect.vue";
+import LoadingOverlay from "./LoadingOverlay.vue";
 import { offsetPreview } from "./offsetPreview";
 
 // Landscape: the stage with the first tab under it, beside a column for the
@@ -169,6 +171,9 @@ onUnmounted(() => {
       <LegacyPanel v-else-if="t.id === 'players'" template="players" />
       <LegacyPanel v-else template="mainmenu" />
     </div>
+
+    <CharacterSelect />
+    <LoadingOverlay />
 
     <Teleport v-if="legacyReady" to="#content_3">
       <TabOrderSettings />
@@ -339,5 +344,12 @@ onUnmounted(() => {
 /* Legacy panels size their contents in percentages of this. */
 .panel > * {
   height: 100%;
+}
+</style>
+
+<style>
+/* The legacy loading/character select overlay is replaced; legacy code still writes into it. */
+#client_waiting {
+  display: none !important;
 }
 </style>

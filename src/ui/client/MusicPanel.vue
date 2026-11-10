@@ -6,7 +6,7 @@ import { playMusic } from "../../core/commands";
 
 /** "music/Trial ~ Cornered.opus" -> "Trial ~ Cornered" */
 const trackTitle = (track: string) =>
-  track.substring(track.lastIndexOf("/") + 1).replace(/\.(opus|ogg|mp3|wav)$/i, "");
+  track.substring(track.lastIndexOf("/") + 1).replace(/\.(opus|ogg|mp3|wav)$/i, "").trim();
 
 /** Category entries are often decorated, e.g. "== Ace Attorney ==". */
 const categoryTitle = (name: string) => name.replace(/^[=\-~*\s]+|[=\-~*\s]+$/g, "") || name;
@@ -74,7 +74,7 @@ const isPlaying = (track: string) => nowPlaying.value?.track === track;
             :title="t.track"
             @click="playMusic(t.track)"
           >
-            <span class="icon" aria-hidden="true">{{ isPlaying(t.track) ? "♪" : "" }}</span>
+            <span v-if="isPlaying(t.track)" class="icon" aria-hidden="true">♪</span>
             <span class="title">{{ t.title }}</span>
           </button>
         </li>
@@ -151,7 +151,7 @@ ul {
   gap: 6px;
   width: 100%;
   min-height: 36px;
-  padding: 0 10px 0 4px;
+  padding: 0 10px;
   border: 0;
   border-radius: var(--radius-sm);
   background: none;
@@ -173,8 +173,6 @@ ul {
 
 .icon {
   flex: none;
-  width: 18px;
-  text-align: center;
 }
 
 .title {

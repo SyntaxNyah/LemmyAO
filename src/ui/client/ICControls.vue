@@ -5,10 +5,10 @@ import { state } from "../../core/state";
 import { settings, setSetting } from "../../core/settings";
 import { draft, changeHealth, playTestimony, sendOOC, setMuted } from "../../core/commands";
 import { characterFolder, selectEmote, setPosition } from "../../core/character";
-import { changeCharacter } from "../../dom/changeCharacter";
 import { RAINBOW, TEXT_COLORS } from "../textColors";
 import EmoteTile from "./EmoteTile.vue";
 import { focusICInput } from "./focus";
+import { charSelectOpen } from "./overlays";
 import { holdOffsetPreview, pulseOffsetPreview } from "./offsetPreview";
 import ComboBox, { type ComboItem } from "../components/ComboBox.vue";
 
@@ -86,7 +86,7 @@ function resetOffsets() {
   draft.pair.offset.y = 0;
 }
 
-const openCharacterSelect = () => changeCharacter(new Event("click"));
+const openCharacterSelect = () => (charSelectOpen.value = true);
 
 const muteQuery = ref("");
 const muteResults = computed(() => {
