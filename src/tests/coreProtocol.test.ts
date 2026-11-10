@@ -27,7 +27,8 @@ import {
   setMuted,
   resetDraftAfterSend,
 } from "../core/commands";
-import { settings } from "../core/settings";
+import { settings, setSetting } from "../core/settings";
+import { icLogAsText } from "../core/log";
 import { on } from "../core/events";
 
 type C2S = keyof packets.C2SOutputs;
@@ -74,6 +75,8 @@ const receive = (wire: string) => conn.server.receive(wire);
 
 beforeEach(() => {
   state.server.assetHost = "https://attorneyoffline.de/base/";
+  state.icLog.length = 0;
+  state.oocLog.length = 0;
   connect();
 });
 
@@ -384,4 +387,46 @@ describe("commands", () => {
     changeHealth(PenaltyBar.prosecution, -1);
     expect(outbound.map((p) => p.value)).toEqual([10, 0]);
   });
+});
+
+describe("log", () => {
+  test("callwords highlight the entry and fire an event", () => {
+    setSetting("callwords", ["phoenix", " "]);
+    let rang = 0;
+    const off = on("callword", () => rang++);
+    conn.clientSession.send.MS({ character: "Maya", emote: "normal", message: "Nick! PHOENIX!", side: Side.def, char_id: 0 });
+    conn.clientSession.send.MS({ character: "Maya", emote: "normal", message: "nothing here", side: Side.def, char_id: 0 });
+    off();
+    setSetting("callwords", []);
+    expect(rang).toBe(1);
+    expect(state.icLog.map((e) => e.kind === "message" && e.callword)).toEqual([true, false]);
+  });
+
+  test("joining, moving and dropping leave notices", () => {
+    receive("SM#Lobby#Courtroom#== Music ==#a.opus#%");
+    receive("DONE#%");
+    changeArea(1);
+    expect(state.icLog.map((e) => e.kind === "notice" && e.text)).toEqual(["Connected", "Moved to Courtroom"]);
+  });
+
+  test("logs survive a reconnect", () => {
+    server().CT({ name: "a", message: "before", is_from_server: false });
+    connect();
+    expect(state.oocLog).toHaveLength(1);
+  });
+
+  test("the text export reads like a transcript", () => {
+    const at = new Date(2026, 0, 1, 9, 5).getTime();
+    const text = icLogAsText(
+      [
+        { kind: "notice", text: "Connected", time: at },
+        { kind: "message", charId: 0, character: "Phoenix", showname: "Nick", message: "~~Hold it!", color: "white", callword: false, time: at },
+        { kind: "music", charId: 0, showname: "", track: "trial.opus", looping: true, time: at },
+      ],
+      true,
+    ).replace(/\[[^\]]+\]/g, "[t]");
+    expect(text).toBe("[t] -- Connected --\n[t] Nick: Hold it!\n[t] Someone played trial.opus (looping)");
+  });
+
+  const server = () => conn.clientSession.send;
 });

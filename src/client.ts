@@ -17,7 +17,6 @@ import { Connection } from "./core/connection";
 import { coreHandlers } from "./core/protocol";
 import { state } from "./core/state";
 import { on as onCore } from "./core/events";
-import { appendICNotice } from "./client/appendICNotice";
 import { loadResources } from "./client/loadResources";
 import { AO_HOST } from "./client/aoHost";
 import { installVoiceUI } from "./voice/voiceUI";
@@ -111,7 +110,6 @@ onCore("opened", () => {
   document.getElementById("client_waiting")!.style.display = "block";
   document.getElementById("client_loading")!.style.display = "block";
   document.getElementById("client_charselect")!.style.display = "none";
-  appendICNotice("Connected");
 });
 
 onCore("closed", ({ code }) => {
@@ -120,7 +118,6 @@ onCore("closed", ({ code }) => {
     document.getElementById("client_errortext")!.textContent = wasJoined
       ? "You were disconnected from the server."
       : "Could not connect to the server.";
-    if (wasJoined) appendICNotice("Disconnected");
     document.getElementById("client_reconnect")!.style.display = "";
   }
   document.getElementById("client_error_overlay")!.style.display = "flex";

@@ -1,7 +1,5 @@
 import { ChatMsg } from "../interfaces/ChatMsg";
 import { client, UPDATE_INTERVAL } from "../../client";
-import { appendICLog } from "../../client/appendICLog";
-import { checkCallword } from "../../client/checkCallword";
 import setEmoteFromUrl from "../../client/setEmoteFromUrl";
 import { AO_HOST } from "../../client/aoHost";
 import { SHOUTS } from "../constants/shouts";
@@ -400,8 +398,6 @@ const renderICMessage = (chatmsg: ChatMsg) => {
   }
   client.viewport.setLastCharacter(chatmsg.name);
 
-  appendICLog(chatmsg.content, chatmsg.showname, chatmsg.nameplate);
-  checkCallword(chatmsg.content, client.viewport.getSfxAudio());
 
   const preloaded = chatmsg.preloadedAssets!;
   // 3D characters render into a Babylon canvas placed in this slot; 2D ones

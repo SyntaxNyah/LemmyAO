@@ -87,9 +87,7 @@ export function pickBackground(name: string) {
   closeBackgroundList();
 
   if (mode === "join") {
-    const oocName = (<HTMLInputElement>document.getElementById("OOC_name"))
-      .value;
-    sendOOC(`/bg ${name}`, oocName);
+    sendOOC(`/bg ${name}`);
   } else if (mode === "replay") {
     client.server.receive(`BN#${name}#%`);
   }

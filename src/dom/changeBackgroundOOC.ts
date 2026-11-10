@@ -19,8 +19,7 @@ export function changeBackgroundOOC() {
   }
 
   if (mode === "join") {
-    const name = (<HTMLInputElement>document.getElementById("OOC_name")).value;
-    sendOOC(`/${changeBGCommand.replace("$1", filename)}`, name);
+    sendOOC(`/${changeBGCommand.replace("$1", filename)}`);
   } else if (mode === "replay") {
     client.server.receive(`BN#${filename}#%`);
   }

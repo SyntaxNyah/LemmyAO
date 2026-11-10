@@ -25,8 +25,7 @@ function inGroup(): boolean {
 }
 
 function sendPairOrder(uid: number, op: string): void {
-  const name = (document.getElementById("OOC_name") as HTMLInputElement).value;
-  sendOOC(`/pairorder ${uid} ${op}`, name);
+  sendOOC(`/pairorder ${uid} ${op}`);
 }
 
 function updatePairOrderButtons(): void {

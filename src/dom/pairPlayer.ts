@@ -10,8 +10,7 @@ import { sendOOC } from "../core/commands";
  *     any vanilla AO server even when the OOC command is unknown.
  */
 export function pairPlayer(id: number) {
-  const name = (<HTMLInputElement>document.getElementById("OOC_name")).value;
-  sendOOC(`/pair ${id}`, name);
+  sendOOC(`/pair ${id}`);
 
   const target = client.playerlist?.get(id);
   if (target && Number.isInteger(target.charId) && target.charId >= 0) {

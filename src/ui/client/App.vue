@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { mountStage } from "../../stage";
 import LegacyPanel from "./LegacyPanel.vue";
+import ICLog from "./ICLog.vue";
+import OOCChat from "./OOCChat.vue";
 
 type Tab = "log" | "ooc" | "emotes" | "music" | "players" | "menu";
 
@@ -23,6 +25,14 @@ const onWidth = (e: MediaQueryListEvent) => {
 
 const tab = ref<Tab>("log");
 const stageHost = ref<HTMLElement>();
+const icLog = ref<InstanceType<typeof ICLog>>();
+const oocChat = ref<InstanceType<typeof OOCChat>>();
+
+watch(tab, async (t) => {
+  await nextTick();
+  if (t === "log") icLog.value?.onVisible();
+  if (t === "ooc") oocChat.value?.onVisible();
+});
 
 onMounted(() => {
   mountStage(stageHost.value!);
@@ -36,6 +46,19 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
     <section class="main">
       <div class="stage-frame">
         <div ref="stageHost" class="legacy stage"></div>
+        <form class="ic-input" data-action="preventDefault" data-event="submit">
+          <input
+            id="client_inputbox"
+            class="input"
+            type="text"
+            data-action="onICEnter"
+            data-event="keypress"
+            placeholder="Say something in character…"
+            aria-label="IC message"
+            autocomplete="off"
+            enterkeyhint="send"
+          />
+        </form>
         <div id="client_bars" class="legacy">
           <span id="client_defense_hp" class="health-box"><div class="health-bar"></div></span>
           <span id="client_prosecutor_hp" class="health-box"><div class="health-bar"></div></span>
@@ -59,26 +82,13 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
       </nav>
 
       <div class="panels">
-        <LegacyPanel v-show="tab === 'log'" template="log" class="panel" />
+        <ICLog v-show="tab === 'log'" ref="icLog" class="panel" />
         <div v-show="tab === 'emotes'" id="controls-mobile" class="panel"></div>
-        <LegacyPanel v-show="tab === 'ooc'" template="ooc" class="panel" />
+        <OOCChat v-show="tab === 'ooc'" ref="oocChat" class="panel" />
         <LegacyPanel v-show="tab === 'music'" template="music" class="panel" />
         <LegacyPanel v-show="tab === 'players'" template="players" class="panel" />
         <LegacyPanel v-show="tab === 'menu'" template="mainmenu" class="panel" />
       </div>
-
-      <form v-show="tab !== 'ooc'" class="composer" data-action="preventDefault" data-event="submit">
-        <input
-          id="client_inputbox"
-          class="input"
-          type="text"
-          data-action="onICEnter"
-          data-event="keypress"
-          placeholder="Say something…"
-          autocomplete="off"
-          enterkeyhint="send"
-        />
-      </form>
     </section>
 
     <Teleport defer :to="isDesktop ? '#controls-desktop' : '#controls-mobile'">
@@ -123,7 +133,7 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
 
 /* Keep the 4:3 stage from pushing the controls off a short desktop screen. */
 .desktop .stage-frame {
-  max-width: calc((100dvh - 220px) * 4 / 3);
+  max-width: calc((100dvh - 260px) * 4 / 3);
 }
 
 .controls {
@@ -182,14 +192,12 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
   overflow-y: auto;
 }
 
-.composer {
-  flex: none;
-  padding: 8px 8px max(8px, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--border);
+.ic-input {
+  padding: 6px;
   background: var(--surface);
 }
 
-.composer .input {
-  min-height: var(--tap);
+.ic-input .input {
+  min-height: 40px;
 }
 </style>

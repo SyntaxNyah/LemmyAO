@@ -35,4 +35,5 @@ export function mountStage(host: HTMLElement) {
   on("musicSeek", seekMusic);
   on("testimony", showTestimony);
   on("modcall", playModcallSound);
+  on("callword", playModcallSound);
 }

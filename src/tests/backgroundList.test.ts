@@ -30,6 +30,8 @@ mock.module("../dom/updateBackgroundPreview", () => ({
   default: async (url: string) => `resolved:${url}`,
 }));
 
+const { setSetting } = await import("../core/settings");
+setSetting("oocName", "Phoenix");
 const { Connection } = await import("../core/connection");
 new Connection({
   url: "",
@@ -53,7 +55,6 @@ const {
 
 function setupDom() {
   document.body.innerHTML = `
-    <input id="OOC_name" value="Phoenix" />
     <div id="client_backgroundselect" style="display: none">
       <div id="client_backgroundpanel">
         <input id="client_backgroundsearch" />

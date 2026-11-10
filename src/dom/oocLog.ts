@@ -1,71 +1,8 @@
-/**
- * Server-side messages that write to the out-of-character log: regular
- * OOC chat (CT), modcall alerts (ZZ), and case announcements (CASEA).
- * All render through `#client_ooclog`; sharing a file keeps the
- * scroll/format conventions in one place.
- */
-
-import { unescapeUnicode, safeHtmlTags } from "../escaping";
-import queryParser from "../utils/queryParser";
+import { unescapeUnicode } from "../escaping";
 import { flashPairActivity } from "./pairNotification";
 import type * as aolib from "aolib-ts";
 
-const { mode } = queryParser();
-
-function addLinks(message: string): string {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  return message.replace(
-    urlRegex,
-    (url) => `<a href="${url}" target="_blank">${url}</a>`,
-  );
-}
-
-/** CT: server broadcast of an OOC chat message; append to the log. */
+/** CT: flash the player list when someone talks about pairing. The OOC panel renders the message. */
 export function appendOOCMessage(packet: aolib.packets.CTToClient) {
-  if (mode === "replay") return;
-
-  const oocLog = document.getElementById("client_ooclog")!;
-  const username = safeHtmlTags(unescapeUnicode(packet.name));
-  const rawMessage = safeHtmlTags(unescapeUnicode(packet.message));
-  let message = addLinks(rawMessage);
-  message = message.replace(/\n/g, "<br>");
-
-  const wasAtBottom =
-    oocLog.scrollTop + oocLog.offsetHeight + 120 > oocLog.scrollHeight;
-  oocLog.innerHTML += `${username}: ${message}<br>`;
-  if (wasAtBottom) {
-    oocLog.scrollTo(0, oocLog.scrollHeight);
-  }
-
-  flashPairActivity(rawMessage);
-}
-
-/** ZZ: server modcall broadcast; show a `$Alert:` notice. The stage plays the sound. */
-export function showModcallNotice(packet: aolib.packets.ZZToClient) {
-  const oocLog = document.getElementById("client_ooclog")!;
-  const message = safeHtmlTags(unescapeUnicode(packet.reason)).replace(/\n/g, "<br>");
-  const wasAtBottom = oocLog.scrollTop > oocLog.scrollHeight - 60;
-  oocLog.innerHTML += `$Alert: ${message}<br>`;
-  if (wasAtBottom) {
-    oocLog.scrollTop = oocLog.scrollHeight;
-  }
-}
-
-/** CASEA: server broadcast of a case announcement; show the alert plus roles needed. */
-export function showCaseAnnouncement(packet: aolib.packets.CASEAToClient) {
-  const oocLog = document.getElementById("client_ooclog")!;
-  const message = safeHtmlTags(unescapeUnicode(packet.message)).replace(/\n/g, "<br>");
-  const roles = [
-    packet.need_def && "Defense",
-    packet.need_pro && "Prosecution",
-    packet.need_judge && "Judge",
-    packet.need_jury && "Jury",
-    packet.need_steno && "Stenographer",
-  ].filter(Boolean);
-  const needed = roles.length ? ` (looking for: ${roles.join(", ")})` : "";
-  const wasAtBottom = oocLog.scrollTop > oocLog.scrollHeight - 60;
-  oocLog.innerHTML += `$Case Alert: ${message}${needed}<br>`;
-  if (wasAtBottom) {
-    oocLog.scrollTop = oocLog.scrollHeight;
-  }
+  flashPairActivity(unescapeUnicode(packet.message));
 }

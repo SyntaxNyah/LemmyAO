@@ -62,10 +62,4 @@ export function onMusicListRequest() {
 export function onReady() {
   client.server.receive("BN#gs4#%");
   client.server.receive("DONE#%");
-  const ooclog = <HTMLInputElement>document.getElementById("client_ooclog");
-  ooclog.value = "";
-  ooclog.readOnly = false;
-
-  document.getElementById("client_oocinput")!.style.display = "none";
-  document.getElementById("client_replaycontrols")!.style.display = "inline-block";
 }

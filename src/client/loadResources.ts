@@ -51,9 +51,6 @@ export function loadResources() {
     evidence_select.add(new Option(evidence));
   });
 
-  (<HTMLInputElement>document.getElementById("OOC_name")).value =
-    settings.oocName || `web${String(Math.round(Math.random() * 100 + 10))}`;
-
   const storedTheme = localStorage.getItem("theme") || "default";
 
   // Restore theme maker before theme link so custom style takes precedence

@@ -1,6 +1,7 @@
 import * as aolib from "aolib-ts";
 import { state, resetSessionState } from "./state";
 import { emit } from "./events";
+import { logNotice } from "./log";
 
 export interface ConnectionOptions {
   /** ws:// or wss:// URL; ignored in local mode. */
@@ -138,6 +139,7 @@ export class Connection {
     console.error(`The connection was closed: ${reason} (${code})`);
     state.connection.status = "disconnected";
     state.connection.closeCode = code;
+    if (state.connection.wasJoined) logNotice("Disconnected");
     this.teardown();
     emit("closed", { code, reason });
   }

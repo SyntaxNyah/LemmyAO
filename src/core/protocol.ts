@@ -10,7 +10,9 @@ import {
   type packets,
 } from "aolib-ts";
 import type { Connection } from "./connection";
-import { state, LOG_LIMIT, type Area, type ICEntry, type OOCEntry, type Player } from "./state";
+import { state, type Area, type Player } from "./state";
+import { logIC, logNotice, logOOC, matchesCallword } from "./log";
+import { settings } from "./settings";
 import { emit } from "./events";
 import { setAssetHost } from "./assetHost";
 
@@ -50,13 +52,6 @@ export function appendAreasAndMusic(names: string[]) {
     }
   }
 }
-
-const pushLimited = <T>(log: T[], entry: T) => {
-  log.push(entry);
-  if (log.length > LOG_LIMIT) log.splice(0, log.length - LOG_LIMIT);
-};
-const logOOC = (entry: OOCEntry) => pushLimited(state.oocLog, entry);
-const logIC = (entry: ICEntry) => pushLimited(state.icLog, entry);
 
 const charIdByName = (name: string) => {
   const lower = name.toLowerCase();
@@ -191,6 +186,7 @@ export function coreHandlers(conn: Connection): CoreHandlers {
     },
 
     DONE: () => {
+      if (!state.connection.wasJoined) logNotice("Connected");
       state.connection.status = "joined";
       state.connection.wasJoined = true;
       emit("joined");
@@ -242,6 +238,7 @@ export function coreHandlers(conn: Connection): CoreHandlers {
       if (p.message === lastICMessage) return;
       lastICMessage = p.message;
       if (state.self.muted.includes(p.char_id)) return;
+      const callword = matchesCallword(p.message, settings.callwords);
       logIC({
         kind: "message",
         charId: p.char_id,
@@ -249,9 +246,11 @@ export function coreHandlers(conn: Connection): CoreHandlers {
         showname: p.showname,
         message: p.message,
         color: p.text_color,
+        callword,
         time: Date.now(),
       });
       emit("icMessage", p);
+      if (callword) emit("callword");
     },
 
     MC: (p) => {

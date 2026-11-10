@@ -52,9 +52,12 @@ export type ICEntry =
       showname: string;
       message: string;
       color: TextColor;
+      /** Contains one of our callwords. */
+      callword: boolean;
       time: number;
     }
-  | { kind: "music"; charId: number; showname: string; track: string; looping: boolean; time: number };
+  | { kind: "music"; charId: number; showname: string; track: string; looping: boolean; time: number }
+  | { kind: "notice"; text: string; time: number };
 
 export interface Timer {
   visible: boolean;
@@ -153,7 +156,8 @@ export function initialState(assetHost = ""): State {
 
 export const state: State = reactive(initialState());
 
-/** Clears everything learned from the server, keeping the asset host. */
+/** Clears everything learned from the server, keeping the asset host and the logs. */
 export function resetSessionState() {
-  Object.assign(state, initialState(state.server.assetHost));
+  const { icLog, oocLog } = state;
+  Object.assign(state, initialState(state.server.assetHost), { icLog, oocLog });
 }

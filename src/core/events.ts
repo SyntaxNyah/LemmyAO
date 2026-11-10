@@ -11,6 +11,8 @@ export interface CoreEvents {
   icMessage: packets.MSToClient;
   /** A moderator was called. */
   modcall: string;
+  /** An IC message contained one of our callwords. */
+  callword: void;
   /** The server asked to seek the music channel to this many seconds. */
   musicSeek: number;
   /** A track started or stopped on a channel. */

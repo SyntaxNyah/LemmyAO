@@ -12,6 +12,7 @@ import {
 import { currentConnection } from "./connection";
 import { state } from "./state";
 import { on } from "./events";
+import { logNotice } from "./log";
 import { settings, setSetting } from "./settings";
 
 /** One emote from the character's char.ini, as sent in MS. */
@@ -134,8 +135,14 @@ export function sendIC(): boolean {
   return true;
 }
 
+/** The OOC name, picking a random guest name the first time. */
+export function oocName() {
+  if (!settings.oocName) setSetting("oocName", `web${Math.floor(Math.random() * 900 + 100)}`);
+  return settings.oocName;
+}
+
 /** Sends an OOC message (or server command) under the saved OOC name. */
-export function sendOOC(message: string, name = settings.oocName) {
+export function sendOOC(message: string, name = oocName()) {
   if (name !== settings.oocName) setSetting("oocName", name);
   server().CT({ name, message });
 }
@@ -151,6 +158,7 @@ export function changeArea(index: number) {
   if (!area) return;
   server().MC({ name: area.name, char_id: state.self.charId });
   state.self.areaId = index;
+  logNotice(`Moved to ${area.name}`);
 }
 
 export function playMusic(track: string) {

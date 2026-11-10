@@ -51,7 +51,7 @@ import { applyCharacterPick } from "./client/changeChar";
 import { applyCharacterAvailability } from "./dom/pickChar";
 
 // Chat (OOC + modcall)
-import { appendOOCMessage, showModcallNotice, showCaseAnnouncement } from "./dom/oocLog";
+import { appendOOCMessage } from "./dom/oocLog";
 
 // Evidence
 import { applyEvidenceInfo, applyEvidenceList } from "./dom/pickEvidence";
@@ -80,7 +80,6 @@ import {
   applyFullMusicList,
   applyMusicListBatch,
 } from "./client/addTrack";
-import { playMusicChange } from "./viewport/utils/playMusic";
 
 // Player roster
 import {
@@ -153,7 +152,7 @@ export function registerProtocol(
   on("BB", showBlockingAlert);
   on("BD", showBanDialog);
   on("BN", applyBackgroundChange);
-  on("CASEA", showCaseAnnouncement);
+  on("CASEA");
   on("CHECK");
   on("CharsCheck", applyCharacterAvailability);
   on("CI", applyCharacterBatch);
@@ -171,7 +170,7 @@ export function registerProtocol(
   on("KB", showKickAndBanScreen);
   on("KK", showKickScreen);
   on("LE", applyEvidenceList);
-  on("MC", playMusicChange);
+  on("MC");
   on("MS", handleChatMessage);
   on("PN");
   on("PR", applyPlayerRosterChange);
@@ -193,7 +192,7 @@ export function registerProtocol(
   server.onCustom("VS_PEERS", applyVoicePeerList);
   server.onCustom("VS_SPEAK", applyVoicePeerSpeak);
   server.onCustom("GP", applyGroupPair);
-  on("ZZ", showModcallNotice);
+  on("ZZ");
 
   // ---- client -> server (replay-mode synthesis) ----
   clientSession.on.askchaa(onAreaCharRequest);

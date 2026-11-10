@@ -1,0 +1,148 @@
+<script setup lang="ts">
+import { computed, ref } from "vue";
+import { state } from "../../core/state";
+import { settings, setSetting } from "../../core/settings";
+import { icLogAsText } from "../../core/log";
+import { oocName, sendOOC } from "../../core/commands";
+import downloadFile from "../../services/downloadFile";
+import LinkifiedText from "../components/LinkifiedText.vue";
+import { useStickyScroll } from "./useStickyScroll";
+
+const { el, onScroll, onVisible } = useStickyScroll(() => state.oocLog.length);
+defineExpose({ onVisible });
+
+oocName();
+const name = computed({
+  get: () => settings.oocName,
+  set: (v: string) => setSetting("oocName", v),
+});
+const message = ref("");
+
+function saveChatlog() {
+  const day = new Date().toISOString().slice(0, 10);
+  downloadFile(icLogAsText(state.icLog, settings.shownamesEnabled), `chatlog-${day}.txt`);
+}
+
+const LOCAL_COMMANDS: Record<string, () => void> = { "/save_chatlog": saveChatlog };
+
+function send() {
+  const text = message.value.trim();
+  if (!text) return;
+  const local = LOCAL_COMMANDS[text.toLowerCase()];
+  if (local) local();
+  else sendOOC(text, name.value.trim() || oocName());
+  message.value = "";
+}
+</script>
+
+<template>
+  <div class="ooc">
+    <div ref="el" class="log" role="log" aria-label="Out-of-character chat" @scroll="onScroll">
+      <p v-if="!state.oocLog.length" class="empty">Server messages and OOC chat appear here.</p>
+      <div v-for="(e, i) in state.oocLog" :key="i" class="entry" :class="e.kind">
+        <template v-if="e.kind === 'chat'">
+          <span class="name" :class="{ server: e.fromServer }">{{ e.name }}</span>
+          <LinkifiedText class="text" :text="e.message" />
+        </template>
+        <template v-else-if="e.kind === 'modcall'">
+          <span class="label">Mod call</span>
+          <LinkifiedText class="text" :text="e.message" />
+        </template>
+        <template v-else>
+          <span class="label">Case</span>
+          <span class="text">
+            <LinkifiedText :text="e.message" />
+            <template v-if="e.roles.length"> · looking for {{ e.roles.join(", ") }}</template>
+          </span>
+        </template>
+      </div>
+    </div>
+    <form class="composer" @submit.prevent="send">
+      <input v-model.lazy="name" class="input name-input" aria-label="OOC name" maxlength="30" />
+      <input
+        v-model="message"
+        class="input"
+        placeholder="Chat out of character…"
+        aria-label="OOC message"
+        autocomplete="off"
+        enterkeyhint="send"
+      />
+      <button type="submit" class="visually-hidden">Send</button>
+    </form>
+  </div>
+</template>
+
+<style scoped>
+.ooc {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  margin: 24px 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.entry {
+  padding: 3px 14px;
+}
+
+.entry:hover {
+  background: var(--surface-hover);
+}
+
+.name {
+  margin-right: 8px;
+  font-weight: 600;
+}
+
+.name.server {
+  color: var(--accent);
+}
+
+.label {
+  margin-right: 8px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.modcall {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.modcall .label {
+  background: var(--danger);
+  color: var(--bg);
+}
+
+.case .label {
+  background: var(--warn);
+  color: var(--bg);
+}
+
+.composer {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.name-input {
+  flex: 0 0 30%;
+  max-width: 140px;
+}
+</style>

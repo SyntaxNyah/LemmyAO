@@ -1,6 +1,5 @@
 import { client } from "../../client";
 import { AO_HOST } from "../../client/aoHost";
-import { appendICLog } from "../../client/appendICLog";
 import { MusicChannel } from "aolib-ts";
 import type * as aolib from "aolib-ts";
 
@@ -22,17 +21,6 @@ export function playMusicTrack(packet: aolib.packets.MCToClient) {
     music.removeAttribute("src");
   }
   document.getElementById("client_trackstatustext")!.innerText = packet.name;
-}
-
-/** MC: log the music change. The stage plays it. */
-export function playMusicChange(packet: aolib.packets.MCToClient) {
-  const musicname: string | undefined = client.chars[packet.char_id]?.name;
-  const looptext = packet.looping ? "(looping)" : "";
-  if (musicname) {
-    appendICLog(`changed music to ${packet.name} ${looptext}`, packet.showname, musicname);
-  } else {
-    appendICLog(`The music was changed to ${packet.name} ${looptext}`, packet.showname);
-  }
 }
 
 /** RMC (undocumented): seek the music channel to `toTime` seconds. */
