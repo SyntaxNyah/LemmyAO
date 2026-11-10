@@ -222,6 +222,12 @@
   transform: translate(-50%, -50%);
 }
 
+#client_fg .effect {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 #client_evi {
   opacity: 0;
   position: absolute;

@@ -60,11 +60,7 @@ export const VIEWPORT_HTML = `
       </div>
       <img id="client_bench_classic" class="client_bench" />
     </div>
-    <div
-      id="client_fg"
-      alt="Various overlay"
-      src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-    ></div>
+    <div id="client_fg"></div>
     <img
       id="client_evi"
       src=""

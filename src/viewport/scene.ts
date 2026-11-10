@@ -5,13 +5,14 @@ import { AO_HOST } from "../client/aoHost";
 import { SHOUTS } from "./constants/shouts";
 import { setChatbox } from "../dom/setChatbox";
 import { resizeChatbox } from "../dom/resizeChatbox";
-import transparentPng from "../constants/transparentPng";
 import { DeskModifier, EmoteModifier, Flip, ShoutModifier, Side } from "aolib-ts";
 import { renderGroupPeers, membersFromAdditionalChars } from "./groupRender";
 import { setupCharacterSlot } from "./mmd/applyEmote";
 import { charLayer, els } from "./elements";
 import { viewportState } from "./state";
 import { set_side } from "./utils/setSide";
+import { requestBuffer } from "../services/request";
+import { animationLength, animationLoops } from "../utils/calculatorHandler";
 
 const BAD_EFFECTS = new Set(["", "-", "none"]);
 
@@ -57,7 +58,7 @@ const applyShout = (chatmsg: ChatMsg, chatContainerBox: HTMLElement) => {
 };
 
 /** Spawns the rain-drop DOM into the foreground layer. */
-const applyRainEffect = (fg: HTMLImageElement, effectName: string) => {
+const applyRainEffect = (fg: HTMLDivElement, effectName: string) => {
   (<HTMLLinkElement>document.getElementById("effect_css")).href =
     "styles/effects/rain.css";
   let intensity = 200;
@@ -78,18 +79,28 @@ const applyRainEffect = (fg: HTMLImageElement, effectName: string) => {
  * effects load a webp into `client_fg`, and absent/sentinel effects
  * clear the layer.
  */
-const applyEffectsOverlay = (fg: HTMLImageElement, effects: string[]) => {
+const applyEffectsOverlay = (fg: HTMLDivElement, effects: string[]) => {
   fg.style.animation = "";
   const effectName = effects[0].toLowerCase();
   if (effectName.startsWith("rain")) {
     applyRainEffect(fg, effectName);
   } else if (effects[0] && !BAD_EFFECTS.has(effectName)) {
     (<HTMLLinkElement>document.getElementById("effect_css")).href = "";
-    fg.innerHTML = "";
-    fg.src = `${AO_HOST}themes/default/effects/${encodeURI(effectName)}.webp`;
+    // The layer is a <div> (rain fills it with drops), so the effect is an image inside it.
+    const overlay = document.createElement("img");
+    overlay.className = "effect";
+    overlay.alt = "";
+    overlay.onerror = () => overlay.remove();
+    overlay.src = `${AO_HOST}themes/default/effects/${encodeURI(effectName)}.webp`;
+    fg.replaceChildren(overlay);
+    // An image stays on its last frame; a play-once effect (a flash) has to go when it ends.
+    const loaded = new Promise((resolve) => overlay.addEventListener("load", resolve, { once: true }));
+    void Promise.all([requestBuffer(overlay.src), loaded]).then(([bytes]) => {
+      const loops = animationLoops(bytes);
+      if (loops > 0) setTimeout(() => overlay.remove(), animationLength(bytes) * loops);
+    }).catch(() => {});
   } else {
-    fg.innerHTML = "";
-    fg.src = transparentPng;
+    fg.replaceChildren();
   }
 };
 

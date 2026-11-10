@@ -15,7 +15,7 @@ export const els = {
   get fullView() { return element<HTMLDivElement>("client_fullview"); },
   get classicView() { return element<HTMLDivElement>("client_classicview"); },
   get court() { return element<HTMLImageElement>("client_court"); },
-  get foreground() { return element<HTMLImageElement>("client_fg"); },
+  get foreground() { return element<HTMLDivElement>("client_fg"); },
   get evidence() { return element<HTMLImageElement>("client_evi"); },
   get testimony() { return element<HTMLImageElement>("client_testimony"); },
   get shout() { return element<HTMLImageElement>("client_shout"); },
