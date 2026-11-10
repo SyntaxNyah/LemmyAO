@@ -53,9 +53,9 @@ async function checkSequence(latencyS?: number) {
 
   const shout = first(rec, "shout block")!;
   const preanim = first(rec, "sprite slam.apng")!;
-  const talking = first(rec, "sprite (b)normal.gif")!;
+  const talking = first(rec, "sprite (b)normal.png")!;
   const letters = lettersAt(rec);
-  const idle = rec.visuals.findLast(([, w]) => w === "sprite (a)normal.gif")![0];
+  const idle = rec.visuals.findLast(([, w]) => w === "sprite (a)normal.png")![0];
   expect(shout).toBeDefined();
 
   // Shout, preanim, talking, letters, idle: in order and on time.
@@ -116,7 +116,7 @@ describe("IC message playback", () => {
     const rec = await recording(page);
 
     const slowPreanim = first(rec, "sprite slam.apng");
-    const secondTalks = rec.visuals.findLast(([, w]) => w === "sprite (b)normal.gif")![0];
+    const secondTalks = rec.visuals.findLast(([, w]) => w === "sprite (b)normal.png")![0];
     expect(slowPreanim).toBeDefined();
     expect(slowPreanim!).toBeLessThan(secondTalks);
     expect(await shownText(page)).toBe("second");

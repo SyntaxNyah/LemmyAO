@@ -35,6 +35,21 @@ describe("buildEmoteUrls", () => {
     expect(buildEmoteUrls(HOST, EXTS, "aurelia", "idle.vmd", "(a)")).toEqual([]);
   });
 
+  it("probes prefixed (a)/(b) PNG frames before the bare PNG", () => {
+    const urls = buildEmoteUrls(HOST, EXTS, "phoenix", "normal", "(a)");
+    const at = (u: string) => urls.indexOf(`${HOST}characters/phoenix/${u}`);
+    expect(at("(a)normal.png")).toBeGreaterThan(-1);
+    expect(at("(a)/normal.png")).toBeGreaterThan(at("(a)normal.png"));
+    expect(at("normal.png")).toBeGreaterThan(at("(a)/normal.png"));
+  });
+
+  it("probes only the bare spellings for a preanim", () => {
+    expect(buildEmoteUrls(HOST, [".gif", ".png"], "phoenix", "slam", "")).toEqual([
+      `${HOST}characters/phoenix/slam.gif`,
+      `${HOST}characters/phoenix/slam.png`,
+    ]);
+  });
+
   it("still builds the bare .webp candidate for an ordinary stem", () => {
     expect(buildEmoteUrls(HOST, EXTS, "phoenix", "normal", "(a)")).toContain(
       `${HOST}characters/phoenix/normal.webp`,

@@ -36,13 +36,12 @@ const ASSETS: Record<string, Buffer | string> = {
 };
 for (const name of ["phoenix", "edgeworth"]) {
   ASSETS[`/characters/${name}/char.ini`] = charIni(name === "phoenix" ? "Phoenix" : "Edgeworth");
-  ASSETS[`/characters/${name}/(a)normal.gif`] = png([0, 200, 0]);
-  ASSETS[`/characters/${name}/(b)normal.gif`] = png([0, 0, 200]);
+  ASSETS[`/characters/${name}/(a)normal.png`] = png([0, 200, 0]);
+  ASSETS[`/characters/${name}/(b)normal.png`] = png([0, 0, 200]);
   ASSETS[`/characters/${name}/slam.apng`] = apng(PREANIM_FRAMES);
 }
 
-// Sprites are PNGs under .gif names (the client probes .gif first); browsers sniff the format.
-const TYPES: Record<string, string> = { ".png": "image/png", ".gif": "image/png", ".apng": "image/apng", ".opus": "audio/wav", ".ini": "text/plain" };
+const TYPES: Record<string, string> = { ".png": "image/png", ".apng": "image/apng", ".opus": "audio/wav", ".ini": "text/plain" };
 
 export interface Server {
   url: string;
