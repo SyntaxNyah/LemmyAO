@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from "vue";
+import { focusICInput } from "./focus";
 import { mountStage } from "../../stage";
 import LegacyPanel from "./LegacyPanel.vue";
 import ICLog from "./ICLog.vue";
@@ -46,6 +47,8 @@ function sendMessage() {
 }
 
 const stageHost = ref<HTMLElement>();
+const icInput = ref<HTMLInputElement>();
+provide(focusICInput, () => icInput.value?.focus());
 const scrollers: Partial<Record<TabId, { onVisible: () => void }>> = {};
 const keepRef = (id: TabId) => (el: unknown) => {
   if (el) scrollers[id] = el as { onVisible: () => void };
@@ -74,6 +77,7 @@ onUnmounted(() => landscapeQuery.removeEventListener("change", onOrientation));
     <form class="ic-input" @submit.prevent="sendMessage">
       <input
         id="client_inputbox"
+        ref="icInput"
         v-model="draft.message"
         class="input"
         type="text"

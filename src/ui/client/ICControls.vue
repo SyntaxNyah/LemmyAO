@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import { PenaltyBar, RTAnimation, ShoutModifier, Side, TextColor } from "aolib-ts";
 import { state } from "../../core/state";
 import { settings, setSetting } from "../../core/settings";
@@ -8,9 +8,16 @@ import { characterFolder, selectEmote, setPosition } from "../../core/character"
 import { changeCharacter } from "../../dom/changeCharacter";
 import { RAINBOW, TEXT_COLORS } from "../textColors";
 import EmoteTile from "./EmoteTile.vue";
+import { focusICInput } from "./focus";
 import ComboBox, { type ComboItem } from "../components/ComboBox.vue";
 
 const character = computed(() => state.self.character);
+
+const focusIC = inject(focusICInput, () => {});
+function pickEmote(index: number) {
+  selectEmote(index);
+  focusIC();
+}
 const features = computed(() => new Set(state.server.features));
 
 const showname = computed({
@@ -102,7 +109,7 @@ const muteResults = computed(() => {
         :character="character.name"
         :emote="emote"
         :selected="state.self.emoteIndex === i"
-        @select="selectEmote(i)"
+        @select="pickEmote(i)"
       />
     </div>
 
