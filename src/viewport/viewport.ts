@@ -68,8 +68,12 @@ const viewport = (): Viewport => {
   const setSfxPlayed = (val: number) => {
     sfxplayed = val;
   };
+  // Milliseconds since the message started, from the clock: counting a fixed
+  // amount per tick drifts behind on a busy page, which let long preanims loop.
+  let tickStart = performance.now();
   const getTickTimer = () => tickTimer;
   const setTickTimer = (val: number) => {
+    tickStart = performance.now() - val;
     tickTimer = val;
   };
   const getAnimating = () => animating;
@@ -295,6 +299,7 @@ const viewport = (): Viewport => {
     // note: this is called fairly often
     // do not perform heavy operations here
     await delay(chatmsg.speed);
+    tickTimer = performance.now() - tickStart;
 
     const gamewindow = document.getElementById("client_gamewindow");
     const waitingBox = document.getElementById("client_chatwaiting");
@@ -502,7 +507,6 @@ const viewport = (): Viewport => {
     if (animating) {
       chat_tick();
     }
-    tickTimer += UPDATE_INTERVAL;
   };
 
   return {
