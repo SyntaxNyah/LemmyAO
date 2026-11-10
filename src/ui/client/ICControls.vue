@@ -86,12 +86,18 @@ function menu(action: () => void) {
   action();
 }
 
-function toggleMute(e: Event) {
-  const select = e.target as HTMLSelectElement;
-  const id = Number(select.value);
-  if (id >= 0) setMuted(id, !state.self.muted.includes(id));
-  select.value = "-1";
-}
+const muteQuery = ref("");
+const muteResults = computed(() => {
+  const q = muteQuery.value.trim().toLowerCase();
+  if (!q) return [];
+  const out: { id: number; name: string; muted: boolean }[] = [];
+  state.characters.forEach((c, id) => {
+    if (out.length < 8 && c?.name.toLowerCase().includes(q)) {
+      out.push({ id, name: c.name, muted: state.self.muted.includes(id) });
+    }
+  });
+  return out;
+});
 </script>
 
 <template>
@@ -209,7 +215,10 @@ function toggleMute(e: Event) {
     </section>
 
     <section class="group">
-      <h3>Position</h3>
+      <div class="group-head">
+        <h3>Position</h3>
+        <button class="link-btn" :disabled="!draft.pair.offset.x && !draft.pair.offset.y" @click="resetOffsets">Reset</button>
+      </div>
       <div class="offsets">
         <label v-if="features.has('y_offset')" class="field vertical">
           <span class="field-label">Vertical <span class="value">{{ draft.pair.offset.y }}%</span></span>
@@ -236,21 +245,35 @@ function toggleMute(e: Event) {
             @wheel.prevent="nudge('x', $event)"
           />
         </label>
-        <button class="btn" :disabled="!draft.pair.offset.x && !draft.pair.offset.y" @click="resetOffsets">Reset</button>
       </div>
     </section>
 
     <section class="group">
       <h3>Mute</h3>
-      <label class="field">
-        <span class="field-label">Hide a character's messages</span>
-        <select class="input select" value="-1" @change="toggleMute">
-          <option value="-1">Choose a character…</option>
-          <option v-for="(c, id) in state.characters" :key="id" :value="id">
-            {{ c.name }}{{ state.self.muted.includes(id) ? " (muted)" : "" }}
-          </option>
-        </select>
-      </label>
+      <div class="mute">
+        <input
+          v-model="muteQuery"
+          class="input"
+          type="search"
+          placeholder="Search characters to mute…"
+          aria-label="Search characters to mute"
+          autocomplete="off"
+        />
+        <ul v-if="muteResults.length" class="mute-results" role="listbox" aria-label="Matching characters">
+          <li v-for="r in muteResults" :key="r.id">
+            <button role="option" :aria-selected="r.muted" @click="setMuted(r.id, !r.muted)">
+              <span>{{ r.name }}</span>
+              <span class="muted">{{ r.muted ? "Unmute" : "Mute" }}</span>
+            </button>
+          </li>
+        </ul>
+        <p v-else-if="muteQuery.trim()" class="muted">No characters match.</p>
+        <div v-if="state.self.muted.length" class="chips" aria-label="Muted characters">
+          <button v-for="id in state.self.muted" :key="id" class="chip-muted" :title="`Unmute ${state.characters[id]?.name}`" @click="setMuted(id, false)">
+            {{ state.characters[id]?.name ?? `#${id}` }} <span aria-hidden="true">×</span>
+          </button>
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -432,9 +455,9 @@ function toggleMute(e: Event) {
 
 .offsets {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 8px 16px;
+  align-items: center;
+  gap: 16px;
+  max-width: 480px;
 }
 
 .offsets .horizontal {
@@ -450,6 +473,89 @@ function toggleMute(e: Event) {
   margin-left: 4px;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+
+.mute {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.mute-results {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.mute-results button {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mute-results button:hover {
+  background: var(--surface-hover);
+}
+
+.mute-results button[aria-selected="true"] span:first-child {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip-muted {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 480px;
+}
+
+.link-btn {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.link-btn:disabled {
+  color: var(--text-muted);
+  cursor: default;
 }
 
 .group h3 {
