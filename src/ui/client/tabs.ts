@@ -3,12 +3,10 @@ export type TabId = "emotes" | "log" | "ooc" | "music" | "players" | "menu";
 export interface TabDef {
   id: TabId;
   label: string;
-  /** In landscape the IC options sit under the stage instead of in a tab. */
-  portraitOnly?: boolean;
 }
 
 export const DEFAULT_TABS: TabDef[] = [
-  { id: "emotes", label: "IC Options", portraitOnly: true },
+  { id: "emotes", label: "IC Options" },
   { id: "log", label: "Log" },
   { id: "ooc", label: "OOC" },
   { id: "music", label: "Music" },

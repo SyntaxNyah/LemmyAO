@@ -5,7 +5,7 @@ import LegacyPanel from "./LegacyPanel.vue";
 import ICLog from "./ICLog.vue";
 import ICControls from "./ICControls.vue";
 import TabOrderSettings from "./TabOrderSettings.vue";
-import { orderTabs, type TabId } from "./tabs";
+import { DEFAULT_TABS, orderTabs, type TabId } from "./tabs";
 import { settings } from "../../core/settings";
 import { client } from "../../client";
 import { draft, sendIC } from "../../core/commands";
@@ -13,18 +13,27 @@ import { parsePairedCharID } from "../../utils/pairCharID";
 import { getPairOrder } from "../../dom/pairOrder";
 import OOCChat from "./OOCChat.vue";
 
-type Tab = TabId;
-
-// Landscape: stage and controls beside the chat column. Portrait: stage, message bar, tabs.
+// Landscape: the stage with the first tab under it, beside a column for the
+// other tabs. Portrait: the stage, the message bar, then every tab.
 const landscapeQuery = window.matchMedia("(orientation: landscape)");
 const isLandscape = ref(landscapeQuery.matches);
-const onWidth = (e: MediaQueryListEvent) => {
-  isLandscape.value = e.matches;
-  if (e.matches && tab.value === "emotes") tab.value = "log";
-};
+const onOrientation = (e: MediaQueryListEvent) => (isLandscape.value = e.matches);
 
-const tab = ref<Tab>("log");
 const tabs = computed(() => orderTabs(settings.tabOrder));
+const first = computed(() => tabs.value[0].id);
+const stripTabs = computed(() => (isLandscape.value ? tabs.value.slice(1) : tabs.value));
+const tab = ref<TabId>(isLandscape.value ? tabs.value[1].id : first.value);
+
+// The first tab is already on screen in landscape; land on what was showing
+// under the stage when turning to portrait, and off it when turning back.
+watch([isLandscape, first], ([landscape]) => {
+  if (!landscape) tab.value = first.value;
+  else if (tab.value === first.value) tab.value = tabs.value[1].id;
+});
+
+const underStage = (id: TabId) => isLandscape.value && id === first.value;
+const shown = (id: TabId) => underStage(id) || tab.value === id;
+
 // Legacy panels fill in during their own mount; teleport into them only after that.
 const legacyReady = ref(false);
 
@@ -42,113 +51,115 @@ function sendMessage() {
   };
   sendIC();
 }
-const stageHost = ref<HTMLElement>();
-const icLog = ref<InstanceType<typeof ICLog>>();
-const oocChat = ref<InstanceType<typeof OOCChat>>();
 
-watch(tab, async (t) => {
+const stageHost = ref<HTMLElement>();
+const scrollers: Partial<Record<TabId, { onVisible: () => void }>> = {};
+const keepRef = (id: TabId) => (el: unknown) => {
+  if (el) scrollers[id] = el as { onVisible: () => void };
+};
+
+// A log can't follow new entries while hidden, so let it catch up when shown.
+watch([tab, isLandscape, first], async () => {
   await nextTick();
-  if (t === "log") icLog.value?.onVisible();
-  if (t === "ooc") oocChat.value?.onVisible();
+  for (const id of ["log", "ooc"] as const) if (shown(id)) scrollers[id]?.onVisible();
 });
 
 onMounted(() => {
   mountStage(stageHost.value!);
   legacyReady.value = true;
-  landscapeQuery.addEventListener("change", onWidth);
+  landscapeQuery.addEventListener("change", onOrientation);
 });
-onUnmounted(() => landscapeQuery.removeEventListener("change", onWidth));
+onUnmounted(() => landscapeQuery.removeEventListener("change", onOrientation));
 </script>
 
 <template>
   <div class="shell" :class="isLandscape ? 'landscape' : 'portrait'">
-    <section class="main">
-      <div class="stage-frame">
-        <div ref="stageHost" class="legacy stage"></div>
-      </div>
-      <form class="ic-input" @submit.prevent="sendMessage">
-        <input
-          id="client_inputbox"
-          v-model="draft.message"
-          class="input"
-          type="text"
-          placeholder="Say something in character…"
-          aria-label="IC message"
-          autocomplete="off"
-          enterkeyhint="send"
-        />
-        <button class="btn btn-primary send" type="submit" aria-label="Send" title="Send">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.1 15 12 3.4 13.9Z" fill="currentColor" />
-          </svg>
-        </button>
-      </form>
-      <div v-show="isLandscape" id="controls-landscape" class="controls"></div>
-    </section>
+    <div class="stage-frame">
+      <div ref="stageHost" class="legacy stage"></div>
+    </div>
 
-    <section class="side">
-      <nav class="tabs" role="tablist">
-        <button
-          v-for="t in tabs"
-          v-show="!(t.portraitOnly && isLandscape)"
-          :key="t.id"
-          role="tab"
-          :aria-selected="tab === t.id"
-          @click="tab = t.id"
-        >
-          {{ t.label }}
-        </button>
-      </nav>
+    <form class="ic-input" @submit.prevent="sendMessage">
+      <input
+        id="client_inputbox"
+        v-model="draft.message"
+        class="input"
+        type="text"
+        placeholder="Say something in character…"
+        aria-label="IC message"
+        autocomplete="off"
+        enterkeyhint="send"
+      />
+      <button class="btn btn-primary send" type="submit" aria-label="Send" title="Send">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.1 15 12 3.4 13.9Z" fill="currentColor" />
+        </svg>
+      </button>
+    </form>
 
-      <div class="panels">
-        <ICLog v-show="tab === 'log'" ref="icLog" class="panel" />
-        <div v-show="tab === 'emotes'" id="controls-portrait" class="panel"></div>
-        <OOCChat v-show="tab === 'ooc'" ref="oocChat" class="panel" />
-        <LegacyPanel v-show="tab === 'music'" template="music" class="panel" />
-        <LegacyPanel v-show="tab === 'players'" template="players" class="panel" />
-        <LegacyPanel v-show="tab === 'menu'" template="mainmenu" class="panel" />
-      </div>
-    </section>
+    <nav class="tabs" role="tablist">
+      <button
+        v-for="t in stripTabs"
+        :key="t.id"
+        role="tab"
+        :aria-selected="tab === t.id"
+        @click="tab = t.id"
+      >
+        {{ t.label }}
+      </button>
+    </nav>
+
+    <!-- Every panel stays mounted; in landscape the first tab moves to the area under the stage. -->
+    <div
+      v-for="t in DEFAULT_TABS"
+      v-show="shown(t.id)"
+      :key="t.id"
+      class="panel"
+      :class="underStage(t.id) ? 'in-under' : 'in-panels'"
+      role="tabpanel"
+      :aria-label="t.label"
+    >
+      <ICControls v-if="t.id === 'emotes'" />
+      <ICLog v-else-if="t.id === 'log'" :ref="keepRef('log')" />
+      <OOCChat v-else-if="t.id === 'ooc'" :ref="keepRef('ooc')" />
+      <LegacyPanel v-else-if="t.id === 'music'" template="music" />
+      <LegacyPanel v-else-if="t.id === 'players'" template="players" />
+      <LegacyPanel v-else template="mainmenu" />
+    </div>
 
     <Teleport v-if="legacyReady" to="#content_3">
       <TabOrderSettings />
-    </Teleport>
-
-    <Teleport defer :to="isLandscape ? '#controls-landscape' : '#controls-portrait'">
-      <ICControls />
     </Teleport>
   </div>
 </template>
 
 <style scoped>
 .shell {
+  display: grid;
   height: 100dvh;
   overflow: hidden;
   background: var(--bg);
 }
 
-.landscape {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(340px, 32vw, 480px);
-}
-
 .portrait {
-  display: flex;
-  flex-direction: column;
+  grid-template:
+    "stage" auto
+    "input" auto
+    "tabs" auto
+    "panels" 1fr
+    / minmax(0, 1fr);
 }
 
-.main {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.landscape .main {
-  border-right: 1px solid var(--border);
+.landscape {
+  grid-template:
+    "stage tabs" auto
+    "stage panels" auto
+    "input panels" auto
+    "under panels" 1fr
+    / minmax(0, 1fr) clamp(340px, 32vw, 480px);
 }
 
 .stage-frame {
-  flex: none;
+  grid-area: stage;
   width: 100%;
   margin: 0 auto;
   background: #000;
@@ -170,29 +181,33 @@ onUnmounted(() => landscapeQuery.removeEventListener("change", onWidth));
    message bar matches the stage's width. */
 .landscape .stage-frame,
 .landscape .ic-input {
-  width: 100%;
   max-width: calc(min(100dvh - 120px, max(60dvh, 100dvh - 260px)) * 4 / 3);
-  margin: 0 auto;
 }
 
-.controls {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.side {
+.ic-input {
+  grid-area: input;
   display: flex;
-  flex-direction: column;
-  min-height: 0;
+  gap: 6px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 6px;
+  background: var(--surface);
 }
 
-.portrait .side {
+.ic-input .input {
   flex: 1;
+  min-width: 0;
+  min-height: 40px;
+}
+
+.ic-input .send {
+  width: 44px;
+  min-height: 40px;
+  padding: 0;
 }
 
 .tabs {
-  flex: none;
+  grid-area: tabs;
   display: flex;
   gap: 2px;
   padding: 6px 8px 0;
@@ -219,34 +234,26 @@ onUnmounted(() => landscapeQuery.removeEventListener("change", onWidth));
   color: var(--text);
 }
 
-.panels {
-  flex: 1;
-  min-height: 0;
-  position: relative;
+.landscape .tabs,
+.landscape .in-panels {
+  border-left: 1px solid var(--border);
 }
 
 .panel {
-  position: absolute;
-  inset: 0;
+  min-height: 0;
   overflow-y: auto;
 }
 
-.ic-input {
-  display: flex;
-  gap: 6px;
-  padding: 6px;
-  background: var(--surface);
+.in-panels {
+  grid-area: panels;
 }
 
-.ic-input .input {
-  flex: 1;
-  min-width: 0;
-  min-height: 40px;
+.in-under {
+  grid-area: under;
 }
 
-.ic-input .send {
-  width: 44px;
-  min-height: 40px;
-  padding: 0;
+/* Legacy panels size their contents in percentages of this. */
+.panel > * {
+  height: 100%;
 }
 </style>

@@ -118,7 +118,7 @@ function toggleMute(e: Event) {
 
     <div class="fields">
       <label class="field">
-        <span class="field-label">Text colour</span>
+        <span class="field-label">Text color</span>
         <span class="color-select" :class="{ rainbow: draft.color === TextColor.rainbow }">
           <span class="dot" :style="{ background: dotFor(draft.color) }" aria-hidden="true"></span>
           <select v-model="draft.color" class="input select" :style="{ color: TEXT_COLORS[draft.color].css }">
@@ -163,16 +163,19 @@ function toggleMute(e: Event) {
       </label>
     </div>
 
-    <div class="options">
-      <label class="check"><input v-model="draft.sendPreanim" type="checkbox" /> Preanim</label>
-      <label class="check"><input v-model="draft.sendSfx" type="checkbox" /> SFX</label>
-      <label class="check"><input v-model="draft.flip" type="checkbox" /> Flip</label>
-      <label class="check"><input v-model="draft.flash" type="checkbox" /> Flash</label>
-      <label class="check"><input v-model="draft.screenshake" type="checkbox" /> Shake</label>
-      <label class="check"><input v-model="draft.nonInterrupting" type="checkbox" /> Non-interrupting preanim</label>
-      <label class="check"><input v-model="draft.loopSfx" type="checkbox" /> Looping SFX</label>
-      <label v-if="features.has('effects')" class="check"><input v-model="draft.additive" type="checkbox" /> Additive</label>
-    </div>
+    <section class="group">
+      <h3>Emote options</h3>
+      <div class="options">
+        <label class="check"><input v-model="draft.sendPreanim" type="checkbox" /> Preanim</label>
+        <label class="check"><input v-model="draft.sendSfx" type="checkbox" /> SFX</label>
+        <label class="check"><input v-model="draft.flip" type="checkbox" /> Flip</label>
+        <label class="check"><input v-model="draft.flash" type="checkbox" /> Flash</label>
+        <label class="check"><input v-model="draft.screenshake" type="checkbox" /> Shake</label>
+        <label class="check"><input v-model="draft.nonInterrupting" type="checkbox" /> Non-interrupting preanim</label>
+        <label class="check"><input v-model="draft.loopSfx" type="checkbox" /> Looping SFX</label>
+        <label v-if="features.has('effects')" class="check"><input v-model="draft.additive" type="checkbox" /> Additive</label>
+      </div>
+    </section>
 
     <section v-if="showJudge" class="group">
       <h3>Judge</h3>
