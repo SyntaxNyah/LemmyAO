@@ -1,26 +1,17 @@
-import { Side } from "aolib-ts";
+import type { Side } from "aolib-ts";
 import transparentPng from "../constants/transparentPng";
-
-// Function rather than module-level array: enum members are accessed only
-// at call time, avoiding "Side is undefined" during circular-import init.
-const isFullView = (s: Side): boolean =>
-  s === Side.def || s === Side.pro || s === Side.wit;
+import { charLayer } from "../viewport/elements";
 
 /**
- * Sets a pre-resolved emote URL on the correct DOM <img> element.
- * This is synchronous because the image should already be in the browser cache
- * from preloading.
+ * Sets a pre-resolved emote URL on the character (or pair) sprite for a side.
+ * Synchronous: the image is already in the browser cache from preloading.
  */
 const setEmoteFromUrl = (url: string, pair: boolean, side: Side): void => {
-  const pairID = pair ? "pair" : "char";
-  const position = isFullView(side) ? `${side}_` : "";
-  const emoteSelector = document.getElementById(
-    `client_${position}${pairID}_img`,
-  ) as HTMLImageElement;
-
-  if (emoteSelector) {
-    emoteSelector.src = url || transparentPng;
-  }
+  const img = charLayer(side, pair).img;
+  // Reassigning the same URL restarts an animation in Chrome, which would
+  // desync a preanim from its timer.
+  const next = url || transparentPng;
+  if (img.src !== next) img.src = next;
 };
 
 export default setEmoteFromUrl;

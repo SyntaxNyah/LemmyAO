@@ -1,6 +1,8 @@
-import { showModcallNotice } from "./oocLog";
+import { emit } from "../core/events";
+import { logOOC } from "../core/log";
 
-/** Triggered by the modcall sfx dropdown — preview the modcall alert. */
+/** Triggered by the modcall sfx dropdown: preview the modcall alert. */
 export function modcall_test() {
-  showModcallNotice({ $header: "ZZ", reason: "test" });
+  logOOC({ kind: "modcall", message: "test", time: Date.now() });
+  emit("modcall", "test");
 }

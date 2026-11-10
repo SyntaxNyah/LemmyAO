@@ -18,14 +18,21 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.6
+          bun-version: 1.3.14
       - name: Install Dependencies
         run: bun install --frozen-lockfile
       - name: Lint
         run: bun run lint
       - name: Type Check
-        run: bunx tsc --noEmit
+        run: bun run typecheck
       - name: Run Tests
         run: bun test
       - name: Build
         run: bun run build
+      - name: Install Chrome
+        run: bunx puppeteer browsers install chrome
+      # Ubuntu 24.04 blocks the unprivileged user namespaces Chrome's sandbox needs.
+      - name: Allow Chrome's sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: End-to-end tests
+        run: bun test ./e2e/viewport.e2e.ts

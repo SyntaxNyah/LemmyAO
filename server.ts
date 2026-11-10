@@ -4,29 +4,32 @@
  * Serves the client + assets AND speaks enough of the AO protocol (via
  * aolib) to get clients into a single shared area, then relays IC (MS),
  * OOC (CT) and music (MC) to everyone. Not a real server: no auth, no
- * moderation, no persistence, one area.
+ * moderation, no persistence; the areas listed all share one room.
  *
  *   bun run server
  *   → open the printed URL, pick a character, chat. Open it in a second
  *     tab/browser to see messages relayed between clients.
  */
 
-import index from "./public/index.html";
-import clientHtml from "./public/client.html";
-import { client as aoClient, type ClientSession } from "aolib-ts";
+import {
+  client as aoClient,
+  PlayerDataType,
+  PlayerListUpdate,
+  type ClientSession,
+} from "aolib-ts";
 
 const PORT = Number(process.env.PORT ?? 8081);
 
 // Character roster offered to clients. Names must match character folders
 // (lowercased) under the asset host. The local dev-assets 3D characters
 // plus a couple of vanilla names for 2D testing.
+// ROSTER_SIZE=5000 pads it with generated names, to test large servers.
 const ROSTER = ["Fenomeno3D", "test3d", "1127-cti", "Phoenix", "Edgeworth"];
-const MUSIC = ["Demo Area", "=== Music ===", "Trial.opus", "Investigation.opus"];
+for (let i = ROSTER.length; i < Number(process.env.ROSTER_SIZE ?? 0); i++) ROSTER.push(`Extra${String(i).padStart(4, "0")}`);
+// Areas come first in the SM list; everyone shares one room regardless of area.
+const AREAS = ["Demo Area", "Courtroom", "Lobby"];
+const MUSIC = [...AREAS, "=== Music ===", "Trial.opus", "Investigation.opus"];
 const BACKGROUND = "gs4";
-// Assets (characters/, background/, sounds/) are served from this server, so
-// tell clients to fetch from here. They only adopt it if they didn't join with
-// an explicit ?asset= override.
-const ASSET_URL = `http://localhost:${PORT}/`;
 
 const FEATURES = [
   "fastloading",
@@ -35,6 +38,7 @@ const FEATURES = [
   "flipping",
   "looping_sfx",
   "effects",
+  "y_offset",
 ];
 
 const sessions = new Set<ClientSession>();
@@ -50,7 +54,38 @@ const broadcast = (fn: (s: ClientSession) => void): void => {
   }
 };
 
-function setupSession(ws: { send(data: string): void }): ClientSession {
+// Evidence shared by everyone (one room).
+const evidence: { name: string; description: string; image: string }[] = [];
+const sendEvidence = () => broadcast((s) => s.send.LE({ evidence: [...evidence] }));
+
+// The player list (PR/PU) every joined client sees.
+type DemoPlayer = { id: number; name: string; charName: string; showName: string; area: number };
+const players = new Map<ClientSession, DemoPlayer>();
+
+function sendPlayer(to: ClientSession, p: DemoPlayer) {
+  to.send.PR({ id: p.id, type: PlayerListUpdate.add });
+  to.send.PU({ id: p.id, type: PlayerDataType.char_name, data: p.charName });
+  to.send.PU({ id: p.id, type: PlayerDataType.ooc_name, data: p.name });
+  to.send.PU({ id: p.id, type: PlayerDataType.showname, data: p.showName });
+  to.send.PU({ id: p.id, type: PlayerDataType.area_id, data: String(p.area) });
+}
+
+function updatePlayer(session: ClientSession, type: PlayerDataType, data: string) {
+  const p = players.get(session);
+  if (p) broadcast((s) => s.send.PU({ id: p.id, type, data }));
+}
+
+function leave(session: ClientSession) {
+  const p = players.get(session);
+  if (!p) return;
+  players.delete(session);
+  broadcast((s) => s.send.PR({ id: p.id, type: PlayerListUpdate.remove }));
+}
+
+// Assets (characters/, background/, sounds/) are served from this server, so
+// tell clients to fetch from here, under the host they reached us by. They only
+// adopt it if they didn't join with an explicit ?asset= override.
+function setupSession(ws: { send(data: string): void }, assetUrl: string): ClientSession {
   const session = aoClient({
     send: (wire) => ws.send(wire),
     onUnhandled: (header) => {
@@ -66,7 +101,7 @@ function setupSession(ws: { send(data: string): void }): ClientSession {
     session.send.FL({ features: FEATURES });
     // Point the client at this server's asset host (before the char list is
     // fetched, so char.ini / icons resolve here).
-    session.send.ASS({ asset_url: ASSET_URL });
+    session.send.ASS({ asset_url: assetUrl });
   });
 
   session.on.ID(() => {
@@ -94,10 +129,32 @@ function setupSession(ws: { send(data: string): void }): ClientSession {
   session.on.RD(() => {
     session.send.BN({ background: BACKGROUND });
     session.send.DONE({});
+    session.send.LE({ evidence: [...evidence] });
+    const me: DemoPlayer = { id: playerId, name: "", charName: "", showName: "", area: 0 };
+    for (const other of players.values()) sendPlayer(session, other);
+    players.set(session, me);
+    broadcast((s) => sendPlayer(s, me));
   });
 
   session.on.CC((packet) => {
     session.send.PV({ player_id: playerId, char_id: packet.char_id } as never);
+    const me = players.get(session);
+    if (me) me.charName = ROSTER[packet.char_id] ?? "";
+    updatePlayer(session, PlayerDataType.char_name, me?.charName ?? "");
+  });
+
+  session.on.PE((p) => {
+    evidence.push({ name: p.name, description: p.description, image: p.image });
+    sendEvidence();
+  });
+  session.on.EE((p) => {
+    if (!evidence[p.id]) return;
+    evidence[p.id] = { name: p.name, description: p.description, image: p.image };
+    sendEvidence();
+  });
+  session.on.DE((p) => {
+    evidence.splice(p.id, 1);
+    sendEvidence();
   });
 
   // Keep-alive: some clients expect a CHECK echo.
@@ -112,33 +169,62 @@ function setupSession(ws: { send(data: string): void }): ClientSession {
   session.on.MS((packet) => {
     console.log(`[ao] MS from char_id=${(packet as { char_id: number }).char_id} -> ${sessions.size} clients: ${(packet as { message: string }).message}`);
     broadcast((s) => s.send.MS(packet as never));
+    const me = players.get(session);
+    const showname = (packet as { showname: string }).showname;
+    if (me && me.showName !== showname) {
+      me.showName = showname;
+      updatePlayer(session, PlayerDataType.showname, showname);
+    }
   });
-  session.on.CT((packet) => broadcast((s) => s.send.CT(packet as never)));
-  session.on.MC((packet) => broadcast((s) => s.send.MC(packet as never)));
+  session.on.CT((packet) => {
+    const message = (packet as { message: string }).message;
+    if (message.startsWith("/bb ")) return session.send.BB({ message: message.slice(4) } as never);
+    const me = players.get(session);
+    const name = (packet as { name: string }).name;
+    if (me && me.name !== name) {
+      me.name = name;
+      updatePlayer(session, PlayerDataType.ooc_name, name);
+    }
+    broadcast((s) => s.send.CT(packet as never));
+  });
+  session.on.RT((packet) => broadcast((s) => s.send.RT(packet as never)));
+  // MC carrying an area name is a move, not a song. Moves are only reported (IC is shared);
+  // the Lobby is locked, to try a refused move.
+  session.on.MC((packet) => {
+    const area = AREAS.indexOf((packet as { name: string }).name);
+    if (area < 0) return broadcast((s) => s.send.MC(packet as never));
+    const me = players.get(session);
+    if (AREAS[area] === "Lobby") {
+      return session.send.CT({ name: "Server", message: "The Lobby is locked.", is_from_server: true } as never);
+    }
+    if (me && me.area !== area) {
+      me.area = area;
+      updatePlayer(session, PlayerDataType.area_id, String(area));
+    }
+  });
 
   return session;
 }
 
+// Lets a client served from elsewhere (e.g. the Vite dev server) use these assets.
+const CORS = { "Access-Control-Allow-Origin": "*" };
+
 const staticFile = async (pathname: string): Promise<Response | null> => {
-  const pub = Bun.file(`./public${pathname}`);
-  if (await pub.exists()) return new Response(pub);
+  const built = Bun.file(`./dist${pathname === "/" ? "/index.html" : pathname}`);
+  if (await built.exists()) return new Response(built, { headers: CORS });
   const local = Bun.file(`./dev-assets${decodeURIComponent(pathname)}`);
-  if (await local.exists()) return new Response(local);
+  if (await local.exists()) return new Response(local, { headers: CORS });
   return null;
 };
 
-const server = Bun.serve<{ session: ClientSession | null }>({
+const server = Bun.serve<{ session: ClientSession | null; assetUrl: string }>({
   port: PORT,
   development: true,
-  routes: {
-    "/": index,
-    "/index.html": index,
-    "/client.html": clientHtml,
-  },
   async fetch(req, srv) {
     // Upgrade AO WebSocket connections.
     if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
-      if (srv.upgrade(req, { data: { session: null } })) return undefined;
+      const assetUrl = `http://${req.headers.get("host") ?? `localhost:${PORT}`}/`;
+      if (srv.upgrade(req, { data: { session: null, assetUrl } })) return undefined;
       return new Response("WebSocket upgrade failed", { status: 400 });
     }
     const url = new URL(req.url);
@@ -146,7 +232,7 @@ const server = Bun.serve<{ session: ClientSession | null }>({
   },
   websocket: {
     open(ws) {
-      ws.data.session = setupSession(ws);
+      ws.data.session = setupSession(ws, ws.data.assetUrl);
       sessions.add(ws.data.session);
       // The client waits for a decryptor packet before sending HI.
       ws.data.session.send.decryptor({ value: "NOENCRYPT" } as never);
@@ -158,6 +244,7 @@ const server = Bun.serve<{ session: ClientSession | null }>({
     close(ws) {
       if (ws.data.session) {
         sessions.delete(ws.data.session);
+        leave(ws.data.session);
         ws.data.session.close();
       }
       console.log(`[ao] client disconnected (${sessions.size} online)`);

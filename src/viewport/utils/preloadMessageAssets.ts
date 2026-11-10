@@ -27,8 +27,8 @@ const DEFAULT_ASSETS: PreloadedAssets = {
 
 const SHOUT_BUBBLE_EXTENSIONS = [".webp", ".gif", ".apng", ".png"];
 
-// Extensions getAnimLength's calculatorHandler can measure a frame count for.
-// .png and .webp.static have no animation, so they're never candidates here.
+// Extensions to probe for a legacy preanim stem; .png and .webp.static are
+// treated as still images there.
 const ANIMATABLE_EXTENSIONS = [".gif", ".webp", ".apng"];
 
 /**

@@ -1,4 +1,5 @@
 import { positions } from "../constants/positions";
+import { element, els } from "../elements";
 import { AO_HOST } from "../../client/aoHost";
 import { client } from "../../client";
 import { isFullView, Side } from "aolib-ts";
@@ -20,9 +21,9 @@ export async function setBackgroundImage(elementid: string, bgname: string, bgpa
     }
   }
   if (success)
-    (<HTMLImageElement>document.getElementById(elementid)).src = url;
+    element<HTMLImageElement>(elementid).src = url;
   else
-    (<HTMLImageElement>document.getElementById(elementid)).src = transparentPng;
+    element<HTMLImageElement>(elementid).src = transparentPng;
   return success;
 }
 
@@ -41,19 +42,11 @@ export async function set_side({
   showSpeedLines: boolean;
   showDesk: boolean;
 }) {
-  const view = document.getElementById("client_fullview")!;
+  const view = els.fullView;
   const fullView = isFullView(position);
 
-  const bench = <HTMLImageElement>(
-    document.getElementById(
-      fullView ? `client_${position}_bench` : "client_bench_classic",
-    )
-  );
-  const court = <HTMLImageElement>(
-    document.getElementById(
-      fullView ? `client_court_${position}` : "client_court_classic",
-    )
-  );
+  const bench = element<HTMLImageElement>(fullView ? `client_${position}_bench` : "client_bench_classic");
+  const court = element<HTMLImageElement>(fullView ? `client_court_${position}` : "client_court_classic");
 
   let bg;
   let desk;
@@ -72,7 +65,7 @@ export async function set_side({
   if (showSpeedLines === true) {
     court.src = `${AO_HOST}themes/default/${encodeURI(speedLines)}`;
   } else {
-    setBackgroundImage(court.id, client.viewport.getBackgroundName(), bg);
+    setBackgroundImage(court.id, viewportState.backgroundName, bg);
   }
 
   if (isHideDesksEnabled()) {
@@ -80,7 +73,7 @@ export async function set_side({
   }
 
   if (showDesk === true && desk) {
-    const bg_folder = client.viewport.getBackgroundFolder();
+    const bg_folder = backgroundFolder();
     const stems = [desk.ao2, desk.ao1].filter((s): s is string => typeof s === "string");
     let found = false;
     outer:
@@ -104,7 +97,7 @@ export async function set_side({
 
   if (fullView) {
     view.style.display = "";
-    document.getElementById("client_classicview")!.style.display = "none";
+    els.classicView.style.display = "none";
     switch (position) {
       case Side.def:
         view.style.left = "0";
@@ -118,29 +111,21 @@ export async function set_side({
     }
   } else {
     view.style.display = "none";
-    document.getElementById("client_classicview").style.display = "";
+    els.classicView.style.display = "";
   }
 }
 
-import { getIndexFromSelect } from "../../dom/getIndexFromSelect";
-import { switchPanTilt } from "../../dom/switchPanTilt";
-import { updateBackgroundPreview } from "../../dom/updateBackgroundPreview";
+import { applyPanTilt } from "../../dom/switchPanTilt";
+import { settings } from "../../core/settings";
+import { state } from "../../core/state";
+import { draft } from "../../core/commands";
 import { safeHtmlTags } from "../../escaping";
-import type * as aolib from "aolib-ts";
+import { backgroundFolder, viewportState } from "../state";
 
-/** BN: background change broadcast — swap every viewport background slot. */
-export function applyBackgroundChange(packet: aolib.packets.BN) {
-  const bgFromArgs = safeHtmlTags(packet.background);
-  client.viewport.setBackgroundName(bgFromArgs);
-  const bg_index = getIndexFromSelect("bg_select", client.viewport.getBackgroundName());
-  (<HTMLSelectElement>document.getElementById("bg_select")).selectedIndex = bg_index;
-  updateBackgroundPreview();
-  if (bg_index === 0) {
-    (<HTMLInputElement>document.getElementById("bg_filename")).value =
-      client.viewport.getBackgroundName();
-  }
-
-  setBackgroundImage("bg_preview", packet.background, "defenseempty");
+/** Swaps every background slot in the viewport. */
+export function showBackground(background: string) {
+  viewportState.backgroundName = safeHtmlTags(background);
+  const packet = { background };
   setBackgroundImage("client_def_bench", packet.background, "defensedesk");
   setBackgroundImage("client_wit_bench", packet.background, "stand");
   setBackgroundImage("client_pro_bench", packet.background, "prosecutiondesk");
@@ -151,18 +136,13 @@ export function applyBackgroundChange(packet: aolib.packets.BN) {
   setBackgroundImage("client_court_prot", packet.background, "transition_pro");
   setBackgroundImage("client_court", packet.background, "court");
 
-  if ((<HTMLImageElement>document.getElementById("client_court")).src !== transparentPng) {
-    const pantiltCheckbox = <HTMLInputElement>document.getElementById("client_pantilt");
-    if (pantiltCheckbox.checked) switchPanTilt();
+  if (els.court.src !== transparentPng) {
+    if (settings.panTilt) applyPanTilt(true);
   }
 
-  if (client.charID === -1) {
-    client.viewport.set_side({ position: Side.jud, showSpeedLines: false, showDesk: true });
-  } else {
-    client.viewport.set_side({
-      position: client.chars[client.charID].side,
-      showSpeedLines: false,
-      showDesk: true,
-    });
-  }
+  set_side({
+    position: state.self.charId === -1 ? Side.jud : draft.side,
+    showSpeedLines: false,
+    showDesk: true,
+  });
 }

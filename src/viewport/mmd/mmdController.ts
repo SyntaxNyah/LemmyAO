@@ -238,7 +238,7 @@ export class MmdController {
 
   /**
    * Loads the model + motions for a message and measures the preanim length so
-   * the chat_tick timeline waits the right amount before speaking. Returns null
+   * the message timeline waits the right amount before speaking. Returns null
    * (falling back to sprites) if the model can't load.
    */
   async preload(

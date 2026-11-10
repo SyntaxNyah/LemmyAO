@@ -1,35 +1,17 @@
-/**
- * Preanim glow indicator settings.
- *
- * Emotes that ship a preanimation are flagged with a glow on their button
- * (see changeChar.ts + the `[data-preanim]` rule in client.css). These
- * settings let the player turn the glow off and tune its colour and
- * intensity. Defaults apply when the keys are absent.
- */
+// Preanim glow settings; the emote picker no longer renders the glow but the settings are kept.
 
-const KEY_ENABLED = "preanimGlowEnabled";
-const KEY_COLOR = "preanimGlowColor";
-const KEY_INTENSITY = "preanimGlowIntensity";
+import { settings, setSetting } from "../core/settings";
 
-export const DEFAULT_PREANIM_GLOW_COLOR = "#ffcf4d";
-export const DEFAULT_PREANIM_GLOW_INTENSITY = 50;
-
-const clampIntensity = (n: number) => Math.min(100, Math.max(0, n));
-
-/** Glow is ON by default; only an explicit "false" disables it. */
 export function isPreanimGlowEnabled(): boolean {
-  return localStorage.getItem(KEY_ENABLED) !== "false";
+  return settings.preanimGlow;
 }
 
 export function getPreanimGlowColor(): string {
-  return localStorage.getItem(KEY_COLOR) || DEFAULT_PREANIM_GLOW_COLOR;
+  return settings.preanimGlowColor;
 }
 
 export function getPreanimGlowIntensity(): number {
-  const raw = localStorage.getItem(KEY_INTENSITY);
-  if (raw === null) return DEFAULT_PREANIM_GLOW_INTENSITY;
-  const n = Number(raw);
-  return Number.isFinite(n) ? clampIntensity(n) : DEFAULT_PREANIM_GLOW_INTENSITY;
+  return settings.preanimGlowIntensity;
 }
 
 /** Applies the current settings to the DOM (CSS vars + body class). */
@@ -52,7 +34,7 @@ export function switchPreanimGlow() {
   const checkbox = <HTMLInputElement>(
     document.getElementById("client_preanimglow")
   );
-  localStorage.setItem(KEY_ENABLED, checkbox?.checked ? "true" : "false");
+  setSetting("preanimGlow", !!checkbox?.checked);
   applyPreanimGlow();
 }
 
@@ -61,7 +43,7 @@ export function changePreanimGlowColor() {
   const input = <HTMLInputElement>(
     document.getElementById("client_preanimglow_color")
   );
-  if (input?.value) localStorage.setItem(KEY_COLOR, input.value);
+  if (input?.value) setSetting("preanimGlowColor", input.value);
   applyPreanimGlow();
 }
 
@@ -70,7 +52,7 @@ export function changePreanimGlowIntensity() {
   const input = <HTMLInputElement>(
     document.getElementById("client_preanimglow_intensity")
   );
-  if (input) localStorage.setItem(KEY_INTENSITY, input.value);
+  if (input) setSetting("preanimGlowIntensity", Number(input.value));
   applyPreanimGlow();
 }
 

@@ -23,7 +23,7 @@ describe("downloadFile", () => {
     const expected = {
       content: [data],
       options: {
-        type: "text",
+        type: "text/plain;charset=utf-8",
       },
     };
     expect(createObjectURL).toHaveBeenCalledWith(expected);

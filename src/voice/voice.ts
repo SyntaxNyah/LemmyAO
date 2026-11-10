@@ -22,6 +22,7 @@
 //     VS_SPEAK#<on_off>#%
 
 import { client } from "../client";
+import { state } from "../core/state";
 import type { SampleRate as WasmOpusSampleRate } from "libopus-wasm";
 
 interface VoiceCaps {
@@ -860,13 +861,8 @@ export function getLocalPlayerID(): number {
 }
 
 function resolveDisplayName(uid: number): string {
-  if (client && client.playerlist) {
-    const entry = client.playerlist.get(uid);
-    if (entry) {
-      return entry.showName || entry.name || entry.charName || `Peer ${uid}`;
-    }
-  }
-  return `Peer ${uid}`;
+  const entry = state.players[uid];
+  return entry?.showName || entry?.name || entry?.charName || `Peer ${uid}`;
 }
 
 export function getSpeakerDisplayName(uid: number): string {

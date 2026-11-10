@@ -45,7 +45,7 @@ function ensurePreviewEl(): { root: HTMLDivElement; img: HTMLImageElement; label
   return { root, img, label };
 }
 
-function positionPreview(event: MouseEvent) {
+function positionPreview(event: PointerEvent) {
   if (!previewEl || previewEl.style.display === "none") return;
   const width = previewEl.offsetWidth || 192;
   const height = previewEl.offsetHeight || 192;
@@ -82,11 +82,13 @@ export function attachSpritePreview(
   emotename: string,
   desc: string,
 ) {
-  let lastEvent: MouseEvent | null = null;
+  let lastEvent: PointerEvent | null = null;
 
-  button.addEventListener("mouseenter", (event) => {
+  // Hover only: a tap fires a fake mouseenter whose mouseleave never comes, leaving the preview stuck.
+  button.addEventListener("pointerenter", (event) => {
+    if (event.pointerType !== "mouse") return;
     activeButton = button;
-    lastEvent = event as MouseEvent;
+    lastEvent = event;
     const token = ++activeToken;
     clearOpenTimer();
     openTimer = window.setTimeout(async () => {
@@ -101,12 +103,16 @@ export function attachSpritePreview(
     }, HOVER_DELAY_MS);
   });
 
-  button.addEventListener("mousemove", (event) => {
-    lastEvent = event as MouseEvent;
-    positionPreview(event as MouseEvent);
+  button.addEventListener("pointermove", (event) => {
+    if (event.pointerType !== "mouse") return;
+    lastEvent = event;
+    positionPreview(event);
   });
 
-  button.addEventListener("mouseleave", () => {
+  button.addEventListener("pointerleave", () => {
     if (activeButton === button) hidePreview();
   });
+
+  // Picking the emote ends the preview.
+  button.addEventListener("pointerdown", hidePreview);
 }

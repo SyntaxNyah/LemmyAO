@@ -1,84 +1,15 @@
-/**
- * Inbound handlers for the post-connection handshake sequence.
- *
- * Order on a fresh connection:
- *   decryptor -> (we send HI) -> ID -> PN -> (download phase, see
- *   handleCharacterInfo / addTrack / pickEvidence) -> DONE.
- */
+import { autoChar, autoArea } from "../client";
+import { changeArea, pickCharacter } from "../core/commands";
+import { state } from "../core/state";
 
-import { client, clientState, autoChar, autoArea } from "../client";
-import { area_click } from "../dom/areaClick";
-import queryParser from "../utils/queryParser";
-import type * as aolib from "aolib-ts";
-
-const { mode } = queryParser();
-
-/**
- * decryptor: legacy FantaCrypt handshake marker. Modern servers
- * repurpose it as a wire-format negotiation signal — `value === "JSON"`
- * means "switch outbound to JSON envelopes from here on".
- *
- * aolib auto-switches the outbound wire to JSON here when the server
- * advertises it (value "JSON"), unless `?disableJson=true` turned off
- * auto-negotiation (disableAutoJson) on the session. So this handler just
- * continues the handshake.
- */
-export function applyEncryptionMode(_packet: aolib.packets.decryptor) {
-  client.joinServer();
-}
-
-/**
- * ID: server identity packet. We always reply with our own ID so the
- * server can continue the handshake (akashi / tsuserver / KFO all
- * gate the rest of the flow on receiving this). In replay mode the
- * outbound ID loops back to `clientSession.on.ID` (see
- * `onClientIdentified` in `./replay.ts`), which synthesises the
- * server's next packet (PN) so the UI keeps moving.
- */
-export function applyServerIdentity(packet: aolib.packets.IDToClient) {
-  client.playerID = packet.player_id;
-  client.server.send.ID({ software: client.software, version: client.version });
-}
-
-/** PN: server population. Triggers the character list request. */
-export function applyServerInfo(_packet: aolib.packets.PN) {
-  client.server.send.askchaa({});
-}
-
-/**
- * DONE: handshake complete. Reveal the char-select UI (unless we're a
- * spectator), then honor `?char=` / `?area=` autopick params from the
- * URL by clicking the matching area/char.
- */
+/** DONE: honor the ?area= and ?char= auto-join parameters. */
 export function finishServerJoin() {
-  client.state = clientState.Joined;
-  document.getElementById("client_loading")!.style.display = "none";
-  if (mode === "watch") {
-    // Spectators don't need to pick a character
-    document.getElementById("client_waiting")!.style.display = "none";
-  }
-
   if (autoArea) {
-    const areaIndex = client.areas.findIndex(
-      (a: any) => a && a.name.toLowerCase() === autoArea.toLowerCase(),
-    );
-    if (areaIndex !== -1) {
-      const el = document.getElementById(`area${areaIndex}`);
-      if (el) area_click(el as HTMLElement);
-    }
+    const areaIndex = state.areas.findIndex((a) => a.name.toLowerCase() === autoArea.toLowerCase());
+    if (areaIndex !== -1) changeArea(areaIndex);
   }
-
   if (autoChar) {
-    // Hide charselect immediately (spectator mode) so the user isn't stuck
-    // on the selection screen. If the CC request succeeds, PV will confirm.
-    document.getElementById("client_waiting")!.style.display = "none";
-    document.getElementById("client_charselect")!.style.display = "none";
-
-    const charIndex = client.chars.findIndex(
-      (c: any) => c && c.name.toLowerCase() === autoChar.toLowerCase(),
-    );
-    if (charIndex !== -1) {
-      client.server.send.CC({ player_id: client.playerID, char_id: charIndex });
-    }
+    const charIndex = state.characters.findIndex((c) => c?.name.toLowerCase() === autoChar.toLowerCase());
+    if (charIndex !== -1) pickCharacter(charIndex);
   }
 }

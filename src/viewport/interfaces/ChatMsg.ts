@@ -21,7 +21,7 @@ export type ChatMsg = aolib.packets.MSToClient & {
   paired_emote: string;
   effects: string[];
 
-  // Character-derived display data (from client.chars[packet.char_id]).
+  // Character-derived display data (from the speaking character's char.ini).
   nameplate: string;
   chatbox: string;
   blips: string;

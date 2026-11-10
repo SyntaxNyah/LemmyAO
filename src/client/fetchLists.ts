@@ -1,132 +1,20 @@
 import { client } from "../client";
 import { AO_HOST } from "./aoHost";
 import { request } from "../services/request";
+import type * as aolib from "aolib-ts";
 
-export async function fetchBackgroundList() {
-  try {
-    const bgdata = await request(`${AO_HOST}backgrounds.json`);
-    const bg_array = JSON.parse(bgdata);
-    // the try catch will fail before here when there is no file
-
-    const bg_select = <HTMLSelectElement>document.getElementById("bg_select");
-    bg_select.innerHTML = "";
-
-    bg_select.add(new Option("Custom", "0"));
-    bg_array.forEach((background: string) => {
-      bg_select.add(new Option(background));
-    });
-  } catch (err) {
-    console.debug("no backgrounds.json file (optional)");
-  }
-}
-
-export async function fetchCharacterList() {
-  const char_select = <HTMLSelectElement>(
-    document.getElementById("client_iniselect")
-  );
-  char_select.innerHTML = "";
-
-  char_select.add(new Option("Custom", "0"));
-
-  try {
-    const chardata = await request(`${AO_HOST}characters.json`);
-    const char_array = JSON.parse(chardata);
-    // the try catch will fail before here when there is no file
-
-    char_array.forEach((character: string) => {
-      char_select.add(new Option(character));
-    });
-  } catch (err) {
-    console.debug("no characters.json file (optional)");
-  }
-}
-
-export async function fetchEvidenceList() {
-  const evi_select = <HTMLSelectElement>document.getElementById("evi_select");
-  evi_select.innerHTML = "";
-
-  evi_select.add(new Option("Custom", "0"));
-
-  try {
-    const evidata = await request(`${AO_HOST}evidence.json`);
-    const evi_array = JSON.parse(evidata);
-    evi_array.forEach((evi: string) => {
-      evi_select.add(new Option(evi));
-    });
-  } catch (err) {
-    console.debug("no evidence.json file (optional)");
-  }
-}
-
+/** Reads the asset host's preferred file extensions, if it publishes them. */
 export async function fetchExtensions() {
   try {
-    const extensiondata = await request(`${AO_HOST}extensions.json`);
-    const allextensions = JSON.parse(extensiondata);
-    client.charicon_extensions = allextensions.charicon_extensions || [".png", ".webp"];
-    client.emote_extensions = allextensions.emote_extensions || [".gif", ".png", ".apng", ".webp", ".webp.static"];
-    client.emotions_extensions = allextensions.emotions_extensions || [".png", ".webp"];
-    client.background_extensions = allextensions.background_extensions || [".png", ".gif", ".webp", ".apng"];
-    console.debug("loaded asset file-extension preferences from extensions.json", {
-      charicons: client.charicon_extensions,
-      emotes: client.emote_extensions,
-      emotions: client.emotions_extensions,
-      backgrounds: client.background_extensions,
-    });
-  } catch (err) {
+    const all = JSON.parse(await request(`${AO_HOST}extensions.json`));
+    client.emote_extensions = all.emote_extensions || [".gif", ".png", ".apng", ".webp", ".webp.static"];
+    client.background_extensions = all.background_extensions || [".png", ".gif", ".webp", ".apng"];
+  } catch {
     console.debug("no extensions.json file (optional)");
   }
 }
 
-import { applyFavourites } from "../dom/toggleFavourite";
-import type * as aolib from "aolib-ts";
-
-/**
- * SI: server announces its asset counts. We seed the char-select grid
- * with placeholder slots (filled in by SC / CI) and start the download
- * sequence by sending RC.
- */
-/**
- * Builds the char-select grid: one clickable `demo_<i>` slot per character.
- * The character loader fills icons in afterwards. Exported so tooling (the
- * dev demo) can rebuild the grid from a locally-discovered roster.
- */
-export function buildCharGrid(count: number): void {
-  const table = document.getElementById("client_chartable")!;
-  table.innerHTML = "";
-
-  for (let i = 0; i < count; i++) {
-    const slot = document.createElement("div");
-    slot.className = "char-slot";
-    slot.dataset.charid = String(i);
-
-    const demothing = document.createElement("img");
-    demothing.className = "demothing";
-    demothing.loading = "lazy";
-    demothing.id = `demo_${i}`;
-    demothing.dataset.action = "pickChar";
-    demothing.dataset.char = String(i);
-
-    const favBtn = document.createElement("button");
-    favBtn.className = "fav-btn";
-    favBtn.title = "Favourite";
-    favBtn.dataset.action = "toggleFavourite";
-    favBtn.textContent = "★";
-
-    slot.appendChild(demothing);
-    slot.appendChild(favBtn);
-    table.appendChild(slot);
-  }
-}
-
-export function applyServerCounts(packet: aolib.packets.SI) {
-  client.char_list_length = packet.char_count;
-  client.evidence_list_length = packet.evi_count;
-  client.music_list_length = packet.mus_count;
-
+/** SI: the counts live in core; load the asset host's extension preferences. */
+export function applyServerCounts(_packet: aolib.packets.SI) {
   fetchExtensions();
-
-  buildCharGrid(client.char_list_length);
-  applyFavourites();
-
-  client.server.send.RC({});
 }

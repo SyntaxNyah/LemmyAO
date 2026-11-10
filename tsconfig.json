@@ -17,5 +17,5 @@
     "verbatimModuleSyntax": false,
     "jsx": "preserve"
   },
-  "include": ["src/**/*", "build.ts", "dev.ts", "server.ts"]
+  "include": ["src/**/*", "src/**/*.vue", "e2e/**/*", "server.ts", "vite.config.mts"]
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { parseCharIni, EmoteModifier } from "aolib-ts";
 
-// Contract for the parseCharIni behaviour LemmyAO's handleCharacterInfo relies
+// Contract for the parseCharIni behaviour LemmyAO's characterInfo (core/character.ts) relies
 // on. aolib-ts 2.x rejects an empty string (it needs an [options] section with a
 // name), so the missing-ini fallback feeds a minimal stub instead. These pin
 // both so a future change is caught.
