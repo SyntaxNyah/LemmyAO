@@ -77,8 +77,8 @@ export interface Recording {
 
 /**
  * Opens the client against `server`, serving the generated assets. `delays`
- * holds back given asset paths once, by ms; `latencyS` fakes the output
- * latency a Bluetooth device would report.
+ * holds back given asset paths once, by ms; `latencyS` is the output latency
+ * the browser reports (0 unless given, e.g. 0.25 for a Bluetooth device).
  */
 export async function openClient(
   browser: Browser,
@@ -107,7 +107,8 @@ export async function openClient(
   await page.evaluateOnNewDocument((latency) => {
     const w = window as unknown as { __rec: Recording };
     w.__rec = { visuals: [], sounds: [] };
-    if (latency !== null) Object.defineProperty(AudioContext.prototype, "outputLatency", { get: () => latency });
+    // Fixed, so results don't depend on the machine's audio device (a Bluetooth headset reports ~200 ms).
+    Object.defineProperty(AudioContext.prototype, "outputLatency", { get: () => latency });
     const start = AudioBufferSourceNode.prototype.start;
     const stop = AudioBufferSourceNode.prototype.stop;
     type Tagged = AudioBufferSourceNode & { rec?: Recording["sounds"][number] };
@@ -124,7 +125,7 @@ export async function openClient(
       if (this.rec && this.rec.stoppedAt === null) this.rec.stoppedAt = performance.now();
       return stop.call(this, when);
     };
-  }, options.latencyS ?? null);
+  }, options.latencyS ?? 0);
   await page.goto(`${server.url}/client.html?mode=join&connect=${server.url.replace(/^http/, "ws")}`, { waitUntil: "load" });
   return page;
 }
