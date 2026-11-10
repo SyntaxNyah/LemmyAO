@@ -187,6 +187,7 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
     }
     broadcast((s) => s.send.CT(packet as never));
   });
+  session.on.RT((packet) => broadcast((s) => s.send.RT(packet as never)));
   // MC carrying an area name is a move, not a song. Moves are only reported (IC is shared);
   // the Lobby is locked, to try a refused move.
   session.on.MC((packet) => {

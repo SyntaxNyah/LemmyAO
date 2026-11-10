@@ -10,6 +10,8 @@ import { DeskModifier, EmoteModifier, Flip, ShoutModifier, Side } from "aolib-ts
 import { renderGroupPeers, membersFromAdditionalChars } from "./groupRender";
 import { setupCharacterSlot } from "./mmd/applyEmote";
 import { charLayer, els } from "./elements";
+import { viewportState } from "./state";
+import { set_side } from "./utils/setSide";
 
 const BAD_EFFECTS = new Set(["", "-", "none"]);
 
@@ -97,9 +99,9 @@ const applyEffectsOverlay = (fg: HTMLImageElement, effects: string[]) => {
 
 /** Sets the scene up for a message; the player then runs its timeline. */
 export const setScene = (chatmsg: ChatMsg) => {
-  client.viewport.setChatmsg(chatmsg);
-  client.viewport.setTextNow("");
-  client.viewport.setAnimating(true);
+  viewportState.chatmsg = chatmsg;
+  viewportState.textNow = "";
+  viewportState.animating = true;
 
   const fg = els.foreground;
   const gamewindow = els.gameWindow;
@@ -108,11 +110,11 @@ export const setScene = (chatmsg: ChatMsg) => {
   waitingBox.style.opacity = "0";
 
   const eviBox = els.evidence;
-  if (client.viewport.getLastEvidence() !== chatmsg.evidence_id) {
+  if (viewportState.lastEvidence !== chatmsg.evidence_id) {
     eviBox.style.opacity = "0";
     eviBox.style.height = "0%";
   }
-  client.viewport.setLastEvidence(chatmsg.evidence_id);
+  viewportState.lastEvidence = chatmsg.evidence_id;
 
   const charLayers = charLayer(chatmsg.side).container;
   const pairLayers = charLayer(chatmsg.side, true).container;
@@ -127,15 +129,15 @@ export const setScene = (chatmsg: ChatMsg) => {
       : chatmsg.nameplate;
 
   if (!chatmsg.additive) {
-    chatBoxInner.innerText = client.viewport.getTextNow();
+    chatBoxInner.innerText = viewportState.textNow;
   }
   nameBoxInner.innerText = displayname;
 
-  if (client.viewport.getLastCharacter() !== chatmsg.name) {
+  if (viewportState.lastCharacter !== chatmsg.name) {
     charLayers.style.opacity = "0";
     pairLayers.style.opacity = "0";
   }
-  client.viewport.setLastCharacter(chatmsg.name);
+  viewportState.lastCharacter = chatmsg.name;
 
 
   const preloaded = chatmsg.preloadedAssets!;
@@ -194,7 +196,7 @@ export const setScene = (chatmsg: ChatMsg) => {
       // hidden (showDesk is initialized to false above).
     }
   }
-  client.viewport.set_side(setAside);
+  set_side(setAside);
 
   setChatbox(chatmsg.chatbox);
   resizeChatbox();

@@ -1,10 +1,10 @@
-import { client } from "../../client";
 import setEmoteFromUrl from "../../client/setEmoteFromUrl";
 import transparentPng from "../../constants/transparentPng";
 import { Side } from "aolib-ts";
 import { getMmdController, existingMmdController } from "./index";
 import { MmdState, Model3dInfo } from "./types";
 import { charLayer } from "../elements";
+import { viewportState } from "../state";
 
 /**
  * Applies one emote phase to the main (non-pair) character slot. For a 3D
@@ -22,7 +22,7 @@ export function applyCharacterEmote(
   pair: boolean,
   side: Side,
 ): void {
-  const chatmsg = client.viewport.getChatmsg();
+  const chatmsg = viewportState.chatmsg;
   if (!pair && chatmsg?.model3d) {
     // preanim is part of the emote clip chain (setupCharacterSlot); ignore here.
     if (state === "preanim") return;

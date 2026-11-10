@@ -1,12 +1,15 @@
 import { els } from "../elements";
-import { client } from "../../client";
+import { createMusic, type MusicChannels } from "./createMusic";
 import { AO_HOST } from "../../client/aoHost";
 import { MusicChannel } from "aolib-ts";
 import type * as aolib from "aolib-ts";
 
+let music: MusicChannels | undefined;
+const channels = () => (music ??= createMusic());
+
 /** Switches a music channel to the announced track. */
 export function playMusicTrack(packet: aolib.packets.MCToClient) {
-  const music = client.viewport.music[packet.channel];
+  const music = channels()[packet.channel];
   music.pause();
   // An empty track name is a stop, not a track: building a URL from it would
   // point the channel at the music directory and error on every attempt.
@@ -26,7 +29,7 @@ export function playMusicTrack(packet: aolib.packets.MCToClient) {
 
 /** RMC (undocumented): seek the music channel to `toTime` seconds. */
 export function seekMusic(toTime: number) {
-  const music = client.viewport.music[MusicChannel.music];
+  const music = channels()[MusicChannel.music];
   music.pause();
   const requestedAt = Date.now() / 1000;
   music.addEventListener(

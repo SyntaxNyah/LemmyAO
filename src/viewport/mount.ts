@@ -1,17 +1,17 @@
-import { client } from "../client";
 import { AO_HOST } from "../client/aoHost";
 import { on } from "../core/events";
 import { playICMessage } from "./playMessage";
 import { showBackground } from "./utils/setSide";
 import { playMusicTrack, seekMusic } from "./utils/playMusic";
-import { showTestimony } from "./utils/initTestimonyUpdater";
+import { showTestimony } from "./testimony";
+import { els } from "./elements";
 import { VIEWPORT_HTML } from "./markup";
 import { followSettings } from "./settings";
 
 let mounted = false;
 
 function playModcallSound() {
-  const sfx = client.viewport.getSfxAudio();
+  const sfx = els.sfxAudio;
   sfx.pause();
   const volume = sfx.volume;
   sfx.volume = 1;

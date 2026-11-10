@@ -89,8 +89,21 @@ export function outputLatency(): number {
 
 export const audioNow = () => ctx?.currentTime ?? 0;
 
-/** Plays `buffer` at `when` on the audio clock. */
-export function schedule(buffer: AudioBuffer, when: number, channel: "blip" | "sfx", loop = false): void {
+// Time to set sounds up before the first one is due.
+const LEAD_S = 0.05;
+
+/**
+ * Where a synced sequence starts: the audio-clock time its sounds begin
+ * (null without audio), and how long its visuals wait so that what is seen
+ * matches what is heard.
+ */
+export async function syncedStart(): Promise<{ audioStart: number | null; visualDelayMs: number }> {
+  if (!(await audioReady())) return { audioStart: null, visualDelayMs: 0 };
+  return { audioStart: audioNow() + LEAD_S, visualDelayMs: (LEAD_S + outputLatency()) * 1000 };
+}
+
+/** Plays `buffer` at `when` on the audio clock; `message` sounds stop when the message is interrupted. */
+export function schedule(buffer: AudioBuffer, when: number, channel: "blip" | "sfx", loop = false, message = true): void {
   const audio = context();
   const gain = channel === "blip" ? blipGain : sfxGain;
   if (!audio || !gain) return;
@@ -99,8 +112,10 @@ export function schedule(buffer: AudioBuffer, when: number, channel: "blip" | "s
   source.loop = loop;
   if (channel === "blip") source.playbackRate.value = blipPitch;
   source.connect(gain);
-  source.onended = () => scheduled.delete(source);
-  scheduled.add(source);
+  if (message) {
+    source.onended = () => scheduled.delete(source);
+    scheduled.add(source);
+  }
   source.start(Math.max(when, audio.currentTime));
 }
 

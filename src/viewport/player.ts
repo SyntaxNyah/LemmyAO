@@ -1,14 +1,14 @@
 import { DeskModifier, Side } from "aolib-ts";
-import { client } from "../client";
 import { state } from "../core/state";
 import { evidenceUrl } from "../core/evidence";
 import setEmoteFromUrl from "../client/setEmoteFromUrl";
 import { applyCharacterEmote } from "./mmd/applyEmote";
 import { set_side } from "./utils/setSide";
-import { audioNow, audioReady, cancelScheduled, outputLatency, schedule } from "./audio";
+import { cancelScheduled, schedule, syncedStart } from "./audio";
 import type { ChatMsg } from "./interfaces/ChatMsg";
 import type { TimelineEvent } from "./timeline";
 import { charLayer, els } from "./elements";
+import { viewportState } from "./state";
 
 /** Decoded sounds a message can play; null when missing. */
 export interface MessageSounds {
@@ -19,9 +19,6 @@ export interface MessageSounds {
   stab: AudioBuffer | null;
   evidence: AudioBuffer | null;
 }
-
-// Time to set up the scheduled sounds before the first one is due.
-const LEAD_S = 0.05;
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 let playing = 0;
@@ -118,7 +115,7 @@ function apply(e: TimelineEvent, chatmsg: ChatMsg) {
     case "char": {
       const span = chatmsg.parsed?.[e.index];
       if (span) els.innerChat.appendChild(span);
-      client.viewport.setTextNow(chatmsg.content.substring(0, e.index + 1));
+      viewportState.textNow = chatmsg.content.substring(0, e.index + 1);
       const box = els.chat;
       box.scrollTop = box.scrollHeight;
       break;
@@ -134,7 +131,7 @@ function apply(e: TimelineEvent, chatmsg: ChatMsg) {
       applyCharacterEmote("idle", assets.idleUrl, false, chatmsg.side);
       charLayer(chatmsg.side).container.style.opacity = "1";
       els.chatWaiting.style.opacity = "1";
-      client.viewport.setAnimating(false);
+      viewportState.animating = false;
       break;
   }
 }
@@ -156,15 +153,9 @@ export function stopPlayback() {
 export async function playTimeline(chatmsg: ChatMsg, events: TimelineEvent[], sounds: MessageSounds, render: () => void) {
   stopPlayback();
   const id = playing;
-  const audio = await audioReady();
+  const { audioStart, visualDelayMs: latencyMs } = await syncedStart();
   if (id !== playing) return;
-
-  let latencyMs = 0;
-  if (audio) {
-    const start = audioNow() + LEAD_S;
-    scheduleSounds(events, chatmsg, sounds, start);
-    latencyMs = (LEAD_S + outputLatency()) * 1000;
-  }
+  if (audioStart !== null) scheduleSounds(events, chatmsg, sounds, audioStart);
   const visualStart = performance.now() + latencyMs;
 
   let next = 0;

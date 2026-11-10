@@ -7,8 +7,6 @@ import "./styles/client.css";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import queryParser from "./utils/queryParser";
 import getResources, { type Resources } from "./utils/getResources";
-import masterViewport from "./viewport/viewport";
-import { Viewport } from "./viewport/interfaces/Viewport";
 import { version } from "./version";
 import { onReplayGo } from "./dom/onReplayGo";
 import * as aolib from "aolib-ts";
@@ -131,8 +129,6 @@ class Client {
 
   software = "LemmyAO";
   version = version;
-  testimonyID: number;
-  viewport: Viewport;
   loadResources: () => void;
   emote_extensions: string[];
   background_extensions: string[];
@@ -148,8 +144,6 @@ class Client {
         registerProtocol(server, clientSession, coreHandlers(this.connection)),
     });
 
-    this.testimonyID = 0;
-    this.viewport = masterViewport();
     this.emote_extensions = [".gif", ".png", ".apng", ".webp", ".webp.static"];
     this.background_extensions = [".png", ".gif"];
   }

@@ -33,7 +33,6 @@ export const els = {
   get clockMonth() { return element<HTMLParagraphElement>("client_clock_month"); },
   get clockWeekday() { return element<HTMLParagraphElement>("client_clock_weekday"); },
   get sfxAudio() { return element<HTMLAudioElement>("client_sfxaudio"); },
-  get testimonyAudio() { return element<HTMLAudioElement>("client_testimonyaudio"); },
 };
 
 /**

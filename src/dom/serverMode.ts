@@ -38,7 +38,7 @@ const waitFor = async (pred: () => boolean, timeoutMs = 8000): Promise<boolean> 
 async function runServerMode(): Promise<void> {
   setAOhost(assetHost);
 
-  await waitFor(() => !!client?.viewport);
+  await waitFor(() => !!client);
 
   // Roster from the asset folder (replaces the replay default when available).
   let names: string[] = [];

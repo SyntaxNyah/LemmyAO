@@ -65,7 +65,7 @@ export async function set_side({
   if (showSpeedLines === true) {
     court.src = `${AO_HOST}themes/default/${encodeURI(speedLines)}`;
   } else {
-    setBackgroundImage(court.id, client.viewport.getBackgroundName(), bg);
+    setBackgroundImage(court.id, viewportState.backgroundName, bg);
   }
 
   if (isHideDesksEnabled()) {
@@ -73,7 +73,7 @@ export async function set_side({
   }
 
   if (showDesk === true && desk) {
-    const bg_folder = client.viewport.getBackgroundFolder();
+    const bg_folder = backgroundFolder();
     const stems = [desk.ao2, desk.ao1].filter((s): s is string => typeof s === "string");
     let found = false;
     outer:
@@ -120,10 +120,11 @@ import { settings } from "../../core/settings";
 import { state } from "../../core/state";
 import { draft } from "../../core/commands";
 import { safeHtmlTags } from "../../escaping";
+import { backgroundFolder, viewportState } from "../state";
 
 /** Swaps every background slot in the viewport. */
 export function showBackground(background: string) {
-  client.viewport.setBackgroundName(safeHtmlTags(background));
+  viewportState.backgroundName = safeHtmlTags(background);
   const packet = { background };
   setBackgroundImage("client_def_bench", packet.background, "defensedesk");
   setBackgroundImage("client_wit_bench", packet.background, "stand");
@@ -139,7 +140,7 @@ export function showBackground(background: string) {
     if (settings.panTilt) applyPanTilt(true);
   }
 
-  client.viewport.set_side({
+  set_side({
     position: state.self.charId === -1 ? Side.jud : draft.side,
     showSpeedLines: false,
     showDesk: true,

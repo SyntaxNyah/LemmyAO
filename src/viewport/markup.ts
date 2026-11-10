@@ -1,7 +1,6 @@
 // The chatbox styles in public/styles/chatbox and the viewport code target these ids.
 export const VIEWPORT_HTML = `
 <audio id="client_sfxaudio" data-action="opusCheck" data-event="error"></audio>
-<audio id="client_testimonyaudio" data-action="opusCheck" data-event="error"></audio>
 <div id="client_background">
   <div id="client_gamewindow">
     <div id="client_fullview">

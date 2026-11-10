@@ -9,7 +9,7 @@ import { applyHideDesks } from "../dom/switchHideDesks";
 import { applyWidescreen } from "../dom/switchAspectRatio";
 import { applyPreanimGlow } from "../dom/switchPreanimGlow";
 
-const SFX_IDS = ["client_sfxaudio", "client_testimonyaudio"];
+const SFX_IDS = ["client_sfxaudio"];
 
 function applyAudio() {
   const music = document.getElementsByClassName("audioChannel") as HTMLCollectionOf<HTMLAudioElement>;
