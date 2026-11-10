@@ -1,0 +1,60 @@
+/* Classic: the look of the pre-rehaul client (#222 panels on a black tab strip,
+   bold brown buttons with a white border). Applied with data-theme="classic". */
+
+:root[data-theme="classic"] {
+  color-scheme: dark;
+  --font: sans-serif;
+  --font-mono: "Source Code Pro", Consolas, monospace;
+
+  --bg: #222;
+  --surface: #2b2b2b;
+  --surface-2: #383838;
+  --surface-hover: #404040;
+  --border: #555;
+  --text: #fff;
+  --text-muted: #aaa;
+  --accent: #7b2900;
+  --accent-hover: #9a3a10;
+  --accent-contrast: #fff;
+  --ok: #5cb85c;
+  --warn: #ffd081;
+  --danger: #e22;
+
+  --radius: 3px;
+  --radius-sm: 3px;
+  --shadow: none;
+}
+
+:root[data-theme="classic"] .btn,
+:root[data-theme="classic"] .btn-primary {
+  border: 1px solid #fff;
+  background: #7b2900;
+  box-shadow: 1px 1px inset;
+  color: #fff;
+  font-weight: bold;
+}
+
+:root[data-theme="classic"] .btn:hover,
+:root[data-theme="classic"] .btn-primary:hover {
+  border-color: #ffd081;
+  background: #7b2900;
+}
+
+:root[data-theme="classic"] .input {
+  border-color: #777;
+  background: #333;
+}
+
+:root[data-theme="classic"] .check {
+  border-color: transparent;
+  background: none;
+}
+
+:root[data-theme="classic"] .tabs-wrap {
+  background: #000;
+}
+
+:root[data-theme="classic"] .tabs button[aria-selected="true"] {
+  border-bottom-color: transparent;
+  background: var(--surface);
+}

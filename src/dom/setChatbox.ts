@@ -15,7 +15,8 @@ export function setChatbox(setstyle: string) {
     if (chatbox_arr.includes(style)) {
       chatbox_theme.href = `styles/chatbox/${style}.css`;
     } else {
-      chatbox_theme.href = "styles/chatbox/default.css";
+      // Classic keeps the old client's AA box as the fallback.
+      chatbox_theme.href = `styles/chatbox/${settings.theme === "classic" ? "aa" : "default"}.css`;
     }
   } else {
     chatbox_theme.href = `styles/chatbox/${CHATBOX}.css`;
