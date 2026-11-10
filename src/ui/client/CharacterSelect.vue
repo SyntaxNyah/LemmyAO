@@ -111,7 +111,7 @@ function close() {
             @click="pick(t.id)"
           >
             <span class="icon">
-              <AssetImage :base="`${characterFolder(t.name)}char_icon`" alt="">
+              <AssetImage :base="`${characterFolder(t.name)}char_icon`" alt="" low-priority>
                 <template #fallback>
                   <span class="initials" aria-hidden="true">{{ initials(t.name) }}</span>
                 </template>

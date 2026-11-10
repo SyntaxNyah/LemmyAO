@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue";
 
 // Asset hosts ship either format; try each before giving up.
-const props = withDefaults(defineProps<{ base: string; alt: string; extensions?: string[] }>(), {
+const props = withDefaults(defineProps<{ base: string; alt: string; extensions?: string[]; lowPriority?: boolean }>(), {
   extensions: () => [".png", ".webp"],
 });
 const emit = defineEmits<{ missing: [] }>();
@@ -33,11 +33,12 @@ function next() {
 
 <template>
   <slot v-if="failed" name="fallback" />
-  <!-- loading must come before src: Vue sets attributes in order, and an image with a src starts fetching. -->
+  <!-- loading and fetchpriority come before src: Vue sets attributes in order, and an image with a src starts fetching. -->
   <img
     v-else
     loading="lazy"
     decoding="async"
+    :fetchpriority="lowPriority ? 'low' : 'auto'"
     :src="src"
     :alt="alt"
     :style="loaded ? undefined : { visibility: 'hidden' }"

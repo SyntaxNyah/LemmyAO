@@ -95,3 +95,35 @@ describe("characterInfo", () => {
     });
   });
 });
+
+describe("loadCharIni", () => {
+  const INI_TEXT = "[Options]\nname = Maya\n[Emotions]\nnumber = 1\n1 = Normal#-#normal#0#1\n";
+
+  test("a network failure isn't cached, so the next try can succeed", async () => {
+    state.server.assetHost = "https://flaky.test/";
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      if (calls === 1) throw new TypeError("network down");
+      return new Response(INI_TEXT);
+    }) as unknown as typeof fetch;
+    const { loadCharIni } = await import("../core/character");
+    expect(await loadCharIni("Maya")).toMatchObject({ found: false, failed: true });
+    expect(await loadCharIni("Maya")).toMatchObject({ found: true, failed: false });
+    await loadCharIni("Maya");
+    expect(calls).toBe(2);
+  });
+
+  test("a missing file is an answer: cached as the stub", async () => {
+    state.server.assetHost = "https://missing.test/";
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return new Response("", { status: 404 });
+    }) as unknown as typeof fetch;
+    const { loadCharIni } = await import("../core/character");
+    expect(await loadCharIni("Ghost")).toMatchObject({ found: false, failed: false });
+    await loadCharIni("Ghost");
+    expect(calls).toBe(1);
+  });
+});

@@ -4,7 +4,7 @@ import { PenaltyBar, RTAnimation, ShoutModifier, Side, TextColor } from "aolib-t
 import { state } from "../../core/state";
 import { settings, setSetting } from "../../core/settings";
 import { draft, changeHealth, playTestimony, sendOOC, setMuted } from "../../core/commands";
-import { characterFolder, selectEmote, setPosition } from "../../core/character";
+import { characterFolder, loadOwnCharacter, selectEmote, setPosition } from "../../core/character";
 import { RAINBOW, TEXT_COLORS } from "../textColors";
 import EmoteTile from "./EmoteTile.vue";
 import { focusICInput } from "./focus";
@@ -102,6 +102,8 @@ const muteResults = computed(() => {
   });
   return out;
 });
+
+const pickedName = computed(() => state.characters[state.self.charId]?.name ?? "");
 </script>
 
 <template>
@@ -116,6 +118,11 @@ const muteResults = computed(() => {
         @select="pickEmote(i)"
       />
     </div>
+    <p v-else-if="state.self.characterLoad === 'loading'" class="emotes-status" role="status">Loading {{ pickedName }}…</p>
+    <p v-else-if="state.self.characterLoad === 'failed'" class="emotes-status" role="alert">
+      Couldn't load {{ pickedName }}'s emotes.
+      <button class="btn" @click="loadOwnCharacter(state.self.charId)">Retry</button>
+    </p>
 
     <div class="name-row">
       <label class="field grow">
@@ -269,6 +276,15 @@ const muteResults = computed(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
   gap: 6px;
+}
+
+.emotes-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-muted);
 }
 
 .options {

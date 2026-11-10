@@ -4,10 +4,10 @@
  * One line per packet, mapping each header to its domain-action handler.
  * The handlers live in the modules that own the domain they touch
  * (voice handlers in `src/voice/voice.ts`, character handlers in
- * `src/client/prefetchPlayerCharacter.ts`, etc.); this file is just the
+ * `src/client/fetchLists.ts`, etc.); this file is just the
  * wiring layer that hooks them up to the aolib session at startup.
  *
- * The `on("PU", prefetchPlayerCharacter)` form checks
+ * The `on("SI", applyServerCounts)` form checks
  * the handler signature against the schema at compile time. Wrong-
  * direction registrations are caught both statically (aolib's mapped
  * types) and at runtime (aolib throws a role-aware error). Wire-format
@@ -48,7 +48,6 @@ import { finishServerJoin } from "./client/handshake";
 import { applyModAuth } from "./dom/applyModAuth";
 
 // Player roster
-import { prefetchPlayerCharacter } from "./client/prefetchPlayerCharacter";
 
 // Server counts (kicks off download)
 import { applyServerCounts } from "./client/fetchLists";
@@ -135,7 +134,7 @@ export function registerProtocol(
   on("MS");
   on("PN");
   on("PR");
-  on("PU", prefetchPlayerCharacter);
+  on("PU");
   on("PV");
   on("RMC");
   on("RT");

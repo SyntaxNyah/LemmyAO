@@ -6,6 +6,7 @@ import { characterFolder, loadCharIni } from "../../core/character";
 import { pairMentions } from "../../core/log";
 import { getLocalPlayerID, getSpeakingUids, isLocalSpeaking, isVoiceAvailable, onSpeakingChange } from "../../voice/voice";
 import AssetImage from "./AssetImage.vue";
+import { charSelectOpen } from "./overlays";
 
 const allAreas = ref(false);
 
@@ -17,14 +18,17 @@ const players = computed(() =>
 const elsewhere = computed(() => Object.keys(state.players).length - players.value.length);
 
 // Without a custom showname the chatbox uses the char.ini name, so match it here.
+// Only for players listed, at low priority, and not while we pick (or load) our
+// own character, so their files never hold ours up.
 const iniNames = ref<Record<string, string>>({});
+const settled = computed(() => !charSelectOpen.value && state.self.characterLoad !== "loading");
 watch(
-  () => players.value.map((p) => p.charName),
+  () => (settled.value ? players.value.map((p) => p.charName) : []),
   (names) => {
     for (const name of names) {
       if (!name || name in iniNames.value) continue;
       iniNames.value[name] = "";
-      void loadCharIni(name).then(({ ini }) => (iniNames.value[name] = String(ini.options.showname || "")));
+      void loadCharIni(name, "low").then(({ ini }) => (iniNames.value[name] = String(ini.options.showname || "")));
     }
   },
   { immediate: true },
@@ -123,7 +127,7 @@ function confirmModeration() {
       >
         <div class="row">
           <span class="avatar">
-            <AssetImage v-if="p.charName" :base="`${characterFolder(p.charName)}char_icon`" alt="">
+            <AssetImage v-if="p.charName" :base="`${characterFolder(p.charName)}char_icon`" alt="" low-priority>
               <template #fallback>
                 <span class="initial" aria-hidden="true">{{ displayName(p)[0]?.toUpperCase() }}</span>
               </template>

@@ -135,6 +135,8 @@ export interface State {
     areaId: number;
     /** Loaded char.ini data for `charId`, or null while loading / spectating. */
     character: OwnCharacter | null;
+    /** Our character's char.ini: still coming, or failed even after retries. */
+    characterLoad: "idle" | "loading" | "failed";
     /** Index into `character.emotes`. */
     emoteIndex: number;
     /** Chosen position; "" speaks from the character's own side. */
@@ -184,7 +186,7 @@ export function initialState(assetHost = ""): State {
       timers: {},
       music: {},
     },
-    self: { charId: -1, areaId: 0, character: null, emoteIndex: 0, position: "", side: null, judgeControls: "by_position", moderator: false, muted: [] },
+    self: { charId: -1, areaId: 0, character: null, characterLoad: "idle", emoteIndex: 0, position: "", side: null, judgeControls: "by_position", moderator: false, muted: [] },
   };
 }
 

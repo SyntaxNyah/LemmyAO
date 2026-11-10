@@ -5,27 +5,44 @@ import { draft } from "./commands";
 // parseCharIni needs an [options] name and at least one emote.
 const STUB_INI = "[options]\nname = -\n[emote normal]\nanim = normal.png\n";
 
-const iniCache = new Map<string, Promise<{ ini: CharIni; found: boolean }>>();
+export interface LoadedIni {
+  ini: CharIni;
+  /** The file exists and parsed. */
+  found: boolean;
+  /** The request itself failed (network, timeout, server error); not cached, so it can be retried. */
+  failed: boolean;
+}
+
+const iniCache = new Map<string, Promise<LoadedIni>>();
+const INI_TIMEOUT_MS = 15000;
 
 export const characterFolder = (name: string) =>
   `${state.server.assetHost}characters/${encodeURI(name.toLowerCase())}/`;
 
 /**
  * Fetches and parses a character's char.ini once per asset host. A missing or
- * unreadable file yields a one-emote stub so callers can carry on.
+ * unreadable file yields a one-emote stub so callers can carry on. `priority`
+ * lets our own character jump ahead of icons and other players' files.
  */
-export function loadCharIni(name: string) {
+export function loadCharIni(name: string, priority: RequestPriority = "auto"): Promise<LoadedIni> {
   const url = `${characterFolder(name)}char.ini`;
   let pending = iniCache.get(url);
   if (!pending) {
-    pending = fetch(url)
+    pending = fetch(url, { priority, signal: AbortSignal.timeout(INI_TIMEOUT_MS) })
       .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return { ini: parseCharIni(await res.text()), found: true };
+        if (res.status >= 500) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) return { ini: parseCharIni(STUB_INI), found: false, failed: false };
+        try {
+          return { ini: parseCharIni(await res.text()), found: true, failed: false };
+        } catch (err) {
+          console.warn(`character ${name} has an unreadable char.ini:`, err);
+          return { ini: parseCharIni(STUB_INI), found: false, failed: false };
+        }
       })
       .catch((err) => {
-        console.warn(`character ${name} has no usable char.ini:`, err);
-        return { ini: parseCharIni(STUB_INI), found: false };
+        console.warn(`could not load ${name}'s char.ini:`, err);
+        iniCache.delete(url);
+        return { ini: parseCharIni(STUB_INI), found: false, failed: true };
       });
     iniCache.set(url, pending);
   }
@@ -44,14 +61,16 @@ export interface CharacterInfo {
   /** A .pmx model marks a 3D (MMD) character; "" for sprites. */
   model: string;
   ini: CharIni;
+  /** The char.ini request failed; the fields are fallbacks. */
+  failed: boolean;
 }
 
 /**
  * A character's display data, by folder name (what MS carries, so iniswaps
  * resolve to the swapped character). Shares loadCharIni's cache.
  */
-export async function characterInfo(name: string): Promise<CharacterInfo> {
-  const { ini } = await loadCharIni(name);
+export async function characterInfo(name: string, priority: RequestPriority = "auto"): Promise<CharacterInfo> {
+  const { ini, failed } = await loadCharIni(name, priority);
   const opt = ini.options;
   const side = String(opt.side ?? "").toLowerCase();
   return {
@@ -63,6 +82,7 @@ export async function characterInfo(name: string): Promise<CharacterInfo> {
     chatbox: String(opt.chat || opt.category || "").toLowerCase() || "default",
     model: String(opt.model ?? "").toLowerCase(),
     ini,
+    failed,
   };
 }
 
@@ -103,13 +123,29 @@ export function setPosition(position: Side | "") {
   draft.side = position || state.self.character?.side || Side.wit;
 }
 
-/** Loads our character after the server assigns it (PV). */
+const RETRY_DELAYS_MS = [1000, 3000];
+
+/**
+ * Loads our character after the server assigns it (PV), ahead of everything
+ * else, retrying a failed request before reporting it.
+ */
 export async function loadOwnCharacter(charId: number) {
   const entry = state.characters[charId];
   state.self.character = null;
+  state.self.characterLoad = entry ? "loading" : "idle";
   if (!entry) return;
-  const info = await characterInfo(entry.name);
+  let info = await characterInfo(entry.name, "high");
+  for (const delay of RETRY_DELAYS_MS) {
+    if (!info.failed || state.self.charId !== charId) break;
+    await new Promise((r) => setTimeout(r, delay));
+    info = await characterInfo(entry.name, "high");
+  }
   if (state.self.charId !== charId) return;
+  if (info.failed) {
+    state.self.characterLoad = "failed";
+    return;
+  }
+  state.self.characterLoad = "idle";
   state.self.character = {
     name: entry.name,
     showname: info.showname,
