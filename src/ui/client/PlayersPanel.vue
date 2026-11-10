@@ -109,7 +109,7 @@ function confirmModeration() {
             </span>
           </span>
           <span v-if="p.id !== state.server.playerId" class="actions">
-            <button class="btn" @click="pairWith(p.id)">Pair</button>
+            <button v-if="p.area === state.self.areaId" class="btn" @click="pairWith(p.id)">Pair</button>
             <template v-if="state.self.moderator">
               <button class="btn" @click="openModeration(p.id, false)">Kick</button>
               <button class="btn danger" @click="openModeration(p.id, true)">Ban</button>

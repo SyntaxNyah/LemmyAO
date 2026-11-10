@@ -49,8 +49,6 @@ import { applyCharacterAvailability } from "./dom/pickChar";
 // Chat (OOC + modcall)
 import { appendOOCMessage } from "./dom/oocLog";
 
-// Evidence
-import { applyEvidenceInfo, applyEvidenceList } from "./dom/pickEvidence";
 
 // Feature flags
 import { applyFeatureFlags } from "./client/featureFlags";
@@ -142,7 +140,7 @@ export function registerProtocol(
   on("CT", appendOOCMessage);
   on("decryptor");
   on("DONE", finishServerJoin);
-  on("EI", applyEvidenceInfo);
+  on("EI");
   on("EM");
   on("FA");
   on("FL", applyFeatureFlags);
@@ -152,7 +150,7 @@ export function registerProtocol(
   on("JD");
   on("KB", showKickAndBanScreen);
   on("KK", showKickScreen);
-  on("LE", applyEvidenceList);
+  on("LE");
   on("MC");
   on("MS");
   on("PN");

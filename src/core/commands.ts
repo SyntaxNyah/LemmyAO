@@ -70,9 +70,10 @@ const emptyDraft = (): ICDraft => ({
 
 export const draft: ICDraft = reactive(emptyDraft());
 
-/** Clears the per-message parts of the draft, keeping pose, pairing and toggles. */
+/** Clears the per-message parts of the draft (text, shout, effects, presented evidence), keeping pose and pairing. */
 export function resetDraftAfterSend() {
   draft.message = "";
+  draft.evidence = -1;
   draft.shout = ShoutModifier.none;
   draft.flash = false;
   draft.screenshake = false;

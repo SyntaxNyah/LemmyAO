@@ -1,4 +1,4 @@
-export type TabId = "emotes" | "log" | "ooc" | "areas" | "music" | "background" | "players" | "menu";
+export type TabId = "emotes" | "log" | "ooc" | "areas" | "music" | "background" | "evidence" | "players" | "menu";
 
 export interface TabDef {
   id: TabId;
@@ -11,8 +11,9 @@ export const DEFAULT_TABS: TabDef[] = [
   { id: "ooc", label: "OOC" },
   { id: "areas", label: "Areas" },
   { id: "music", label: "Music" },
-  { id: "background", label: "Background" },
   { id: "players", label: "Players" },
+  { id: "background", label: "Background" },
+  { id: "evidence", label: "Evidence" },
   { id: "menu", label: "Menu" },
 ];
 

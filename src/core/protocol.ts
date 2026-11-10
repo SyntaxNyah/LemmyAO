@@ -195,7 +195,9 @@ export function coreHandlers(conn: Connection): CoreHandlers {
     },
 
     LE: (p) => {
-      state.evidence = p.evidence.map((e) => ({ ...e }));
+      // "LE##%" (empty list from some servers) decodes as one blank item.
+      const blank = p.evidence.length === 1 && !p.evidence[0].name && !p.evidence[0].image;
+      state.evidence = blank ? [] : p.evidence.map((e) => ({ ...e }));
     },
 
     EI: (p) => {

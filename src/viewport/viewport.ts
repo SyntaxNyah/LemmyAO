@@ -2,6 +2,8 @@
 
 import { client, delay } from "../client";
 import { UPDATE_INTERVAL } from "../client";
+import { state } from "../core/state";
+import { evidenceUrl } from "../core/evidence";
 import setEmote from "../client/setEmote";
 import setEmoteFromUrl from "../client/setEmoteFromUrl";
 import { applyCharacterEmote } from "./mmd/applyEmote";
@@ -402,7 +404,8 @@ const viewport = (): Viewport => {
         // Evidence Bullshit
         if (chatmsg.evidence_id > 0) {
           // Prepare evidence
-          eviBox.src = client.evidences[chatmsg.evidence_id - 1].icon;
+          const evidence = state.evidence[chatmsg.evidence_id - 1];
+          eviBox.src = evidence ? evidenceUrl(evidence.image) : "";
 
           eviBox.style.width = "auto";
           eviBox.style.height = "36.5%";

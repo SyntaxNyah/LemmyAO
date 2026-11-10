@@ -8,11 +8,12 @@ import ICControls from "./ICControls.vue";
 import TabOrderSettings from "./TabOrderSettings.vue";
 import { DEFAULT_TABS, orderTabs, type TabId } from "./tabs";
 import { settings } from "../../core/settings";
-import { client } from "../../client";
 import { draft, sendIC } from "../../core/commands";
 import { getPairOrder } from "../../dom/pairOrder";
 import OOCChat from "./OOCChat.vue";
 import BackgroundPanel from "./BackgroundPanel.vue";
+import EvidencePanel from "./EvidencePanel.vue";
+import { state } from "../../core/state";
 import AreasPanel from "./AreasPanel.vue";
 import MusicPanel from "./MusicPanel.vue";
 import PlayersPanel from "./PlayersPanel.vue";
@@ -47,10 +48,11 @@ const legacyReady = ref(false);
 
 /** Evidence and pair order still live in legacy code; copy them into the draft, then send. */
 function sendMessage() {
-  draft.evidence = client.evidence;
   draft.pair.order = getPairOrder();
   sendIC();
 }
+
+const presenting = computed(() => (draft.evidence >= 0 ? state.evidence[draft.evidence] : undefined));
 
 const tabStrip = ref<HTMLElement>();
 const overflow = ref({ left: false, right: false });
@@ -114,6 +116,15 @@ onUnmounted(() => {
     </div>
 
     <form class="ic-input" @submit.prevent="sendMessage">
+      <button
+        v-if="presenting"
+        type="button"
+        class="presenting"
+        :title="`Presenting ${presenting.name} with your next message. Click to cancel.`"
+        @click="draft.evidence = -1"
+      >
+        Presenting {{ presenting.name }} <span aria-hidden="true">×</span>
+      </button>
       <input
         id="client_inputbox"
         ref="icInput"
@@ -169,6 +180,7 @@ onUnmounted(() => {
       <AreasPanel v-else-if="t.id === 'areas'" />
       <MusicPanel v-else-if="t.id === 'music'" />
       <BackgroundPanel v-else-if="t.id === 'background'" />
+      <EvidencePanel v-else-if="t.id === 'evidence'" />
       <PlayersPanel v-else-if="t.id === 'players'" />
       <LegacyPanel v-else template="mainmenu" />
     </div>
@@ -249,6 +261,23 @@ onUnmounted(() => {
   flex: 1;
   min-width: 0;
   min-height: 40px;
+}
+
+.presenting {
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  padding: 0 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .ic-input .send {

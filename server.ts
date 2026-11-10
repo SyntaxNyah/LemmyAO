@@ -52,6 +52,10 @@ const broadcast = (fn: (s: ClientSession) => void): void => {
   }
 };
 
+// Evidence shared by everyone (one room).
+const evidence: { name: string; description: string; image: string }[] = [];
+const sendEvidence = () => broadcast((s) => s.send.LE({ evidence: [...evidence] }));
+
 // The player list (PR/PU) every joined client sees.
 const players = new Map<ClientSession, { id: number; name: string; charName: string }>();
 
@@ -121,6 +125,7 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
   session.on.RD(() => {
     session.send.BN({ background: BACKGROUND });
     session.send.DONE({});
+    session.send.LE({ evidence: [...evidence] });
     const me = { id: playerId, name: "", charName: "" };
     for (const other of players.values()) sendPlayer(session, other);
     players.set(session, me);
@@ -132,6 +137,20 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
     const me = players.get(session);
     if (me) me.charName = ROSTER[packet.char_id] ?? "";
     updatePlayer(session, PlayerDataType.char_name, me?.charName ?? "");
+  });
+
+  session.on.PE((p) => {
+    evidence.push({ name: p.name, description: p.description, image: p.image });
+    sendEvidence();
+  });
+  session.on.EE((p) => {
+    if (!evidence[p.id]) return;
+    evidence[p.id] = { name: p.name, description: p.description, image: p.image };
+    sendEvidence();
+  });
+  session.on.DE((p) => {
+    evidence.splice(p.id, 1);
+    sendEvidence();
   });
 
   // Keep-alive: some clients expect a CHECK echo.

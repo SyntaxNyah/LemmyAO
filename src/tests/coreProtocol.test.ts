@@ -449,3 +449,8 @@ describe("pairing", () => {
     expect(draft.pair.charId).toBe(1);
   });
 });
+
+test("an empty evidence list sent as LE##% is empty", () => {
+  receive("LE##%");
+  expect(state.evidence).toEqual([]);
+});
