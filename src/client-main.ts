@@ -27,7 +27,7 @@ for (const id of [
 }
 
 import "./client";
-import "./ui";
+import "./ui/client/main";
 import "./dom/dispatch";
 import "./components/audioChannels";
 import "./dom/serverMode";

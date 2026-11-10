@@ -3,7 +3,7 @@
   <head>
     <title>Attorney Online session</title>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta
       name="description"
       content="An off-the-cuff courtroom drama simulator"
@@ -151,33 +151,9 @@
         </p>
       </div>
     </div>
+    <div id="app"></div>
     <script type="module" src="./src/client-main.ts"></script>
   </body>
-
-  <template id="client_wrapper">
-    <meta name="frame-title" lang="en" content="Game" />
-    <div id="client_icwrapper">
-      <div id="client_stage"></div>
-      <form data-action="preventDefault" data-event="submit">
-        <input
-          id="client_inputbox"
-          class="long"
-          type="text"
-          data-action="onICEnter" data-event="keypress"
-          placeholder="Say something&hellip;"
-          autocomplete="off"
-        />
-      </form>
-      <div id="client_bars">
-        <span id="client_defense_hp" class="health-box">
-          <div class="health-bar"></div>
-        </span>
-        <span id="client_prosecutor_hp" class="health-box">
-          <div class="health-bar"></div>
-        </span>
-      </div>
-    </div>
-  </template>
 
   <template id="icoptions">
     <div id="client_iccontrols">

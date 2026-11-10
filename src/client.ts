@@ -4,8 +4,6 @@
  * credits to aleks for original idea and source
  */
 import "./styles/client.css";
-import "./styles/goldenlayout.css";
-import "golden-layout/dist/css/themes/goldenlayout-dark-theme.css";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import queryParser from "./utils/queryParser";
 import getResources from "./utils/getResources";
