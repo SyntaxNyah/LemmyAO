@@ -2,11 +2,10 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 import { state, type Player } from "../../core/state";
 import { callMod, draft, pairWith, removePlayer, unpair } from "../../core/commands";
-import { characterFolder, loadCharIni } from "../../core/character";
+import { characterFolder } from "../../core/character";
 import { pairMentions } from "../../core/log";
 import { getLocalPlayerID, getSpeakingUids, isLocalSpeaking, isVoiceAvailable, onSpeakingChange } from "../../voice/voice";
 import AssetImage from "./AssetImage.vue";
-import { charSelectOpen } from "./overlays";
 
 const allAreas = ref(false);
 
@@ -17,26 +16,9 @@ const players = computed(() =>
 );
 const elsewhere = computed(() => Object.keys(state.players).length - players.value.length);
 
-// Without a custom showname the chatbox uses the char.ini name, so match it here.
-// Only for players listed, at low priority, and not while we pick (or load) our
-// own character, so their files never hold ours up.
-const iniNames = ref<Record<string, string>>({});
-const settled = computed(() => !charSelectOpen.value && state.self.characterLoad !== "loading");
-watch(
-  () => (settled.value ? players.value.map((p) => p.charName) : []),
-  (names) => {
-    for (const name of names) {
-      if (!name || name in iniNames.value) continue;
-      iniNames.value[name] = "";
-      void loadCharIni(name, "low").then(({ ini }) => (iniNames.value[name] = String(ini.options.showname || "")));
-    }
-  },
-  { immediate: true },
-);
-
 const displayName = (p: Player) => {
   const custom = state.spokenShownames[p.charId] ?? p.showName;
-  return custom || iniNames.value[p.charName] || p.charName || p.name || `Player ${p.id}`;
+  return custom || p.charName || p.name || `Player ${p.id}`;
 };
 const areaName = (p: Player) => state.areas[p.area]?.name ?? `Area ${p.area}`;
 
