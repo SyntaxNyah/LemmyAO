@@ -15,6 +15,18 @@ const lines: Codec<string[]> = {
   encode: (v) => v.join("\n"),
 };
 
+const stringList: Codec<string[]> = {
+  decode: (raw, fallback) => {
+    try {
+      const v = JSON.parse(raw ?? "");
+      return Array.isArray(v) ? v.filter((x) => typeof x === "string") : fallback;
+    } catch {
+      return fallback;
+    }
+  },
+  encode: (v) => JSON.stringify(v),
+};
+
 const range = (min: number, max: number): Codec<number> => ({
   decode: (raw, fallback) => {
     if (raw == null || raw.trim() === "") return fallback;
@@ -72,6 +84,8 @@ const schema = {
   voiceMuted: field("vcMuted", flag01, false),
   voiceOpenMic: field("voiceOpenMic", flag01, false),
   voiceOutputVolume: field("voiceOutputVolume", range(0, 1), 1),
+
+  favouriteServers: field("favouriteServers", stringList, [] as string[]),
 };
 
 type Schema = typeof schema;

@@ -2,6 +2,7 @@ import { createReadStream, existsSync, statSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
+import vue from "@vitejs/plugin-vue";
 
 // Dev-only helpers for the `?demo` tool (localhost; reads arbitrary paths):
 // `/@list?dir=<path>` lists a directory's subfolders (the character roster),
@@ -54,7 +55,7 @@ function devAssets(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [devAssets()],
+  plugins: [vue(), devAssets()],
   base: "./",
   server: { port: 8080 },
   build: {
