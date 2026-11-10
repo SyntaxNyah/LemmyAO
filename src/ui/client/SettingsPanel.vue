@@ -115,28 +115,6 @@ const checkbox = (key: SettingKey) => ({
     <input v-model="query" class="input" type="search" placeholder="Search settings…" aria-label="Search settings" />
     <p v-if="!anyVisible" class="empty">No settings match.</p>
 
-    <section v-show="visible('server')" class="section">
-      <h3>Server</h3>
-      <dl class="info">
-        <dt>Name</dt>
-        <dd>{{ serverName }}</dd>
-        <template v-if="address">
-          <dt>Address</dt>
-          <dd>{{ address }}</dd>
-        </template>
-        <template v-if="state.server.software">
-          <dt>Software</dt>
-          <dd>{{ state.server.software }} {{ state.server.version }}</dd>
-        </template>
-        <template v-if="state.server.maxPlayers">
-          <dt>Players</dt>
-          <dd>{{ state.server.playerCount }} / {{ state.server.maxPlayers }}</dd>
-        </template>
-      </dl>
-      <p v-if="state.server.description" class="description"><LinkifiedText :text="state.server.description" /></p>
-      <div><a class="btn" href="index.html">Back to server list</a></div>
-    </section>
-
     <section v-show="visible('audio')" class="section">
       <h3>Audio</h3>
       <div v-for="v in VOLUMES" :key="v.key" class="volume">
@@ -301,6 +279,28 @@ const checkbox = (key: SettingKey) => ({
     <section v-show="visible('layout')" class="section">
       <h3>Layout</h3>
       <TabOrderSettings />
+    </section>
+
+    <section v-show="visible('server')" class="section">
+      <h3>Server</h3>
+      <dl class="info">
+        <dt>Name</dt>
+        <dd>{{ serverName }}</dd>
+        <template v-if="address">
+          <dt>Address</dt>
+          <dd>{{ address }}</dd>
+        </template>
+        <template v-if="state.server.software">
+          <dt>Software</dt>
+          <dd>{{ state.server.software }} {{ state.server.version }}</dd>
+        </template>
+        <template v-if="state.server.maxPlayers">
+          <dt>Players</dt>
+          <dd>{{ state.server.playerCount }} / {{ state.server.maxPlayers }}</dd>
+        </template>
+      </dl>
+      <p v-if="state.server.description" class="description"><LinkifiedText :text="state.server.description" /></p>
+      <div><a class="btn" href="index.html">Back to server list</a></div>
     </section>
 
     <section v-show="visible('log')" class="section">
