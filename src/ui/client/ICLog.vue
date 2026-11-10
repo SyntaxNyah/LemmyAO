@@ -3,6 +3,7 @@ import { state, type ICEntry } from "../../core/state";
 import { settings } from "../../core/settings";
 import { messageText, speakerName } from "../../core/log";
 import { useStickyScroll } from "./useStickyScroll";
+import { RAINBOW, TEXT_COLORS } from "../textColors";
 
 const { el, onScroll, onVisible } = useStickyScroll(() => state.icLog.length);
 defineExpose({ onVisible });
@@ -32,7 +33,9 @@ const speaker = (e: Extract<ICEntry, { kind: "message" }>) => speakerName(e, set
       <div v-else class="entry" :class="{ callword: e.kind === 'message' && e.callword }">
         <template v-if="e.kind === 'message'">
           <span class="name">{{ speaker(e) }}:</span>
-          <span class="text" :class="`color-${e.color}`">{{ messageText(e.message) }}</span>
+          <span class="text" :style="{ color: TEXT_COLORS[e.color].css }">
+            <span :class="{ rainbow: e.color === 'rainbow' }">{{ messageText(e.message) }}</span>
+          </span>
         </template>
         <span v-else class="music">
           {{ e.showname || "Someone" }} played <b>{{ e.track || "nothing" }}</b>{{ e.looping ? " (looping)" : "" }}
@@ -117,33 +120,9 @@ const speaker = (e: Extract<ICEntry, { kind: "message" }>) => speakerName(e, set
   border-top: 1px solid var(--border);
 }
 
-.color-green {
-  color: #4ade80;
-}
-.color-red {
-  color: #f87171;
-}
-.color-orange {
-  color: #fb923c;
-}
-.color-blue {
-  color: #60a5fa;
-}
-.color-yellow {
-  color: #facc15;
-}
-.color-pink {
-  color: #f472b6;
-}
-.color-cyan {
-  color: #22d3ee;
-}
-.color-grey {
-  color: var(--text-muted);
-}
-.color-rainbow {
-  background: linear-gradient(90deg, #f87171, #facc15, #4ade80, #60a5fa, #f472b6);
+.rainbow {
+  background: v-bind(RAINBOW);
   background-clip: text;
-  color: transparent;
+  color: transparent !important;
 }
 </style>

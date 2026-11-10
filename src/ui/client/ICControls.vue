@@ -8,6 +8,7 @@ import { characterFolder, selectEmote, setPosition } from "../../core/character"
 import { changeCharacter } from "../../dom/changeCharacter";
 import { openBackgroundList } from "../../dom/backgroundList";
 import LegacyPanel from "./LegacyPanel.vue";
+import { RAINBOW, TEXT_COLORS } from "../textColors";
 import EmoteTile from "./EmoteTile.vue";
 import AssetImage from "./AssetImage.vue";
 
@@ -42,6 +43,7 @@ function choosePosition(e: Event) {
 }
 
 const colors = Object.values(TextColor);
+const dotFor = (c: TextColor) => (c === TextColor.rainbow ? RAINBOW : TEXT_COLORS[c].css);
 
 const hasCustomShout = ref(false);
 watch(
@@ -130,18 +132,14 @@ function toggleMute(e: Event) {
     </div>
 
     <div class="options">
-      <div class="colors" role="radiogroup" aria-label="Text colour">
-        <button
-          v-for="c in colors"
-          :key="c"
-          class="swatch"
-          :class="`swatch-${c}`"
-          role="radio"
-          :aria-checked="draft.color === c"
-          :title="c"
-          @click="draft.color = c"
-        ></button>
-      </div>
+      <label class="color-select" :class="{ rainbow: draft.color === TextColor.rainbow }">
+        <span class="dot" :style="{ background: dotFor(draft.color) }" aria-hidden="true"></span>
+        <select v-model="draft.color" class="input select" :style="{ color: TEXT_COLORS[draft.color].css }" aria-label="Text colour">
+          <option v-for="c in colors" :key="c" :value="c" :style="{ color: TEXT_COLORS[c].css }">
+            {{ TEXT_COLORS[c].label }}
+          </option>
+        </select>
+      </label>
       <select class="input select" :value="state.self.position" aria-label="Position" @change="choosePosition">
         <option v-for="[value, label] in POSITIONS" :key="value" :value="value">{{ label }}</option>
       </select>
@@ -346,35 +344,35 @@ input[type="checkbox"] {
   padding: 0 8px;
 }
 
-.colors {
-  display: flex;
-  gap: 6px;
+.color-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
-.swatch {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 2px solid var(--border);
+.color-select .dot {
+  position: absolute;
+  left: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--border);
+  pointer-events: none;
 }
 
-.swatch[aria-checked="true"] {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.color-select .select {
+  padding-left: 30px;
+  font-weight: 600;
 }
 
-.swatch-white { background: #f2f2f2; }
-.swatch-green { background: #4ade80; }
-.swatch-red { background: #f87171; }
-.swatch-orange { background: #fb923c; }
-.swatch-blue { background: #60a5fa; }
-.swatch-yellow { background: #facc15; }
-.swatch-pink { background: #f472b6; }
-.swatch-cyan { background: #22d3ee; }
-.swatch-grey { background: #9ca3af; }
-.swatch-rainbow { background: conic-gradient(#f87171, #facc15, #4ade80, #60a5fa, #f472b6, #f87171); }
+/* A select can't paint gradient text, so Rainbow gets a gradient dot and plain label. */
+.color-select.rainbow .select {
+  color: var(--text) !important;
+}
+
+.color-select option {
+  background: var(--surface);
+}
 
 .judge {
   display: flex;

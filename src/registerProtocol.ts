@@ -62,8 +62,6 @@ import { applyFeatureFlags } from "./client/featureFlags";
 // Handshake
 import { finishServerJoin } from "./client/handshake";
 
-// Health bars
-import { applyHealthBar } from "./dom/healthBar";
 
 
 
@@ -160,7 +158,7 @@ export function registerProtocol(
   on("FA", applyFullAreaList);
   on("FL", applyFeatureFlags);
   on("FM", applyFullMusicList);
-  on("HP", applyHealthBar);
+  on("HP");
   on("ID");
   on("JD");
   on("KB", showKickAndBanScreen);

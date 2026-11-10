@@ -78,10 +78,6 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
             enterkeyhint="send"
           />
         </form>
-        <div v-show="isDesktop" id="client_bars" class="legacy">
-          <span id="client_defense_hp" class="health-box"><div class="health-bar"></div></span>
-          <span id="client_prosecutor_hp" class="health-box"><div class="health-bar"></div></span>
-        </div>
       </div>
       <div v-show="isDesktop" id="controls-desktop" class="controls"></div>
     </section>
@@ -148,6 +144,12 @@ onUnmounted(() => wide.removeEventListener("change", onWidth));
   width: 100%;
   margin: 0 auto;
   background: #000;
+}
+
+/* The full courtroom view is three screens wide and pans inside the frame. */
+.stage {
+  position: relative;
+  overflow: hidden;
 }
 
 /* Keep the 4:3 stage from pushing the controls off a short desktop screen. */
