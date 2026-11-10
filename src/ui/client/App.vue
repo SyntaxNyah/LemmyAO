@@ -197,6 +197,8 @@ onUnmounted(() => {
   display: grid;
   height: 100dvh;
   overflow: hidden;
+  /* Installed on a phone, the page runs under the status bar and notch; the panels pad the bottom themselves. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
   background: var(--bg);
 }
 
