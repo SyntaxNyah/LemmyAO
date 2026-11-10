@@ -77,7 +77,11 @@ onUnmounted(() => landscapeQuery.removeEventListener("change", onWidth));
           autocomplete="off"
           enterkeyhint="send"
         />
-        <button class="btn btn-primary" type="submit">Send</button>
+        <button class="btn btn-primary send" type="submit" aria-label="Send" title="Send">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.1 15 12 3.4 13.9Z" fill="currentColor" />
+          </svg>
+        </button>
       </form>
       <div v-show="isLandscape" id="controls-landscape" class="controls"></div>
     </section>
@@ -240,7 +244,9 @@ onUnmounted(() => landscapeQuery.removeEventListener("change", onWidth));
   min-height: 40px;
 }
 
-.ic-input .btn {
+.ic-input .send {
+  width: 44px;
   min-height: 40px;
+  padding: 0;
 }
 </style>
