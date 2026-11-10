@@ -357,7 +357,14 @@ const checkbox = (key: SettingKey) => ({
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 10px 12px max(32px, env(safe-area-inset-bottom));
+  padding: 10px 12px 0;
+}
+
+/* Padding is lost when the content overflows the panel, so leave room with a spacer. */
+.settings::after {
+  content: "";
+  flex: none;
+  height: max(18px, env(safe-area-inset-bottom));
 }
 
 .empty {

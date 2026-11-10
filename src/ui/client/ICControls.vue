@@ -9,7 +9,7 @@ import { RAINBOW, TEXT_COLORS } from "../textColors";
 import EmoteTile from "./EmoteTile.vue";
 import { focusICInput } from "./focus";
 import { charSelectOpen } from "./overlays";
-import { holdOffsetPreview, pulseOffsetPreview } from "./offsetPreview";
+import OffsetPad from "./OffsetPad.vue";
 import ComboBox, { type ComboItem } from "../components/ComboBox.vue";
 
 const character = computed(() => state.self.character);
@@ -72,14 +72,6 @@ const showJudge = computed(
     state.self.judgeControls === "shown" ||
     (state.self.judgeControls === "by_position" && draft.side === Side.jud),
 );
-
-// Scrolling up moves the sprite right, or up for the vertical axis.
-function nudge(axis: "x" | "y", e: WheelEvent) {
-  const toward = (e.deltaY < 0 ? 1 : -1) * (axis === "y" ? -1 : 1);
-  const next = draft.pair.offset[axis] + toward;
-  draft.pair.offset[axis] = Math.min(100, Math.max(-100, next));
-  pulseOffsetPreview();
-}
 
 function resetOffsets() {
   draft.pair.offset.x = 0;
@@ -204,40 +196,20 @@ const muteResults = computed(() => {
     </section>
 
     <section class="group">
-      <div class="group-head">
-        <h3>Position</h3>
-        <button class="link-btn" :disabled="!draft.pair.offset.x && !draft.pair.offset.y" @click="resetOffsets">Reset</button>
-      </div>
+      <h3>Position</h3>
       <div class="offsets">
-        <label v-if="features.has('y_offset')" class="field vertical">
-          <span class="field-label">Vertical <span class="value">{{ draft.pair.offset.y }}%</span></span>
-          <input
-            v-model.number="draft.pair.offset.y"
-            class="range range-vertical"
-            type="range"
-            min="-100"
-            max="100"
-            step="1"
-            aria-orientation="vertical"
-            @pointerdown="holdOffsetPreview"
-            @input="pulseOffsetPreview"
-            @wheel.prevent="nudge('y', $event)"
-          />
-        </label>
-        <label class="field horizontal">
-          <span class="field-label">Horizontal <span class="value">{{ draft.pair.offset.x }}%</span></span>
-          <input
-            v-model.number="draft.pair.offset.x"
-            class="range"
-            type="range"
-            min="-100"
-            max="100"
-            step="1"
-            @pointerdown="holdOffsetPreview"
-            @input="pulseOffsetPreview"
-            @wheel.prevent="nudge('x', $event)"
-          />
-        </label>
+        <div class="pad-col">
+          <OffsetPad v-model:x="draft.pair.offset.x" v-model:y="draft.pair.offset.y" :lock-y="!features.has('y_offset')" />
+          <button class="btn" :disabled="!draft.pair.offset.x && !draft.pair.offset.y" @click="resetOffsets">Reset</button>
+        </div>
+        <dl class="readout">
+          <dt>Horizontal</dt>
+          <dd>{{ draft.pair.offset.x }}%</dd>
+          <template v-if="features.has('y_offset')">
+            <dt>Vertical</dt>
+            <dd>{{ draft.pair.offset.y }}%</dd>
+          </template>
+        </dl>
       </div>
     </section>
 
@@ -273,7 +245,14 @@ const muteResults = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 10px 12px max(32px, env(safe-area-inset-bottom));
+  padding: 10px 12px 0;
+}
+
+/* Padding is lost when the content overflows the panel, so leave room with a spacer. */
+.ic-controls::after {
+  content: "";
+  flex: none;
+  height: max(22px, env(safe-area-inset-bottom));
 }
 
 .emotes {
@@ -373,24 +352,34 @@ const muteResults = computed(() => {
 
 .offsets {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   max-width: 480px;
 }
 
-.offsets .horizontal {
-  flex: 1 1 200px;
-  align-self: center;
+.pad-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.offsets .vertical {
-  align-items: center;
+.readout {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 13px;
 }
 
-.value {
-  margin-left: 4px;
-  color: var(--text);
+.readout dt {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.readout dd {
+  margin: 0;
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .mute {
@@ -416,31 +405,6 @@ const muteResults = computed(() => {
   font: inherit;
   font-size: 13px;
   cursor: pointer;
-}
-
-.group-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  max-width: 480px;
-}
-
-.link-btn {
-  min-height: 32px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--accent);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.link-btn:disabled {
-  color: var(--text-muted);
-  cursor: default;
 }
 
 .group h3 {
