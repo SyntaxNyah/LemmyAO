@@ -54,9 +54,9 @@
 #client_name {
   display: block;
   position: absolute;
-  /* Rests on the panel's top edge (76% up the container), flush with its left side. */
-  bottom: 76%;
-  left: 1%;
+  /* Rests on the panel's top edge and lines up with its text: panel offsets in its 1.25em, plus borders, over 0.75em. */
+  bottom: calc(7.45em + 2px);
+  left: calc(1% + 0.9167em + 1px);
   z-index: 1;
   max-width: 70%;
   margin: 0;
@@ -81,7 +81,7 @@
   display: block;
   position: absolute;
   right: 1%;
-  bottom: 1.5%;
+  bottom: 0.12em;
   left: 1%;
   /* Exactly three lines of text. */
   height: 4.35em;
