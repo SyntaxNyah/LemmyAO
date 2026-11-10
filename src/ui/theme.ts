@@ -4,7 +4,7 @@ import { settings } from "../core/settings";
 /** Applies the theme and accent colour settings to the page. */
 effect(() => {
   const root = document.documentElement;
-  if (["dark", "light", "classic"].includes(settings.theme)) root.dataset.theme = settings.theme;
+  if (settings.theme === "classic") root.dataset.theme = "classic";
   else delete root.dataset.theme;
 
   if (settings.accent) {

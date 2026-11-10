@@ -86,8 +86,8 @@ const schema = {
   voiceOpenMic: field("voiceOpenMic", flag01, false),
   voiceOutputVolume: field("voiceOutputVolume", range(0, 1), 1),
 
-  /** "system" (Modern, following the OS), "dark" (Modern Dark), "light" (Modern Light) or "classic". */
-  theme: field("uiTheme", text, "system"),
+  /** "modern" or "classic"; anything else is Modern. */
+  theme: field("uiTheme", text, "modern"),
   /** A CSS colour replacing the theme's accent; "" keeps the default. */
   accent: field("uiAccent", text, ""),
 

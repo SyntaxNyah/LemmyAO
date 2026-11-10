@@ -17,7 +17,7 @@ const query = ref("");
 const SECTIONS: Record<string, string> = {
   audio: "audio volume music sfx sound effects blips mute",
   voice: "voice chat microphone mic push to talk ptt",
-  appearance: "appearance theme modern dark light classic accent colour color chatbox style font dialogue",
+  appearance: "appearance theme modern classic accent colour color chatbox style font dialogue",
   courtroom: "courtroom 16:9 widescreen aspect chatbox inset offset pan tilt desks",
   chat: "chat callwords mention modcall sound",
   layout: "layout tabs tab order",
@@ -190,10 +190,12 @@ const checkbox = (key: SettingKey) => ({
       <div class="grid">
         <label class="field">
           <span class="field-label">Theme</span>
-          <select class="input" :value="settings.theme" @change="setSetting('theme', ($event.target as HTMLSelectElement).value)">
-            <option value="system">Modern (match system)</option>
-            <option value="dark">Modern Dark</option>
-            <option value="light">Modern Light</option>
+          <select
+            class="input"
+            :value="settings.theme === 'classic' ? 'classic' : 'modern'"
+            @change="setSetting('theme', ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="modern">Modern</option>
             <option value="classic">Classic</option>
           </select>
         </label>
