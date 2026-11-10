@@ -4,14 +4,6 @@ import { state } from "../../core/state";
 
 const serverName = document.title;
 
-const step = computed(() => {
-  if (state.connection.status !== "handshaking") return "Connecting…";
-  const { charCount } = state.server;
-  const loaded = state.characters.filter(Boolean).length;
-  if (charCount && loaded < charCount) return `Loading characters (${loaded}/${charCount})…`;
-  return "Joining…";
-});
-
 // From page load until joined; a failed connection shows the error overlay instead.
 const visible = computed(() => ["idle", "connecting", "handshaking"].includes(state.connection.status));
 </script>
@@ -21,7 +13,7 @@ const visible = computed(() => ["idle", "connecting", "handshaking"].includes(st
     <div class="card">
       <div class="spinner" aria-hidden="true"></div>
       <strong class="server">{{ serverName }}</strong>
-      <span class="step">{{ step }}</span>
+      <span class="step">Loading…</span>
     </div>
   </div>
 </template>
