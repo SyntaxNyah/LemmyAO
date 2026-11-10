@@ -29,3 +29,7 @@ jobs:
         run: bun test
       - name: Build
         run: bun run build
+      - name: Install Chrome
+        run: bunx puppeteer browsers install chrome
+      - name: End-to-end tests
+        run: bun test ./e2e/viewport.e2e.ts
