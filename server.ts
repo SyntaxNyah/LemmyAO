@@ -57,12 +57,13 @@ const evidence: { name: string; description: string; image: string }[] = [];
 const sendEvidence = () => broadcast((s) => s.send.LE({ evidence: [...evidence] }));
 
 // The player list (PR/PU) every joined client sees.
-const players = new Map<ClientSession, { id: number; name: string; charName: string }>();
+const players = new Map<ClientSession, { id: number; name: string; charName: string; showName: string }>();
 
-function sendPlayer(to: ClientSession, p: { id: number; name: string; charName: string }) {
+function sendPlayer(to: ClientSession, p: { id: number; name: string; charName: string; showName: string }) {
   to.send.PR({ id: p.id, type: PlayerListUpdate.add });
   to.send.PU({ id: p.id, type: PlayerDataType.char_name, data: p.charName });
   to.send.PU({ id: p.id, type: PlayerDataType.ooc_name, data: p.name });
+  to.send.PU({ id: p.id, type: PlayerDataType.showname, data: p.showName });
   to.send.PU({ id: p.id, type: PlayerDataType.area_id, data: "0" });
 }
 
@@ -126,7 +127,7 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
     session.send.BN({ background: BACKGROUND });
     session.send.DONE({});
     session.send.LE({ evidence: [...evidence] });
-    const me = { id: playerId, name: "", charName: "" };
+    const me = { id: playerId, name: "", charName: "", showName: "" };
     for (const other of players.values()) sendPlayer(session, other);
     players.set(session, me);
     broadcast((s) => sendPlayer(s, me));
@@ -165,6 +166,12 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
   session.on.MS((packet) => {
     console.log(`[ao] MS from char_id=${(packet as { char_id: number }).char_id} -> ${sessions.size} clients: ${(packet as { message: string }).message}`);
     broadcast((s) => s.send.MS(packet as never));
+    const me = players.get(session);
+    const showname = (packet as { showname: string }).showname;
+    if (me && me.showName !== showname) {
+      me.showName = showname;
+      updatePlayer(session, PlayerDataType.showname, showname);
+    }
   });
   session.on.CT((packet) => {
     const message = (packet as { message: string }).message;
