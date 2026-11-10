@@ -211,18 +211,6 @@ function toggleMute(e: Event) {
     <section class="group">
       <h3>Position</h3>
       <div class="offsets">
-        <label class="field horizontal">
-          <span class="field-label">Horizontal <span class="value">{{ draft.pair.offset.x }}%</span></span>
-          <input
-            v-model.number="draft.pair.offset.x"
-            class="range"
-            type="range"
-            min="-100"
-            max="100"
-            step="1"
-            @wheel.prevent="nudge('x', $event)"
-          />
-        </label>
         <label v-if="features.has('y_offset')" class="field vertical">
           <span class="field-label">Vertical <span class="value">{{ draft.pair.offset.y }}%</span></span>
           <input
@@ -234,6 +222,18 @@ function toggleMute(e: Event) {
             step="1"
             aria-orientation="vertical"
             @wheel.prevent="nudge('y', $event)"
+          />
+        </label>
+        <label class="field horizontal">
+          <span class="field-label">Horizontal <span class="value">{{ draft.pair.offset.x }}%</span></span>
+          <input
+            v-model.number="draft.pair.offset.x"
+            class="range"
+            type="range"
+            min="-100"
+            max="100"
+            step="1"
+            @wheel.prevent="nudge('x', $event)"
           />
         </label>
         <button class="btn" :disabled="!draft.pair.offset.x && !draft.pair.offset.y" @click="resetOffsets">Reset</button>
