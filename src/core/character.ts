@@ -34,6 +34,38 @@ export function loadCharIni(name: string) {
 
 const KNOWN_SIDES = new Set<string>(Object.values(Side));
 
+/** What the stage needs to show a character, from its char.ini. */
+export interface CharacterInfo {
+  name: string;
+  showname: string;
+  side: Side;
+  blips: string;
+  chatbox: string;
+  /** A .pmx model marks a 3D (MMD) character; "" for sprites. */
+  model: string;
+  ini: CharIni;
+}
+
+/**
+ * A character's display data, by folder name (what MS carries, so iniswaps
+ * resolve to the swapped character). Shares loadCharIni's cache.
+ */
+export async function characterInfo(name: string): Promise<CharacterInfo> {
+  const { ini } = await loadCharIni(name);
+  const opt = ini.options;
+  const side = String(opt.side ?? "").toLowerCase();
+  return {
+    name,
+    showname: String(opt.showname || name),
+    side: KNOWN_SIDES.has(side) ? (side as Side) : Side.wit,
+    blips: String(opt.blips || "male").toLowerCase(),
+    // An absent chat key would read as a blankpost and hide the chatbox.
+    chatbox: String(opt.chat || opt.category || "").toLowerCase() || "default",
+    model: String(opt.model ?? "").toLowerCase(),
+    ini,
+  };
+}
+
 /** Turns a parsed char.ini into what the IC controls and MS need. */
 export function emotesFromIni(ini: CharIni): Emote[] {
   return ini.emotes.map((e, i) => ({
@@ -76,14 +108,13 @@ export async function loadOwnCharacter(charId: number) {
   const entry = state.characters[charId];
   state.self.character = null;
   if (!entry) return;
-  const { ini } = await loadCharIni(entry.name);
+  const info = await characterInfo(entry.name);
   if (state.self.charId !== charId) return;
-  const side = String(ini.options.side ?? "").toLowerCase();
   state.self.character = {
     name: entry.name,
-    showname: String(ini.options.showname || entry.name),
-    side: KNOWN_SIDES.has(side) ? (side as Side) : Side.wit,
-    emotes: emotesFromIni(ini),
+    showname: info.showname,
+    side: info.side,
+    emotes: emotesFromIni(info.ini),
   };
   setPosition(state.self.position);
   selectEmote(0);

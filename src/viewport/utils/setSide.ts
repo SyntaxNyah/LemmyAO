@@ -124,6 +124,8 @@ export async function set_side({
 
 import { applyPanTilt } from "../../dom/switchPanTilt";
 import { settings } from "../../core/settings";
+import { state } from "../../core/state";
+import { draft } from "../../core/commands";
 import { safeHtmlTags } from "../../escaping";
 
 /** Swaps every background slot on the stage. */
@@ -144,13 +146,9 @@ export function showBackground(background: string) {
     if (settings.panTilt) applyPanTilt(true);
   }
 
-  if (client.charID === -1) {
-    client.viewport.set_side({ position: Side.jud, showSpeedLines: false, showDesk: true });
-  } else {
-    client.viewport.set_side({
-      position: client.chars[client.charID].side,
-      showSpeedLines: false,
-      showDesk: true,
-    });
-  }
+  client.viewport.set_side({
+    position: state.self.charId === -1 ? Side.jud : draft.side,
+    showSpeedLines: false,
+    showDesk: true,
+  });
 }

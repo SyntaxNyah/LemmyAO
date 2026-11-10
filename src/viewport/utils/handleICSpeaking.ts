@@ -24,6 +24,7 @@ import { renderGroupPeers, membersFromAdditionalChars } from "../groupRender";
 import { getMmdController } from "../mmd";
 import { setupCharacterSlot } from "../mmd/applyEmote";
 import type { Model3dInfo } from "../mmd/types";
+import { characterInfo, type CharacterInfo } from "../../core/character";
 
 const SOUND_SENTINELS = new Set(["", "0", "1"]);
 const BAD_EFFECTS = new Set(["", "-", "none"]);
@@ -88,11 +89,10 @@ const flipTransform = (flip: Flip | undefined): string => {
  * spread the packet and add the display-transformed / char-derived /
  * render-loop fields on top.
  */
-const buildChatMsg = (packet: aolib.packets.MSToClient): ChatMsg => {
-  const char = client.chars[packet.char_id];
-  const msg_nameplate = char?.showname ?? packet.character;
-  const msg_blips = char?.blips ?? "male";
-  const char_chatbox = char?.chat ?? "default";
+const buildChatMsg = (packet: aolib.packets.MSToClient, char: CharacterInfo): ChatMsg => {
+  const msg_nameplate = char.showname;
+  const msg_blips = char.blips;
+  const char_chatbox = char.chatbox;
   // A group supersedes the 2-person pair: blank the paired fields so the pair
   // layer doesn't re-draw the first partner the group already renders. The
   // group is the per-message additional_chars (present only when a group
@@ -164,13 +164,10 @@ const parseContent = async (chatmsg: ChatMsg): Promise<HTMLSpanElement[]> => {
  * for ordinary sprite characters (leaving the 2D path untouched).
  */
 const prepare3dModel = async (
-  packet: aolib.packets.MSToClient,
+  char: CharacterInfo,
   chatmsg: ChatMsg,
   hasPreanim: boolean,
 ): Promise<Model3dInfo | null> => {
-  const char = client.chars[packet.char_id];
-  if (!char) return null;
-  if (!char.inifile) await ensureCharIniForChat(packet.char_id);
   if (!char.model) return null;
 
   const controller = await getMmdController();
@@ -178,7 +175,7 @@ const prepare3dModel = async (
 
   // postanim / camera aren't on the wire — read them from the emote's char.ini
   // block (matched by its anim, which is chatmsg.sprite).
-  const emoteDef = char.inifile?.emotes?.find(
+  const emoteDef = char.ini.emotes?.find(
     (e: { anim?: string }) => (e.anim ?? "").toLowerCase() === chatmsg.sprite,
   );
   const preanim = emoteDef?.preanim
@@ -207,7 +204,9 @@ const prepare3dModel = async (
  * No DOM mutation here -- only state on the chatmsg object itself.
  */
 const prepareICMessage = async (packet: aolib.packets.MSToClient): Promise<ChatMsg> => {
-  const chatmsg = buildChatMsg(packet);
+  // By the folder name the message carries, so iniswaps show the swapped character.
+  const char = await characterInfo(packet.character);
+  const chatmsg = buildChatMsg(packet, char);
 
   // Preload all assets in parallel; primes browser cache.
   chatmsg.preloadedAssets = await preloadMessageAssets(
@@ -227,7 +226,7 @@ const prepareICMessage = async (packet: aolib.packets.MSToClient): Promise<ChatM
 
   // 3D character detection + model/motion preload. When present, the VMD's
   // measured preanim length drives the same timeline the sprites use.
-  chatmsg.model3d = await prepare3dModel(packet, chatmsg, hasPreanim);
+  chatmsg.model3d = await prepare3dModel(char, chatmsg, hasPreanim);
   if (chatmsg.model3d) {
     chatmsg.preanimdelay = chatmsg.model3d.preanimDurationMs;
     chatmsg.startspeaking = chatmsg.model3d.preanimDurationMs <= 0;
@@ -526,28 +525,8 @@ export async function handle_ic_speaking(packet: aolib.packets.MSToClient) {
   renderICMessage(chatmsg);
 }
 
-import { handleCharacterInfo as handleCharacterInfoForChat, ensureCharIni as ensureCharIniForChat } from "../../client/handleCharacterInfo";
-
-/**
- * Plays an IC message. Core has already dropped duplicates and muted
- * characters. A changed character name means the sender iniedited.
- */
+/** Plays an IC message. Core has already dropped duplicates and muted characters. */
 export function playICMessage(packet: aolib.packets.MSToClient) {
-  const char_id = packet.char_id;
-  const char_name = safeHtmlTags(packet.character);
-
-  if (char_id >= 0 && char_id < client.char_list_length) {
-    if (client.chars[char_id].name !== char_name) {
-      console.info(
-        `${client.chars[char_id].name} is iniediting to ${char_name}`,
-      );
-      handleCharacterInfoForChat([char_name, "iniediter"], char_id);
-    } else if (!client.chars[char_id].inifile) {
-      // Lazily load char.ini in background so future messages have proper data
-      ensureCharIniForChat(char_id);
-    }
-  }
-
   handle_ic_speaking(packet);
 }
 

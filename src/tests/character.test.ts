@@ -61,3 +61,37 @@ describe("selectEmote and setPosition", () => {
     expect([state.self.position, draft.side]).toEqual([Side.jud, Side.jud]);
   });
 });
+
+describe("characterInfo", () => {
+  const serve = (body: string | null) => {
+    globalThis.fetch = (async () =>
+      body === null ? new Response("", { status: 404 }) : new Response(body)) as unknown as typeof fetch;
+  };
+
+  test("reads the stage's display data from char.ini", async () => {
+    state.server.assetHost = "https://info-a.test/";
+    serve("[Options]\nname = Apollo\nshowname = Apollo Justice\nside = DEF\nblips = Male\ncategory = AA\nmodel = Apollo.pmx\n[Emotions]\nnumber = 1\n1 = Normal#-#normal#0#1\n");
+    const { characterInfo } = await import("../core/character");
+    expect(await characterInfo("Apollo")).toMatchObject({
+      name: "Apollo",
+      showname: "Apollo Justice",
+      side: Side.def,
+      blips: "male",
+      chatbox: "aa",
+      model: "apollo.pmx",
+    });
+  });
+
+  test("falls back to the folder name and the default chatbox", async () => {
+    state.server.assetHost = "https://info-b.test/";
+    serve(null);
+    const { characterInfo } = await import("../core/character");
+    expect(await characterInfo("Nobody")).toMatchObject({
+      showname: "Nobody",
+      side: Side.wit,
+      blips: "male",
+      chatbox: "default",
+      model: "",
+    });
+  });
+});

@@ -4,7 +4,7 @@
  * One line per packet, mapping each header to its domain-action handler.
  * The handlers live in the modules that own the domain they touch
  * (voice handlers in `src/voice/voice.ts`, character handlers in
- * `src/client/handleCharacterInfo.ts`, etc.); this file is just the
+ * `src/client/prefetchPlayerCharacter.ts`, etc.); this file is just the
  * wiring layer that hooks them up to the aolib session at startup.
  *
  * The `on("PU", prefetchPlayerCharacter)` form checks
@@ -28,13 +28,8 @@ import { applyAssetOrigin } from "./client/aoHost";
 
 
 // Character downloads
-import {
-  applyCharacterBatch,
-  applyFullCharacterList,
-} from "./client/handleCharacterInfo";
 
 // Character pick
-import { applyCharacterPick } from "./client/changeChar";
 
 // Character availability grid
 
@@ -121,7 +116,7 @@ export function registerProtocol(
   on("CASEA");
   on("CHECK");
   on("CharsCheck");
-  on("CI", applyCharacterBatch);
+  on("CI");
   on("CT");
   on("decryptor");
   on("DONE", finishServerJoin);
@@ -141,10 +136,10 @@ export function registerProtocol(
   on("PN");
   on("PR");
   on("PU", prefetchPlayerCharacter);
-  on("PV", applyCharacterPick);
+  on("PV");
   on("RMC");
   on("RT");
-  on("SC", applyFullCharacterList);
+  on("SC");
   on("SI", applyServerCounts);
   on("SM");
   on("SP");

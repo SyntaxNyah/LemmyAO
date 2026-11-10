@@ -140,28 +140,11 @@ class Client {
 
   software = "LemmyAO";
   version = version;
-  hp: number[];
-  char_list_length: number;
-  evidence_list_length: number;
-  music_list_length: number;
   testimonyID: number;
-  chars: any;
-  emotes: any;
-  evidences: any;
-  areas: any;
-  musics: any;
-  musics_time: boolean;
-  callwords: string[];
   resources: any;
-  selectedEmote: number;
-  selectedEvidence: number;
-  _lastTimeICReceived: any;
   viewport: Viewport;
   loadResources: () => void;
-  /** Maps player ID to player data */
-  charicon_extensions: string[];
   emote_extensions: string[];
-  emotions_extensions: string[];
   background_extensions: string[];
   constructor(connectionString: string, hdid: string) {
     this.connection = new Connection({
@@ -175,41 +158,11 @@ class Client {
         registerProtocol(server, clientSession, coreHandlers(this.connection)),
     });
 
-    this.hp = [0, 0];
-    this.char_list_length = 0;
-    this.evidence_list_length = 0;
-    this.music_list_length = 0;
     this.testimonyID = 0;
-    this.chars = [];
-    this.emotes = [];
-    this.evidences = [];
-    this.areas = [];
-    this.musics = [];
-    this.musics_time = false;
-    this.callwords = [];
     this.resources = getResources(AO_HOST, theme);
-    this.selectedEmote = -1;
-    this.selectedEvidence = -1;
     this.viewport = masterViewport();
-    this._lastTimeICReceived = new Date(0);
-    this.charicon_extensions = [".png", ".webp"];
     this.emote_extensions = [".gif", ".png", ".apng", ".webp", ".webp.static"];
-    this.emotions_extensions = [".png", ".webp"];
     this.background_extensions = [".png", ".gif"];
-  }
-
-  /**
-   * Gets the current player's character.
-   */
-  get character() {
-    return this.chars[this.charID];
-  }
-
-  /**
-   * Gets the player's currently selected emote.
-   */
-  get emote() {
-    return this.emotes[this.selectedEmote];
   }
 
   connect() {

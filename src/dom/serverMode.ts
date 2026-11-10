@@ -14,7 +14,6 @@
 import { client } from "../client";
 import { state } from "../core/state";
 import { setAOhost } from "../client/aoHost";
-import { setupCharacterBasic } from "../client/handleCharacterInfo";
 import queryParser from "../utils/queryParser";
 
 const { mode } = queryParser();
@@ -39,7 +38,7 @@ const waitFor = async (pred: () => boolean, timeoutMs = 8000): Promise<boolean> 
 async function runServerMode(): Promise<void> {
   setAOhost(assetHost);
 
-  await waitFor(() => !!client?.viewport && Array.isArray(client.chars));
+  await waitFor(() => !!client?.viewport);
 
   // Roster from the asset folder (replaces the replay default when available).
   let names: string[] = [];
@@ -51,9 +50,6 @@ async function runServerMode(): Promise<void> {
   }
 
   if (names.length > 0) {
-    client.chars = [];
-    client.char_list_length = names.length;
-    names.forEach((name, i) => setupCharacterBasic([name, "", "", ""], i));
     state.characters = names.map((name) => ({ name, description: "", evidence: "", taken: false }));
   }
 }
