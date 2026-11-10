@@ -405,7 +405,11 @@ const renderICMessage = (chatmsg: ChatMsg) => {
   // the speaker is 2D.
   setupCharacterSlot(chatmsg.side, chatmsg.model3d);
   if (!chatmsg.model3d) {
-    setEmoteFromUrl(preloaded.idleUrl, false, chatmsg.side);
+    // Without a shout the preanim starts on the first tick; showing it now
+    // avoids flashing the idle sprite for that tick. With a shout, the idle
+    // sprite waits under the bubble so the preanim doesn't start early.
+    const preanimNow = chatmsg.preanimdelay > 0 && !SHOUTS[chatmsg.shout_modifier];
+    setEmoteFromUrl(preanimNow ? preloaded.preanimUrl : preloaded.idleUrl, false, chatmsg.side);
   }
   if (chatmsg.paired_name) {
     setEmoteFromUrl(preloaded.pairIdleUrl, true, chatmsg.side);

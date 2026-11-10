@@ -267,7 +267,7 @@ const muteResults = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 10px 12px 16px;
+  padding: 10px 12px max(32px, env(safe-area-inset-bottom));
 }
 
 .emotes {
