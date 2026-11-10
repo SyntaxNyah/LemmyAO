@@ -8,7 +8,7 @@ import chatboxStyles from "../../constants/chatboxes";
 import { version } from "../../version";
 import { voiceUi, toggleVoice, toggleTalk, setOpenMic, setVoiceMuted, chooseDevice, setVoiceVolume } from "../../voice/voiceUI";
 import TabOrderSettings from "./TabOrderSettings.vue";
-import { applyUpdate, install, installable, installed, showIosHint, updateReady } from "../pwa";
+import { applyUpdate, install, installable, installed, iosInstallSteps, updateReady } from "../pwa";
 
 // Bound, not a literal src: the template compiler would turn a literal into an import.
 const logo = "logo-new.png";
@@ -290,7 +290,7 @@ const checkbox = (key: SettingKey) => ({
       <h3>App</h3>
       <p v-if="installed" class="muted">LemmyAO is installed on this device.</p>
       <div v-else-if="installable"><button class="btn btn-primary" @click="install">Install LemmyAO</button></div>
-      <p v-else-if="showIosHint" class="muted">To install, tap Share, then Add to Home Screen.</p>
+      <p v-else-if="iosInstallSteps" class="muted">To install: {{ iosInstallSteps }}</p>
       <p v-else class="muted">This browser doesn't offer to install LemmyAO. Chrome, Edge and Safari do.</p>
       <div v-if="updateReady" class="buttons">
         <span class="muted">A new version is ready. Reloading disconnects you.</span>

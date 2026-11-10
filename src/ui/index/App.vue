@@ -11,7 +11,7 @@ import {
 import { settings, setSetting } from "../../core/settings";
 import { version } from "../../version";
 import ServerRow from "./ServerRow.vue";
-import { applyUpdate, install, installable, showIosHint, updateReady } from "../pwa";
+import { applyUpdate, dismissIosHint, install, installable, iosInstallSteps, showIosHint, updateReady } from "../pwa";
 
 const page = location.href;
 const query = ref("");
@@ -127,6 +127,10 @@ onMounted(() => {
       <span>Install LemmyAO for a home screen icon and a full-screen window.</span>
       <button class="btn btn-primary" @click="install">Install</button>
     </div>
+    <div v-else-if="showIosHint" class="app card">
+      <span>Install LemmyAO for a home screen icon and a full-screen window. {{ iosInstallSteps }}</span>
+      <button class="btn" @click="dismissIosHint">Dismiss</button>
+    </div>
 
     <footer class="footer muted">
       <span>{{ directory.servers.length }} servers · {{ playerTotal }} players online</span>
@@ -136,7 +140,6 @@ onMounted(() => {
         <a href="https://discord.gg/wWvQ3pw">Discord</a>
         <a href="https://servers.aceattorneyonline.com/privacy">Privacy</a>
       </nav>
-      <span v-if="showIosHint">To install, tap Share, then Add to Home Screen.</span>
       <span>
         LemmyAO {{ version }}<template v-if="directory.masterVersion"> · master server {{ directory.masterVersion }}</template>
       </span>
