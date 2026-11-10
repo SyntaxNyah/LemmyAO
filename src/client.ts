@@ -6,7 +6,7 @@
 import "./styles/client.css";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import queryParser from "./utils/queryParser";
-import getResources from "./utils/getResources";
+import getResources, { type Resources } from "./utils/getResources";
 import masterViewport from "./viewport/viewport";
 import { Viewport } from "./viewport/interfaces/Viewport";
 import { version } from "./version";
@@ -132,7 +132,6 @@ class Client {
   software = "LemmyAO";
   version = version;
   testimonyID: number;
-  resources: any;
   viewport: Viewport;
   loadResources: () => void;
   emote_extensions: string[];
@@ -150,10 +149,14 @@ class Client {
     });
 
     this.testimonyID = 0;
-    this.resources = getResources(AO_HOST, theme);
     this.viewport = masterViewport();
     this.emote_extensions = [".gif", ".png", ".apng", ".webp", ".webp.static"];
     this.background_extensions = [".png", ".gif"];
+  }
+
+  /** Built per read: the asset host changes when the server announces its own (ASS). */
+  get resources(): Resources {
+    return getResources(AO_HOST, theme);
   }
 
   connect() {
