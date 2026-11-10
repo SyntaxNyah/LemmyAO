@@ -1,11 +1,22 @@
 import { describe, test, expect, beforeEach } from "bun:test";
-import type * as aolib from "aolib-ts";
+import {
+  AuthState,
+  JudgeState,
+  MusicChannel,
+  PenaltyBar,
+  PlayerDataType,
+  PlayerListUpdate,
+  RTAnimation,
+  Side,
+  TimerCommand,
+  type packets,
+} from "aolib-ts";
 import { Connection } from "../core/connection";
 import { coreHandlers } from "../core/protocol";
-import { state } from "../core/state";
+import { state, LOG_LIMIT } from "../core/state";
 import { on } from "../core/events";
 
-type C2S = keyof aolib.packets.C2SOutputs;
+type C2S = keyof packets.C2SOutputs;
 const REPLIES: C2S[] = ["HI", "ID", "askchaa", "RC", "RM", "RD", "CH"];
 
 let sent: string[];
@@ -156,5 +167,92 @@ describe("server notices", () => {
     expect(state.connection.removal).toEqual({ kind: "kicked", reason: "spamming" });
     receive("KB#for real#%");
     expect(state.connection.removal).toEqual({ kind: "banned", reason: "for real" });
+  });
+});
+
+describe("court and logs", () => {
+  const server = () => conn.clientSession.send;
+
+  test("evidence list and single updates", () => {
+    server().LE({ evidence: [{ name: "Badge", description: "Shiny", image: "badge.png" }] });
+    server().EI({ id: 1, details: { name: "Knife", description: "Sharp", type: "", image: "knife.png" } } as never);
+    expect(state.evidence.map((e) => e.name)).toEqual(["Badge", "Knife"]);
+    expect(state.evidence[1].image).toBe("knife.png");
+  });
+
+  test("players join, update and leave", () => {
+    receive("SC#Phoenix#Edgeworth#%");
+    server().PR({ id: 4, type: PlayerListUpdate.add });
+    server().PU({ id: 4, type: PlayerDataType.char_name, data: "edgeworth" });
+    server().PU({ id: 4, type: PlayerDataType.area_id, data: "2" });
+    server().PU({ id: 9, type: PlayerDataType.ooc_name, data: "ghost" });
+    expect(state.players[4]).toMatchObject({ charName: "edgeworth", charId: 1, area: 2 });
+    expect(state.players[9]).toBeUndefined();
+    server().PR({ id: 4, type: PlayerListUpdate.remove });
+    expect(state.players[4]).toBeUndefined();
+  });
+
+  test("OOC chat, modcalls and case alerts are logged", () => {
+    const calls: string[] = [];
+    const off = on("modcall", (r) => calls.push(r));
+    server().CT({ name: "Maya", message: "hi", is_from_server: false });
+    server().ZZ({ reason: "help" });
+    server().CASEA({
+      message: "trial",
+      need_def: true,
+      need_pro: false,
+      need_judge: true,
+      need_jury: false,
+      need_steno: false,
+    });
+    off();
+    expect(state.oocLog.map((e) => e.kind)).toEqual(["chat", "modcall", "case"]);
+    const caseAlert = state.oocLog[2];
+    expect(caseAlert.kind === "case" && [...caseAlert.roles]).toEqual(["Defense", "Judge"]);
+    expect(calls).toEqual(["help"]);
+  });
+
+  test("IC messages are logged once and handed to the stage", () => {
+    const shown: string[] = [];
+    const off = on("icMessage", (p) => shown.push(p.message));
+    const ms = { character: "Phoenix", emote: "normal", message: "Objection!", side: Side.def, char_id: 0 };
+    server().MS(ms);
+    server().MS(ms);
+    server().MS({ ...ms, message: "Hold it!" });
+    off();
+    expect(shown).toEqual(["Objection!", "Hold it!"]);
+    expect(state.icLog.map((e) => e.kind === "message" && e.message)).toEqual(["Objection!", "Hold it!"]);
+  });
+
+  test("music changes are tracked per channel and logged", () => {
+    server().MC({ name: "trial.opus", char_id: 0, looping: true, channel: MusicChannel.music } as never);
+    expect(state.court.music.music).toEqual({ track: "trial.opus", looping: true });
+    expect(state.icLog.at(-1)).toMatchObject({ kind: "music", track: "trial.opus" });
+  });
+
+  test("health, testimony, timers, judge controls and auth", () => {
+    server().HP({ bar: PenaltyBar.prosecution, value: 3 });
+    server().RT({ animation: RTAnimation.cross_examination } as never);
+    server().TI({ timer_id: 1, command: TimerCommand.show, time: 0 } as never);
+    server().TI({ timer_id: 1, command: TimerCommand.start, time: 60000 });
+    server().JD({ state: JudgeState.shown });
+    server().AUTH({ auth_state: AuthState.success });
+    server().SP({ side: Side.pro });
+    server().BN({ background: "gs4", position: "" } as never);
+
+    expect(state.court.hp).toEqual({ defense: 10, prosecution: 3 });
+    expect(state.court.testimony).toBe(RTAnimation.cross_examination);
+    expect(state.court.timers[1]).toMatchObject({ visible: true, running: true, time: 60000 });
+    expect(state.self).toMatchObject({ judgeControls: "shown", moderator: true, side: "pro" });
+    expect(state.court.background).toBe("gs4");
+
+    server().RT({ animation: RTAnimation.end_animation } as never);
+    expect(state.court.testimony).toBeNull();
+  });
+
+  test("logs are capped", () => {
+    for (let i = 0; i < LOG_LIMIT + 5; i++) server().CT({ name: "a", message: String(i), is_from_server: false });
+    expect(state.oocLog).toHaveLength(LOG_LIMIT);
+    expect(state.oocLog[0]).toMatchObject({ message: "5" });
   });
 });

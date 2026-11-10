@@ -1,4 +1,5 @@
 import { reactive } from "@vue/reactivity";
+import type { JudgeState, RTAnimation, Side, TextColor } from "aolib-ts";
 
 export type ConnectionStatus =
   | "idle"
@@ -20,6 +21,47 @@ export interface CharacterEntry {
   description: string;
   evidence: string;
   taken: boolean;
+}
+
+export interface Evidence {
+  name: string;
+  description: string;
+  image: string;
+}
+
+export interface Player {
+  id: number;
+  name: string;
+  charName: string;
+  showName: string;
+  /** Roster index matching `charName`, or -1. */
+  charId: number;
+  area: number;
+}
+
+export type OOCEntry =
+  | { kind: "chat"; name: string; message: string; fromServer: boolean; time: number }
+  | { kind: "modcall"; message: string; time: number }
+  | { kind: "case"; message: string; roles: string[]; time: number };
+
+export type ICEntry =
+  | {
+      kind: "message";
+      charId: number;
+      character: string;
+      showname: string;
+      message: string;
+      color: TextColor;
+      time: number;
+    }
+  | { kind: "music"; charId: number; showname: string; track: string; looping: boolean; time: number };
+
+export interface Timer {
+  visible: boolean;
+  running: boolean;
+  /** Milliseconds as of `updatedAt`; counts down while running. */
+  time: number;
+  updatedAt: number;
 }
 
 export interface State {
@@ -48,11 +90,30 @@ export interface State {
   areas: Area[];
   music: string[];
   characters: CharacterEntry[];
+  evidence: Evidence[];
+  players: Record<number, Player>;
+  oocLog: OOCEntry[];
+  icLog: ICEntry[];
+  court: {
+    background: string;
+    hp: { defense: number; prosecution: number };
+    testimony: RTAnimation | null;
+    timers: Record<number, Timer>;
+    music: Record<string, { track: string; looping: boolean }>;
+  };
   self: {
     charId: number;
     areaId: number;
+    /** Position confirmed by the server (SP); null until it sends one. */
+    side: Side | null;
+    /** JD: whether the judge buttons show; "by_position" means only as judge. */
+    judgeControls: JudgeState;
+    moderator: boolean;
   };
 }
+
+/** Log entries kept per log; older ones are dropped. */
+export const LOG_LIMIT = 1000;
 
 export function initialState(assetHost = ""): State {
   return {
@@ -73,7 +134,18 @@ export function initialState(assetHost = ""): State {
     areas: [],
     music: [],
     characters: [],
-    self: { charId: -1, areaId: 0 },
+    evidence: [],
+    players: {},
+    oocLog: [],
+    icLog: [],
+    court: {
+      background: "",
+      hp: { defense: 10, prosecution: 10 },
+      testimony: null,
+      timers: {},
+      music: {},
+    },
+    self: { charId: -1, areaId: 0, side: null, judgeControls: "by_position", moderator: false },
   };
 }
 

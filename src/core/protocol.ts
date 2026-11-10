@@ -1,6 +1,16 @@
-import { AreaUpdateType, CharAvailability, type packets } from "aolib-ts";
+import {
+  AreaUpdateType,
+  AuthState,
+  CharAvailability,
+  PenaltyBar,
+  PlayerDataType,
+  PlayerListUpdate,
+  RTAnimation,
+  TimerCommand,
+  type packets,
+} from "aolib-ts";
 import type { Connection } from "./connection";
-import { state, type Area } from "./state";
+import { state, LOG_LIMIT, type Area, type ICEntry, type OOCEntry, type Player } from "./state";
 import { emit } from "./events";
 import { setAssetHost } from "./assetHost";
 
@@ -41,6 +51,38 @@ export function appendAreasAndMusic(names: string[]) {
   }
 }
 
+const pushLimited = <T>(log: T[], entry: T) => {
+  log.push(entry);
+  if (log.length > LOG_LIMIT) log.splice(0, log.length - LOG_LIMIT);
+};
+const logOOC = (entry: OOCEntry) => pushLimited(state.oocLog, entry);
+const logIC = (entry: ICEntry) => pushLimited(state.icLog, entry);
+
+const charIdByName = (name: string) => {
+  const lower = name.toLowerCase();
+  return state.characters.findIndex((c) => c?.name.toLowerCase() === lower);
+};
+
+const PLAYER_FIELDS: Record<PlayerDataType, (p: Player, value: string) => void> = {
+  [PlayerDataType.ooc_name]: (p, v) => (p.name = v),
+  [PlayerDataType.char_name]: (p, v) => {
+    p.charName = v;
+    p.charId = charIdByName(v);
+  },
+  [PlayerDataType.showname]: (p, v) => (p.showName = v),
+  [PlayerDataType.area_id]: (p, v) => (p.area = Number(v)),
+};
+
+const CASE_ROLES = [
+  ["need_def", "Defense"],
+  ["need_pro", "Prosecution"],
+  ["need_judge", "Judge"],
+  ["need_jury", "Jury"],
+  ["need_steno", "Stenographer"],
+] as const;
+
+let lastICMessage: string | null = null;
+
 const AREA_FIELDS: Partial<Record<AreaUpdateType, (area: Area, value: string) => void>> = {
   [AreaUpdateType.player_count]: (a, v) => (a.players = Number(v)),
   [AreaUpdateType.status]: (a, v) => (a.status = v),
@@ -51,6 +93,7 @@ const AREA_FIELDS: Partial<Record<AreaUpdateType, (area: Area, value: string) =>
 /** State updates and protocol replies for server packets. Rendering lives elsewhere. */
 export function coreHandlers(conn: Connection): CoreHandlers {
   const send = () => conn.server.send;
+  lastICMessage = null;
 
   return {
     decryptor: () => conn.hello(),
@@ -151,6 +194,127 @@ export function coreHandlers(conn: Connection): CoreHandlers {
       state.connection.status = "joined";
       state.connection.wasJoined = true;
       emit("joined");
+    },
+
+    LE: (p) => {
+      state.evidence = p.evidence.map((e) => ({ ...e }));
+    },
+
+    EI: (p) => {
+      state.evidence[p.id] = { ...p.details };
+    },
+
+    PR: (p) => {
+      if (p.type === PlayerListUpdate.add) {
+        state.players[p.id] = { id: p.id, name: "", charName: "", showName: "", charId: -1, area: 0 };
+      } else if (p.type === PlayerListUpdate.remove) {
+        delete state.players[p.id];
+      }
+    },
+
+    PU: (p) => {
+      const player = state.players[p.id];
+      if (player) PLAYER_FIELDS[p.type]?.(player, p.data);
+    },
+
+    CT: (p) => {
+      logOOC({
+        kind: "chat",
+        name: p.name,
+        message: p.message,
+        fromServer: p.is_from_server,
+        time: Date.now(),
+      });
+    },
+
+    ZZ: (p) => {
+      logOOC({ kind: "modcall", message: p.reason, time: Date.now() });
+      emit("modcall", p.reason);
+    },
+
+    CASEA: (p) => {
+      const roles = CASE_ROLES.filter(([key]) => p[key]).map(([, label]) => label);
+      logOOC({ kind: "case", message: p.message, roles, time: Date.now() });
+    },
+
+    MS: (p) => {
+      // Servers echo a message to everyone, sometimes more than once.
+      if (p.message === lastICMessage) return;
+      lastICMessage = p.message;
+      logIC({
+        kind: "message",
+        charId: p.char_id,
+        character: p.character,
+        showname: p.showname,
+        message: p.message,
+        color: p.text_color,
+        time: Date.now(),
+      });
+      emit("icMessage", p);
+    },
+
+    MC: (p) => {
+      state.court.music[p.channel] = { track: p.name, looping: p.looping };
+      logIC({
+        kind: "music",
+        charId: p.char_id,
+        showname: p.showname,
+        track: p.name,
+        looping: p.looping,
+        time: Date.now(),
+      });
+    },
+
+    RMC: (p) => {
+      emit("musicSeek", parseFloat(p.to_time));
+    },
+
+    BN: (p) => {
+      state.court.background = p.background;
+    },
+
+    HP: (p) => {
+      const bar = p.bar === PenaltyBar.defense ? "defense" : "prosecution";
+      state.court.hp[bar] = p.value;
+    },
+
+    RT: (p) => {
+      state.court.testimony = p.animation === RTAnimation.end_animation ? null : p.animation;
+    },
+
+    TI: (p) => {
+      const timer = (state.court.timers[p.timer_id] ??= {
+        visible: false,
+        running: false,
+        time: 0,
+        updatedAt: 0,
+      });
+      switch (p.command) {
+        case TimerCommand.start:
+        case TimerCommand.pause:
+          timer.running = p.command === TimerCommand.start;
+          timer.time = p.time;
+          timer.updatedAt = Date.now();
+          break;
+        case TimerCommand.show:
+          timer.visible = true;
+          break;
+        case TimerCommand.hide:
+          timer.visible = false;
+          break;
+      }
+    },
+
+    SP: (p) => {
+      state.self.side = p.side;
+    },
+
+    JD: (p) => {
+      state.self.judgeControls = p.state;
+    },
+
+    AUTH: (p) => {
+      state.self.moderator = p.auth_state === AuthState.success;
     },
 
     BD: (p) => {
