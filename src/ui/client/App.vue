@@ -46,6 +46,30 @@ function sendMessage() {
   sendIC();
 }
 
+const tabStrip = ref<HTMLElement>();
+const overflow = ref({ left: false, right: false });
+
+function measureTabs() {
+  const el = tabStrip.value;
+  if (!el) return;
+  overflow.value = {
+    left: el.scrollLeft > 1,
+    right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+  };
+}
+
+function scrollTabs(direction: number) {
+  const el = tabStrip.value!;
+  el.scrollBy({ left: direction * el.clientWidth * 0.7, behavior: "smooth" });
+}
+
+// Keep the selected tab fully visible, e.g. after rotating or reordering.
+watch([tab, stripTabs], async () => {
+  await nextTick();
+  tabStrip.value?.querySelector(`[data-tab="${tab.value}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  measureTabs();
+});
+
 const stageHost = ref<HTMLElement>();
 const icInput = ref<HTMLInputElement>();
 provide(focusICInput, () => icInput.value?.focus());
@@ -60,12 +84,20 @@ watch([tab, isLandscape, first], async () => {
   for (const id of ["log", "ooc"] as const) if (shown(id)) scrollers[id]?.onVisible();
 });
 
+let tabObserver: ResizeObserver | undefined;
+
 onMounted(() => {
+  tabObserver = new ResizeObserver(measureTabs);
+  tabObserver.observe(tabStrip.value!);
+  measureTabs();
   mountStage(stageHost.value!);
   legacyReady.value = true;
   landscapeQuery.addEventListener("change", onOrientation);
 });
-onUnmounted(() => landscapeQuery.removeEventListener("change", onOrientation));
+onUnmounted(() => {
+  landscapeQuery.removeEventListener("change", onOrientation);
+  tabObserver?.disconnect();
+});
 </script>
 
 <template>
@@ -93,17 +125,26 @@ onUnmounted(() => landscapeQuery.removeEventListener("change", onOrientation));
       </button>
     </form>
 
-    <nav class="tabs" role="tablist">
-      <button
-        v-for="t in stripTabs"
-        :key="t.id"
-        role="tab"
-        :aria-selected="tab === t.id"
-        @click="tab = t.id"
-      >
-        {{ t.label }}
+    <div class="tabs-wrap" :class="{ 'more-left': overflow.left, 'more-right': overflow.right }">
+      <nav ref="tabStrip" class="tabs" role="tablist" @scroll="measureTabs">
+        <button
+          v-for="t in stripTabs"
+          :key="t.id"
+          role="tab"
+          :data-tab="t.id"
+          :aria-selected="tab === t.id"
+          @click="tab = t.id"
+        >
+          {{ t.label }}
+        </button>
+      </nav>
+      <button v-if="overflow.left" class="tab-scroll left" tabindex="-1" aria-label="Show earlier tabs" @click="scrollTabs(-1)">
+        ‹
       </button>
-    </nav>
+      <button v-if="overflow.right" class="tab-scroll right" tabindex="-1" aria-label="Show more tabs" @click="scrollTabs(1)">
+        ›
+      </button>
+    </div>
 
     <!-- Every panel stays mounted; in landscape the first tab moves to the area under the stage. -->
     <div
@@ -205,14 +246,19 @@ onUnmounted(() => landscapeQuery.removeEventListener("change", onOrientation));
   padding: 0;
 }
 
-.tabs {
+.tabs-wrap {
   grid-area: tabs;
+  position: relative;
+  min-width: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.tabs {
   display: flex;
   gap: 2px;
   padding: 6px 8px 0;
   overflow-x: auto;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
   scrollbar-width: none;
 }
 
@@ -233,7 +279,41 @@ onUnmounted(() => landscapeQuery.removeEventListener("change", onOrientation));
   color: var(--text);
 }
 
-.landscape .tabs,
+/* Fade the cut-off edge and offer a chevron so hidden tabs are discoverable. */
+.more-left .tabs {
+  mask-image: linear-gradient(to right, transparent, #000 48px);
+}
+
+.more-right .tabs {
+  mask-image: linear-gradient(to left, transparent, #000 48px);
+}
+
+.more-left.more-right .tabs {
+  mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent);
+}
+
+.tab-scroll {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tab-scroll.left {
+  left: 0;
+}
+
+.tab-scroll.right {
+  right: 0;
+}
+
+.landscape .tabs-wrap,
 .landscape .in-panels {
   border-left: 1px solid var(--border);
 }
