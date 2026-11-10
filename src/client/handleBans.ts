@@ -1,4 +1,3 @@
-import { client } from "../client";
 import { safeHtmlTags } from "../escaping";
 import type * as aolib from "aolib-ts";
 
@@ -24,18 +23,15 @@ export function showBlockingAlert(packet: aolib.packets.BB) {
 
 /** BD: server rejects the connection with a persistent ban reason. */
 export function showBanDialog(packet: aolib.packets.BD) {
-  client.banned = true;
   handleBans("Banned", packet.reason);
 }
 
 /** KB: kicked AND banned (reconnect refused). */
 export function showKickAndBanScreen(packet: aolib.packets.KB) {
-  client.banned = true;
   handleBans("Banned", packet.reason);
 }
 
 /** KK: kicked (no ban); reconnect still allowed. */
 export function showKickScreen(packet: aolib.packets.KK) {
-  client.banned = true;
   handleBans("Kicked", packet.reason);
 }

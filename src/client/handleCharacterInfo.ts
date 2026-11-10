@@ -161,7 +161,6 @@ export async function applyFullCharacterList(packet: aolib.packets.SC) {
     const c = packet.char_data[i];
     setupCharacterBasic([c.name, c.desc, "", c.evidence], i);
   }
-  client.server.send.RM({});
 }
 
 /**

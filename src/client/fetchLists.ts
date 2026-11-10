@@ -128,5 +128,4 @@ export function applyServerCounts(packet: aolib.packets.SI) {
   buildCharGrid(client.char_list_length);
   applyFavourites();
 
-  client.server.send.RC({});
 }

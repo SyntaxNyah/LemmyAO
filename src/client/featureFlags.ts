@@ -1,4 +1,4 @@
-import { client, setExtraFeatures } from "../client";
+import { setExtraFeatures } from "../client";
 import type * as aolib from "aolib-ts";
 
 /**
@@ -9,11 +9,6 @@ import type * as aolib from "aolib-ts";
 export function applyFeatureFlags(packet: aolib.packets.FL) {
   const { features } = packet;
   setExtraFeatures(features);
-
-  // The feature-gated UI below is driven purely by the server's advertised
-  // features. The client->server FL advert (advertising "grouppair" back) is
-  // sent at the END, after this UI is shown, so a failure there can never hide
-  // the buttons.
 
   if (features.includes("yellowtext")) {
     const colorselect = <HTMLSelectElement>document.getElementById("textcolor");
@@ -46,19 +41,4 @@ export function applyFeatureFlags(packet: aolib.packets.FL) {
     document.getElementById("y_offset")!.style.display = "";
   }
 
-  // Advertise our own capabilities back (client->server FL) so FantaCode
-  // servers learn we support "grouppair". aolib models FL as server->client
-  // only, so the typed C2S `send.FL` throws the role guard and `sendCustom`
-  // throws for a spec header — send the raw wire directly instead. Best-effort
-  // and fully guarded: it runs last, and a failure must never hide the UI.
-  try {
-    const socket = client.socket;
-    const jsonMode =
-      (client.server as unknown as { jsonMode?: boolean }).jsonMode === true;
-    if (socket && socket.readyState === WebSocket.OPEN && !jsonMode) {
-      socket.send("FL#grouppair#%");
-    }
-  } catch {
-    // The advert is optional; JSON servers gate GP on JSON mode.
-  }
 }

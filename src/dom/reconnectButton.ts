@@ -1,4 +1,4 @@
-import Client, { client, clientState, setClient } from "../client";
+import Client, { client, setClient } from "../client";
 import queryParser from "../utils/queryParser";
 const { ip: serverIP, connect } = queryParser();
 
@@ -16,12 +16,10 @@ export function ReconnectButton() {
     connectionString = `ws://${serverIP}`;
   }
 
-  const hdid = client.hdid;
-  client.state = clientState.Reconnecting;
+  const { hdid } = client.connection.options;
   client.cleanup();
 
-  const newClient = new Client(connectionString);
+  const newClient = new Client(connectionString, hdid);
   setClient(newClient);
-  newClient.hdid = hdid;
   newClient.connect();
 }

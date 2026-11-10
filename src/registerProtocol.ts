@@ -7,7 +7,7 @@
  * `src/client/handleCharacterInfo.ts`, etc.); this file is just the
  * wiring layer that hooks them up to the aolib session at startup.
  *
- * The function-call form (`server.on.MS(handleChatMessage)`) checks
+ * The `on("MS", handleChatMessage)` form checks
  * the handler signature against the schema at compile time. Wrong-
  * direction registrations are caught both statically (aolib's mapped
  * types) and at runtime (aolib throws a role-aware error). Wire-format
@@ -15,6 +15,7 @@
  */
 
 import * as aolib from "aolib-ts";
+import type { CoreHandlers } from "./core/protocol";
 
 // ---------------------------------------------------------------------
 // Server -> client handlers.
@@ -59,12 +60,7 @@ import { applyEvidenceInfo, applyEvidenceList } from "./dom/pickEvidence";
 import { applyFeatureFlags } from "./client/featureFlags";
 
 // Handshake
-import {
-  applyEncryptionMode,
-  applyServerIdentity,
-  applyServerInfo,
-  finishServerJoin,
-} from "./client/handshake";
+import { finishServerJoin } from "./client/handshake";
 
 // Health bars
 import { applyHealthBar } from "./dom/healthBar";
@@ -134,48 +130,63 @@ import {
 export function registerProtocol(
   server: aolib.ServerSession,
   clientSession: aolib.ClientSession,
+  core: CoreHandlers = {},
 ): void {
+  // Each header gets one handler: the core state update runs first, then the
+  // legacy DOM handler that renders it.
+  type S2C = aolib.packets.S2COutputs;
+  const on = <H extends keyof S2C>(header: H, legacy: (packet: S2C[H]) => void = () => {}) => {
+    const first = core[header] as ((packet: S2C[H]) => void) | undefined;
+    const handler = first
+      ? (packet: S2C[H]) => {
+        first(packet);
+        legacy(packet);
+      }
+      : legacy;
+    (server.on[header] as (h: (packet: S2C[H]) => void) => void)(handler);
+  };
+
   registerVoiceCodecs();
   registerGroupPairCodec();
 
   // ---- server -> client ----
-  server.on.ARUP(applyAreaStatus);
-  server.on.ASS(applyAssetOrigin);
-  server.on.AUTH(applyModAuth);
-  server.on.BB(showBlockingAlert);
-  server.on.BD(showBanDialog);
-  server.on.BN(applyBackgroundChange);
-  server.on.CASEA(showCaseAnnouncement);
-  server.on.CHECK(() => {});
-  server.on.CharsCheck(applyCharacterAvailability);
-  server.on.CI(applyCharacterBatch);
-  server.on.CT(appendOOCMessage);
-  server.on.decryptor(applyEncryptionMode);
-  server.on.DONE(finishServerJoin);
-  server.on.EI(applyEvidenceInfo);
-  server.on.EM(applyEvidenceListBatch);
-  server.on.FA(applyFullAreaList);
-  server.on.FL(applyFeatureFlags);
-  server.on.FM(applyFullMusicList);
-  server.on.HP(applyHealthBar);
-  server.on.ID(applyServerIdentity);
-  server.on.JD(toggleJudgePanel);
-  server.on.KB(showKickAndBanScreen);
-  server.on.KK(showKickScreen);
-  server.on.LE(applyEvidenceList);
-  server.on.MC(playMusicChange);
-  server.on.MS(handleChatMessage);
-  server.on.PN(applyServerInfo);
-  server.on.PR(applyPlayerRosterChange);
-  server.on.PU(applyPlayerFieldUpdate);
-  server.on.PV(applyCharacterPick);
-  server.on.RMC(applyMusicSeek);
-  server.on.RT(applyTestimonyState);
-  server.on.SC(applyFullCharacterList);
-  server.on.SI(applyServerCounts);
-  server.on.SM(applyMusicListBatch);
-  server.on.SP(applyCharacterSide);
-  server.on.TI(applyTimerUpdate);
+  on("ARUP", applyAreaStatus);
+  on("ASS", applyAssetOrigin);
+  on("AUTH", applyModAuth);
+  on("BB", showBlockingAlert);
+  on("BD", showBanDialog);
+  on("BN", applyBackgroundChange);
+  on("CASEA", showCaseAnnouncement);
+  on("CHECK");
+  on("CharsCheck", applyCharacterAvailability);
+  on("CI", applyCharacterBatch);
+  on("CT", appendOOCMessage);
+  on("decryptor");
+  on("DONE", finishServerJoin);
+  on("EI", applyEvidenceInfo);
+  on("EM", applyEvidenceListBatch);
+  on("FA", applyFullAreaList);
+  on("FL", applyFeatureFlags);
+  on("FM", applyFullMusicList);
+  on("HP", applyHealthBar);
+  on("ID");
+  on("JD", toggleJudgePanel);
+  on("KB", showKickAndBanScreen);
+  on("KK", showKickScreen);
+  on("LE", applyEvidenceList);
+  on("MC", playMusicChange);
+  on("MS", handleChatMessage);
+  on("PN");
+  on("PR", applyPlayerRosterChange);
+  on("PU", applyPlayerFieldUpdate);
+  on("PV", applyCharacterPick);
+  on("RMC", applyMusicSeek);
+  on("RT", applyTestimonyState);
+  on("SC", applyFullCharacterList);
+  on("SI", applyServerCounts);
+  on("SM", applyMusicListBatch);
+  on("SP", applyCharacterSide);
+  on("TI", applyTimerUpdate);
   // VS_* are a LemmyAO transport extension, not part of the meta spec, so they
   // ride aolib-ts's custom channel (codecs in ./voice/vsPackets).
   server.onCustom("VS_AUDIO", handleVoiceAudio);
@@ -185,7 +196,7 @@ export function registerProtocol(
   server.onCustom("VS_PEERS", applyVoicePeerList);
   server.onCustom("VS_SPEAK", applyVoicePeerSpeak);
   server.onCustom("GP", applyGroupPair);
-  server.on.ZZ(showModcallNotice);
+  on("ZZ", showModcallNotice);
 
   // ---- client -> server (replay-mode synthesis) ----
   clientSession.on.askchaa(onAreaCharRequest);

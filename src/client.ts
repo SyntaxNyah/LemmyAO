@@ -15,6 +15,10 @@ import { version } from "./version";
 import { onReplayGo } from "./dom/onReplayGo";
 import * as aolib from "aolib-ts";
 import { registerProtocol } from "./registerProtocol";
+import { Connection } from "./core/connection";
+import { coreHandlers } from "./core/protocol";
+import { state } from "./core/state";
+import { on as onCore } from "./core/events";
 import { appendICNotice } from "./client/appendICNotice";
 import { loadResources } from "./client/loadResources";
 import { AO_HOST } from "./client/aoHost";
@@ -62,14 +66,12 @@ export function setExtraFeatures(val: any) {
 }
 
 
-let hdid: string;
-
 const fpPromise = FingerprintJS.load();
 
 fpPromise
   .then((fp) => fp.get())
   .then((result) => {
-    hdid = result.visitorId;
+    const hdid = result.visitorId;
 
     let connectionString = connect;
 
@@ -96,9 +98,8 @@ fpPromise
       );
     }
 
-    client = new Client(connectionString);
+    client = new Client(connectionString, hdid);
     client.connect();
-    client.hdid = hdid;
     loadResources();
     installVoiceUI();
   });
@@ -107,15 +108,27 @@ export function delay(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
 }
 
-export enum clientState {
-  NotConnected,
-  // Should be set once the client has established a connection
-  Connected,
-  // Should be set once the client has joined the server (after handshake)
-  Joined,
-  // Set when a reconnect attempt is in progress
-  Reconnecting,
-}
+onCore("opened", () => {
+  document.getElementById("client_error_overlay")!.style.display = "none";
+  document.getElementById("client_waiting")!.style.display = "block";
+  document.getElementById("client_loading")!.style.display = "block";
+  document.getElementById("client_charselect")!.style.display = "none";
+  appendICNotice("Connected");
+});
+
+onCore("closed", ({ code }) => {
+  const { removal, wasJoined } = state.connection;
+  if (!removal) {
+    document.getElementById("client_errortext")!.textContent = wasJoined
+      ? "You were disconnected from the server."
+      : "Could not connect to the server.";
+    if (wasJoined) appendICNotice("Disconnected");
+    document.getElementById("client_reconnect")!.style.display = "";
+  }
+  document.getElementById("client_error_overlay")!.style.display = "flex";
+  document.getElementById("client_loading")!.style.display = "none";
+  document.getElementById("error_id")!.textContent = String(code);
+});
 
 export let lastICMessageTime = new Date(0);
 export function setLastICMessageTime(val: Date) {
@@ -123,39 +136,35 @@ export function setLastICMessageTime(val: Date) {
 }
 
 class Client {
-  /**
-   * Session representing the remote server. Owns the C2S send side
-   * (`server.send.HI(...)`, etc.) and the S2C receive side
-   * (`server.on.MS(...)`, registered from `packets.ts`).
-   * Initialised in `connect()` once the transport is ready.
-   */
-  server!: aolib.ServerSession;
+  connection: Connection;
 
-  /**
-   * Session representing a remote client. Used only in replay /
-   * acting-as-server mode where we synthesise server-side packets
-   * locally — `clientSession.send.MC(...)` loops back to
-   * `server.receive(wire)` as if a real server had sent it.
-   */
-  clientSession!: aolib.ClientSession;
+  get server(): aolib.ServerSession {
+    return this.connection.server;
+  }
 
-  /**
-   * When true, we synthesise the server locally instead of talking
-   * to a real one. In this mode, outbound from `server.send` is
-   * looped back into `clientSession.receive` so the synthesised
-   * server can react.
-   */
-  acting_as_server = false;
+  /** The locally synthesised server used by replay and server mode. */
+  get clientSession(): aolib.ClientSession {
+    return this.connection.clientSession;
+  }
 
-  /** Raw WebSocket transport. Undefined in replay mode. */
-  socket: WebSocket | undefined;
-  /** Cancels the current attempt's socket listeners + watchdog. */
-  private connectAbort: AbortController | undefined;
+  get socket(): WebSocket | undefined {
+    return this.connection.socket;
+  }
+
+  get playerID() {
+    return state.server.playerId;
+  }
+
+  get charID() {
+    return state.self.charId;
+  }
+  set charID(id: number) {
+    state.self.charId = id;
+  }
+
   software = "LemmyAO";
   version = version;
   hp: number[];
-  playerID: number;
-  charID: number;
   char_list_length: number;
   evidence_list_length: number;
   music_list_length: number;
@@ -168,16 +177,11 @@ class Client {
   musics: any;
   musics_time: boolean;
   callwords: string[];
-  banned: boolean;
-  hdid: string;
   resources: any;
   selectedEmote: number;
   selectedEvidence: number;
-  checkUpdater: any;
   _lastTimeICReceived: any;
   viewport: Viewport;
-  state: clientState;
-  connect: () => void;
   loadResources: () => void;
   /** Maps player ID to player data */
   playerlist: Map<number, { charId: number; charName: string; showName: string; name: string; area: number }>;
@@ -185,85 +189,19 @@ class Client {
   emote_extensions: string[];
   emotions_extensions: string[];
   background_extensions: string[];
-  constructor(connectionString: string) {
-    this.acting_as_server = isLocalMode;
-    this.state = clientState.NotConnected;
-    this.connect = () => {
-      // Detach the previous attempt's socket listeners + watchdog.
-      this.connectAbort?.abort();
-      const abort = new AbortController();
-      this.connectAbort = abort;
+  constructor(connectionString: string, hdid: string) {
+    this.connection = new Connection({
+      url: connectionString,
+      local: isLocalMode,
+      disableJson,
+      hdid,
+      software: this.software,
+      version: this.version,
+      register: (server, clientSession) =>
+        registerProtocol(server, clientSession, coreHandlers(this.connection)),
+    });
 
-      // Wire the aolib sessions. Both must exist before handlers are
-      // registered so the wrong-direction guard sees the full picture.
-      // server.send.X ships outbound; in replay mode it loops back to
-      // clientSession.receive instead of going to the wire.
-      // clientSession.send.X is used only in replay mode (to synthesise
-      // server -> client packets) — its output always loops to
-      // server.receive.
-      this.server = aolib.server({
-        // JSON negotiation is on by default; ?disableJson=true keeps fanta.
-        disableAutoJson: disableJson,
-        send: (wire) => {
-          console.debug(`C: ${wire}`);
-          if (this.acting_as_server) {
-            this.clientSession.receive(wire);
-          } else {
-            this.socket.send(wire);
-          }
-        },
-        onUnknownHeader: (header, wire) => {
-          console.warn(`[aolib] unknown s2c header '${header}'`, { wire });
-        },
-        onDecodeError: (header, err, wire) => {
-          console.error(`[aolib] decode error for '${header}':`, err, { wire });
-        },
-        onHandlerError: (header, err) => {
-          console.error(`[aolib] handler for '${header}' threw:`, err);
-        },
-      });
-      this.clientSession = aolib.client({
-        disableAutoJson: disableJson,
-        send: (wire) => {
-          console.debug(`S: ${wire}`);
-          this.server.receive(wire);
-        },
-        onUnknownHeader: (header, wire) => {
-          console.warn(`[aolib] unknown c2s header '${header}'`, { wire });
-        },
-        onDecodeError: (header, err, wire) => {
-          console.error(`[aolib] decode error for '${header}':`, err, { wire });
-        },
-        onHandlerError: (header, err) => {
-          console.error(`[aolib] server-side handler for '${header}' threw:`, err);
-        },
-      });
-      registerProtocol(this.server, this.clientSession);
-
-      if (!isLocalMode) {
-        this.socket = new WebSocket(connectionString);
-        const opts = { signal: abort.signal };
-        this.socket.addEventListener("open", this.onOpen.bind(this), opts);
-        this.socket.addEventListener("close", this.onClose.bind(this), opts);
-        this.socket.addEventListener("message", this.onMessage.bind(this), opts);
-        this.socket.addEventListener("error", this.onError.bind(this), opts);
-
-        // 5s watchdog — if the socket hasn't opened, assume unreachable.
-        const watchdog = setTimeout(() => {
-          if (this.state === clientState.NotConnected) {
-            this.socket?.close();
-          }
-        }, 5000);
-        abort.signal.addEventListener("abort", () => clearTimeout(watchdog));
-      } else {
-        this.joinServer();
-      }
-    };
-
-    this.banned = false;
     this.hp = [0, 0];
-    this.playerID = 1;
-    this.charID = -1;
     this.char_list_length = 0;
     this.evidence_list_length = 0;
     this.music_list_length = 0;
@@ -279,7 +217,6 @@ class Client {
     this.resources = getResources(AO_HOST, theme);
     this.selectedEmote = -1;
     this.selectedEvidence = -1;
-    this.checkUpdater = null;
     this.viewport = masterViewport();
     this._lastTimeICReceived = new Date(0);
     this.playerlist = new Map();
@@ -312,87 +249,13 @@ class Client {
       : -1;
   }
 
-  /**
-   * Begins the handshake process by sending an identifier
-   * to the server.
-   */
-  joinServer() {
-    this.server.send.HI({ hdid });
-    if (!isLocalMode) {
-      this.checkUpdater = setInterval(
-        () => this.server.send.CH({ char_id: this.charID }),
-        5000,
-      );
-    }
+  connect() {
+    this.connection.connect();
   }
 
-  /**
-   * Triggered when a connection is established to the server.
-   * @param {Event} _e
-   */
-  onOpen(_e: Event) {
-    client.state = clientState.Connected;
-    document.getElementById("client_error_overlay").style.display = "none";
-    document.getElementById("client_waiting").style.display = "block";
-    document.getElementById("client_loading").style.display = "block";
-    document.getElementById("client_charselect").style.display = "none";
-    appendICNotice("Connected");
-  }
-
-  /**
-   * Triggered when the connection to the server closes.
-   * @param {CloseEvent} e
-   */
-  onClose(e: CloseEvent) {
-    console.error(`The connection was closed: ${e.reason} (${e.code})`);
-    if (this.state === clientState.Reconnecting) return;
-    client.state = clientState.NotConnected;
-    if (this.banned === false) {
-      if (this.areas.length > 0) {
-        document.getElementById("client_errortext").textContent =
-          "You were disconnected from the server.";
-        appendICNotice("Disconnected");
-      } else {
-        document.getElementById("client_errortext").textContent =
-          "Could not connect to the server.";
-      }
-      (<HTMLElement>document.getElementById("client_reconnect")).style.display = "";
-    }
-    document.getElementById("client_error_overlay").style.display = "flex";
-    document.getElementById("client_loading").style.display = "none";
-    document.getElementById("error_id").textContent = String(e.code);
-    this.cleanup();
-  }
-
-  /** Triggered when a packet (or chunk thereof) is received from the server. */
-  onMessage(e: MessageEvent) {
-    const msg = e.data;
-    console.debug(`S: ${msg}`);
-    this.server.receive(msg);
-  }
-
-  /**
-   * Triggered when a network error occurs. WebSocket fires a plain
-   * `Event` here, not `ErrorEvent` — the browser doesn't expose error
-   * detail by design.
-   */
-  onError(e: Event) {
-    console.error(`A network error occurred`);
-    console.error(e);
-    if (this.state === clientState.Reconnecting) return;
-    client.state = clientState.NotConnected;
-    document.getElementById("client_errortext").textContent =
-      "Could not connect to the server.";
-    (<HTMLElement>document.getElementById("client_reconnect")).style.display = "";
-    document.getElementById("client_error_overlay").style.display = "flex";
-    this.cleanup();
-  }
-
-  /** Stop keepalives, detach socket listeners, close the socket. */
+  /** Drops the connection without reporting a disconnect. */
   cleanup() {
-    clearInterval(this.checkUpdater);
-    this.connectAbort?.abort();
-    if (this.socket) this.socket.close();
+    this.connection.dispose();
   }
 
   /**

@@ -45,9 +45,6 @@ export function applyMusicListBatch(packet: aolib.packets.SM) {
     }
     index++;
   }
-
-  // Music done, carry on
-  client.server.send.RD({});
 }
 
 /** FM: server pushes the full music list (refresh after edits). */

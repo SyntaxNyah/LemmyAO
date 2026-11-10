@@ -12,6 +12,7 @@
 // type. No effect unless mode is `server`.
 
 import { client } from "../client";
+import { state } from "../core/state";
 import { setAOhost } from "../client/aoHost";
 import { buildCharGrid } from "../client/fetchLists";
 import { setupCharacterBasic } from "../client/handleCharacterInfo";
@@ -59,6 +60,7 @@ async function runServerMode(): Promise<void> {
     client.char_list_length = names.length;
     buildCharGrid(names.length);
     names.forEach((name, i) => setupCharacterBasic([name, "", "", ""], i));
+    state.characters = names.map((name) => ({ name, description: "", evidence: "", taken: false }));
   }
 
   // Replace the replay playback controls with the normal OOC input.
