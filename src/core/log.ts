@@ -43,3 +43,15 @@ export function icLogAsText(entries: readonly ICEntry[], useShownames: boolean) 
     })
     .join("\n");
 }
+
+const PAIR_KEYWORD = /\b(pair|paired|pairing|unpair|unpaired)\b/i;
+const PLAYER_ID = /(?:\[|\(|#|id\s*[:=]?\s*)(\d{1,5})\b/gi;
+
+/**
+ * Player ids an OOC message talks about pairing with, e.g. "[12] wants to
+ * pair", or null if it isn't about pairing.
+ */
+export function pairMentions(message: string): number[] | null {
+  if (!PAIR_KEYWORD.test(message)) return null;
+  return [...new Set([...message.matchAll(PLAYER_ID)].map((m) => Number(m[1])))];
+}

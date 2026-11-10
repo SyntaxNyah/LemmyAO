@@ -210,9 +210,9 @@ h2 {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   align-items: start;
-  gap: 8px;
+  gap: 2px;
   margin: 0;
   padding: 12px 16px 16px;
   overflow-y: auto;
@@ -227,9 +227,9 @@ h2 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
-  padding: 6px 4px 8px;
+  padding: 4px 2px 6px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: none;

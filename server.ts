@@ -11,7 +11,12 @@
  *     tab/browser to see messages relayed between clients.
  */
 
-import { client as aoClient, type ClientSession } from "aolib-ts";
+import {
+  client as aoClient,
+  PlayerDataType,
+  PlayerListUpdate,
+  type ClientSession,
+} from "aolib-ts";
 
 const PORT = Number(process.env.PORT ?? 8081);
 
@@ -46,6 +51,28 @@ const broadcast = (fn: (s: ClientSession) => void): void => {
     }
   }
 };
+
+// The player list (PR/PU) every joined client sees.
+const players = new Map<ClientSession, { id: number; name: string; charName: string }>();
+
+function sendPlayer(to: ClientSession, p: { id: number; name: string; charName: string }) {
+  to.send.PR({ id: p.id, type: PlayerListUpdate.add });
+  to.send.PU({ id: p.id, type: PlayerDataType.char_name, data: p.charName });
+  to.send.PU({ id: p.id, type: PlayerDataType.ooc_name, data: p.name });
+  to.send.PU({ id: p.id, type: PlayerDataType.area_id, data: "0" });
+}
+
+function updatePlayer(session: ClientSession, type: PlayerDataType, data: string) {
+  const p = players.get(session);
+  if (p) broadcast((s) => s.send.PU({ id: p.id, type, data }));
+}
+
+function leave(session: ClientSession) {
+  const p = players.get(session);
+  if (!p) return;
+  players.delete(session);
+  broadcast((s) => s.send.PR({ id: p.id, type: PlayerListUpdate.remove }));
+}
 
 // Assets (characters/, background/, sounds/) are served from this server, so
 // tell clients to fetch from here, under the host they reached us by. They only
@@ -94,10 +121,17 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
   session.on.RD(() => {
     session.send.BN({ background: BACKGROUND });
     session.send.DONE({});
+    const me = { id: playerId, name: "", charName: "" };
+    for (const other of players.values()) sendPlayer(session, other);
+    players.set(session, me);
+    broadcast((s) => sendPlayer(s, me));
   });
 
   session.on.CC((packet) => {
     session.send.PV({ player_id: playerId, char_id: packet.char_id } as never);
+    const me = players.get(session);
+    if (me) me.charName = ROSTER[packet.char_id] ?? "";
+    updatePlayer(session, PlayerDataType.char_name, me?.charName ?? "");
   });
 
   // Keep-alive: some clients expect a CHECK echo.
@@ -113,7 +147,15 @@ function setupSession(ws: { send(data: string): void }, assetUrl: string): Clien
     console.log(`[ao] MS from char_id=${(packet as { char_id: number }).char_id} -> ${sessions.size} clients: ${(packet as { message: string }).message}`);
     broadcast((s) => s.send.MS(packet as never));
   });
-  session.on.CT((packet) => broadcast((s) => s.send.CT(packet as never)));
+  session.on.CT((packet) => {
+    const me = players.get(session);
+    const name = (packet as { name: string }).name;
+    if (me && me.name !== name) {
+      me.name = name;
+      updatePlayer(session, PlayerDataType.ooc_name, name);
+    }
+    broadcast((s) => s.send.CT(packet as never));
+  });
   // MC carrying an area name is a move, not a song; there is only one room to move to.
   session.on.MC((packet) => {
     if (AREAS.includes((packet as { name: string }).name)) return;
@@ -161,6 +203,7 @@ const server = Bun.serve<{ session: ClientSession | null; assetUrl: string }>({
     close(ws) {
       if (ws.data.session) {
         sessions.delete(ws.data.session);
+        leave(ws.data.session);
         ws.data.session.close();
       }
       console.log(`[ao] client disconnected (${sessions.size} online)`);

@@ -15,6 +15,7 @@ import OOCChat from "./OOCChat.vue";
 import BackgroundPanel from "./BackgroundPanel.vue";
 import AreasPanel from "./AreasPanel.vue";
 import MusicPanel from "./MusicPanel.vue";
+import PlayersPanel from "./PlayersPanel.vue";
 import OffsetGhost from "./OffsetGhost.vue";
 import CharacterSelect from "./CharacterSelect.vue";
 import LoadingOverlay from "./LoadingOverlay.vue";
@@ -168,7 +169,7 @@ onUnmounted(() => {
       <AreasPanel v-else-if="t.id === 'areas'" />
       <MusicPanel v-else-if="t.id === 'music'" />
       <BackgroundPanel v-else-if="t.id === 'background'" />
-      <LegacyPanel v-else-if="t.id === 'players'" template="players" />
+      <PlayersPanel v-else-if="t.id === 'players'" />
       <LegacyPanel v-else template="mainmenu" />
     </div>
 

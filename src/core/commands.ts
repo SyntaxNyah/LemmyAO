@@ -203,6 +203,16 @@ export function changeHealth(bar: PenaltyBar, delta: number) {
   server().HP({ bar, value });
 }
 
+/**
+ * Pairs with a player: asks the server (/pair) and, since not every server
+ * knows the command, also puts their character on our next message.
+ */
+export function pairWith(playerId: number) {
+  sendOOC(`/pair ${playerId}`);
+  const charId = state.players[playerId]?.charId ?? -1;
+  if (charId >= 0) draft.pair.charId = charId;
+}
+
 /** Kicks when `minutes` is 0, bans otherwise. */
 export function removePlayer(playerId: number, reason: string, minutes = 0) {
   server().MA({ player_id: playerId, duration_minutes: minutes, reason });

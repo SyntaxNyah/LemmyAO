@@ -26,9 +26,10 @@ import {
   changeHealth,
   setMuted,
   resetDraftAfterSend,
+  pairWith,
 } from "../core/commands";
 import { settings, setSetting } from "../core/settings";
-import { icLogAsText } from "../core/log";
+import { icLogAsText, pairMentions } from "../core/log";
 import { on } from "../core/events";
 
 type C2S = keyof packets.C2SOutputs;
@@ -429,4 +430,22 @@ describe("log", () => {
   });
 
   const server = () => conn.clientSession.send;
+});
+
+describe("pairing", () => {
+  test("pairMentions finds player ids in pairing messages only", () => {
+    expect(pairMentions("[12] wants to pair with (#7)")).toEqual([12, 7]);
+    expect(pairMentions("id: 3 unpaired")).toEqual([3]);
+    expect(pairMentions("[12] said hello")).toBeNull();
+  });
+
+  test("pairWith asks the server and sets the partner on the draft", () => {
+    receive("SC#Phoenix#Edgeworth#%");
+    conn.clientSession.send.PR({ id: 4, type: PlayerListUpdate.add });
+    conn.clientSession.send.PU({ id: 4, type: PlayerDataType.char_name, data: "Edgeworth" });
+    draft.pair.charId = -1;
+    pairWith(4);
+    expect(outbound.at(-1)).toMatchObject({ $header: "CT", message: "/pair 4" });
+    expect(draft.pair.charId).toBe(1);
+  });
 });
