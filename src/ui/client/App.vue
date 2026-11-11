@@ -23,6 +23,8 @@ import LoadingOverlay from "./LoadingOverlay.vue";
 import ConnectionOverlay from "./ConnectionOverlay.vue";
 import ServerAlert from "./ServerAlert.vue";
 import { offsetPreview } from "./offsetPreview";
+import SeamKnob from "./SeamKnob.vue";
+import { editingLayout, ratio } from "./layout";
 
 // Landscape: the viewport with the first tab under it, beside a column for the
 // other tabs. Portrait: the viewport, the message bar, then every tab.
@@ -43,6 +45,16 @@ watch([isLandscape, first], ([landscape]) => {
 });
 
 const underStage = (id: TabId) => isLandscape.value && id === first.value;
+
+// Ratios set in edit mode; without one, the CSS fallbacks keep the default layout.
+const layoutVars = computed(() => {
+  const vars: Record<string, string> = {};
+  const sidebar = ratio("sidebar");
+  const viewport = ratio(isLandscape.value ? "viewportLandscape" : "viewportPortrait");
+  if (sidebar) vars["--sidebar"] = `${sidebar * 100}%`;
+  if (viewport) vars["--viewport-height"] = `${viewport * 100}dvh`;
+  return vars;
+});
 const shown = (id: TabId) => underStage(id) || tab.value === id;
 
 
@@ -108,7 +120,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="shell" :class="isLandscape ? 'landscape' : 'portrait'">
+  <div class="shell" :class="[isLandscape ? 'landscape' : 'portrait', { editing: editingLayout }]" :style="layoutVars">
     <div class="viewport-frame">
       <div ref="viewportHost" class="legacy viewport"></div>
       <OffsetGhost v-if="offsetPreview" />
@@ -185,6 +197,11 @@ onUnmounted(() => {
       <SettingsPanel v-else />
     </div>
 
+    <template v-if="editingLayout">
+      <SeamKnob v-if="isLandscape" seam="sidebar" class="seam-sidebar" />
+      <SeamKnob :seam="isLandscape ? 'viewportLandscape' : 'viewportPortrait'" class="seam-viewport" />
+    </template>
+
     <CharacterSelect />
     <LoadingOverlay />
     <ConnectionOverlay />
@@ -217,7 +234,7 @@ onUnmounted(() => {
     "viewport panels" auto
     "input panels" auto
     "under panels" 1fr
-    / minmax(0, 1fr) clamp(340px, 32vw, 480px);
+    / minmax(0, 1fr) var(--sidebar, clamp(340px, 32vw, 480px));
 }
 
 .viewport-frame {
@@ -236,13 +253,33 @@ onUnmounted(() => {
 
 /* Leave room for the message bar and a panel. */
 .portrait .viewport-frame {
-  max-width: calc(55dvh * 4 / 3);
+  max-width: calc(var(--viewport-height, 55dvh) * 4 / 3);
 }
 
 /* Keep the 4:3 viewport from pushing the controls off screen: tall screens keep
    260px for them, short ones (landscape phones) give the viewport 60%. */
 .landscape .viewport-frame {
-  max-width: calc(min(100dvh - 120px, max(60dvh, 100dvh - 260px)) * 4 / 3);
+  max-width: calc(var(--viewport-height, min(100dvh - 120px, max(60dvh, 100dvh - 260px))) * 4 / 3);
+}
+
+/* Knobs sit centered on the seams they move. */
+.seam-sidebar {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  align-self: center;
+  justify-self: start;
+  transform: translateX(-50%);
+}
+
+.seam-viewport {
+  grid-area: viewport;
+  align-self: end;
+  justify-self: center;
+  transform: translateY(50%);
+}
+
+.editing .viewport-frame {
+  outline: 1px dashed var(--accent);
 }
 
 .ic-input {

@@ -100,6 +100,10 @@ const schema = {
   favouriteAreas: field("favouriteAreas", stringList, [] as string[]),
   /** Client tab ids in display order; tabs missing from it keep their default place at the end. */
   tabOrder: field("tabOrder", stringList, [] as string[]),
+  /** Layout ratios set in edit mode, as fractions of the window; 0 keeps the default. */
+  layoutSidebar: field("layoutSidebar", range(0, 1), 0),
+  layoutViewportLandscape: field("layoutViewportLandscape", range(0, 1), 0),
+  layoutViewportPortrait: field("layoutViewportPortrait", range(0, 1), 0),
 };
 
 type Schema = typeof schema;
