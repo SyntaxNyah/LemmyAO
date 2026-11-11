@@ -1,9 +1,9 @@
 import { DEFAULT_TABS, type TabId } from "./tabs";
 
 /**
- * How the tabs are arranged in landscape: a group under the viewport, and the
- * right side as a tree of splits whose leaves are groups. Each group shows one
- * of its tabs. Portrait ignores the arrangement and lists every tab in one strip.
+ * How the tabs are arranged in landscape: a tree of splits whose leaves are
+ * groups, each showing one of its tabs. The viewport is a tab like any other.
+ * Portrait ignores the arrangement: the viewport on top, every other tab in one strip.
  */
 export interface PanelGroup {
   kind: "group";
@@ -24,73 +24,69 @@ export interface PanelSplit {
 export type PanelNode = PanelGroup | PanelSplit;
 
 export interface PanelLayout {
-  under: PanelGroup;
-  side: PanelNode;
+  root: PanelNode;
 }
 
-/** A group: "under", or the child indices from the right side's root. */
-export type GroupRef = "under" | number[];
+/** A group, as the child indices from the root. */
+export type GroupRef = number[];
 
-export const MAX_SIDE_GROUPS = 4;
+export const MAX_GROUPS = 6;
 
 const ALL_TABS = DEFAULT_TABS.map((t) => t.id);
 const group = (tabs: TabId[], size = 1): PanelGroup => ({ kind: "group", tabs, active: tabs[0] ?? null, size });
+const split = (dir: PanelSplit["dir"], children: PanelNode[], size = 1): PanelSplit => ({ kind: "split", dir, children, size });
 
-/** The default arrangement, following a saved tab order: the first tab under the viewport. */
+// The viewport above one group, beside the other tabs; sizes roughly match the classic layout.
+const around = (under: PanelGroup, side: PanelNode): PanelNode =>
+  split("row", [split("column", [group(["viewport"], 2.4), { ...under, size: 1 }], 2.1), { ...side, size: 1 }]);
+
+/** The default arrangement, following a saved tab order: its first tab under the viewport. */
 export function defaultLayout(order: readonly TabId[] = ALL_TABS): PanelLayout {
-  const [first, ...rest] = order;
-  return { under: group(first ? [first] : []), side: group(rest) };
+  const [first, ...rest] = order.filter((t) => t !== "viewport");
+  return { root: around(group(first ? [first] : []), group(rest)) };
 }
 
 export function nodeAt(layout: PanelLayout, path: number[]): PanelNode | undefined {
-  let node: PanelNode | undefined = layout.side;
+  let node: PanelNode | undefined = layout.root;
   for (const i of path) node = node?.kind === "split" ? node.children[i] : undefined;
   return node;
 }
 
 export function groupAt(layout: PanelLayout, ref: GroupRef): PanelGroup | undefined {
-  if (ref === "under") return layout.under;
   const node = nodeAt(layout, ref);
   return node?.kind === "group" ? node : undefined;
 }
 
-/** Every group with where it is, the one under the viewport first, then the right side in reading order. */
+/** Every group with where it is, in reading order. */
 export function allGroups(layout: PanelLayout): { ref: GroupRef; group: PanelGroup }[] {
-  const out: { ref: GroupRef; group: PanelGroup }[] = [{ ref: "under", group: layout.under }];
+  const out: { ref: GroupRef; group: PanelGroup }[] = [];
   const walk = (node: PanelNode, path: number[]) => {
     if (node.kind === "group") out.push({ ref: path, group: node });
     else node.children.forEach((child, i) => walk(child, [...path, i]));
   };
-  walk(layout.side, []);
+  walk(layout.root, []);
   return out;
 }
-
-export const sideGroupCount = (layout: PanelLayout) => allGroups(layout).length - 1;
 
 const positive = (n: unknown) => (typeof n === "number" && n > 0 ? n : 1);
 
 /**
  * Makes a layout safe to use: every tab exactly once (missing ones join the
- * last group), no empty groups on the right, no split with a single child,
- * and a valid active tab everywhere.
+ * last group), no empty groups, no split with a single child or nested in one
+ * running the same way, and a valid active tab everywhere.
  */
 export function normalize(input: PanelLayout): PanelLayout {
   const seen = new Set<TabId>();
-  const fixGroup = (g: Partial<PanelGroup>): PanelGroup => {
-    const tabs = (g.tabs ?? []).filter((t) => ALL_TABS.includes(t) && !seen.has(t) && !!seen.add(t));
-    return { kind: "group", tabs, active: tabs.includes(g.active as TabId) ? g.active! : (tabs[0] ?? null), size: positive(g.size) };
-  };
-  const under = fixGroup(input.under ?? {});
   const fixNode = (node: PanelNode | undefined): PanelNode | null => {
     if (!node) return null;
     if (node.kind !== "split") {
-      const g = fixGroup(node);
-      return g.tabs.length ? g : null;
+      const tabs = (node.tabs ?? []).filter((t) => ALL_TABS.includes(t) && !seen.has(t) && !!seen.add(t));
+      if (!tabs.length) return null;
+      return { kind: "group", tabs, active: tabs.includes(node.active as TabId) ? node.active! : tabs[0], size: positive(node.size) };
     }
     const dir = node.dir === "column" ? "column" : "row";
     const children = (node.children ?? []).map(fixNode).flatMap((c): PanelNode[] => {
       if (!c) return [];
-      // A split inside one running the same way merges into it, keeping its share.
       if (c.kind === "split" && c.dir === dir) {
         const total = c.children.reduce((sum, k) => sum + k.size, 0);
         return c.children.map((k) => ({ ...k, size: (k.size / total) * c.size }));
@@ -98,44 +94,40 @@ export function normalize(input: PanelLayout): PanelLayout {
       return [c];
     });
     if (!children.length) return null;
-    // A split of one is just that child, in the split's place.
     if (children.length === 1) return { ...children[0], size: positive(node.size) };
-    return { kind: "split", dir, children, size: positive(node.size) };
+    return split(dir, children, positive(node.size));
   };
-  let side = fixNode(input.side) ?? group([]);
+  const root = fixNode(input.root) ?? group([]);
   const missing = ALL_TABS.filter((t) => !seen.has(t));
   if (missing.length) {
-    let last: PanelNode = side;
+    let last: PanelNode = root;
     while (last.kind === "split") last = last.children.at(-1)!;
     last.tabs.push(...missing);
     last.active ??= last.tabs[0];
   }
-  if (side.kind === "group") side = { ...side, size: 1 };
-  return { under, side };
+  return { root: { ...root, size: 1 } };
 }
 
-// The first version stored the right side as columns of stacked groups.
-interface ColumnsLayout {
-  under: PanelGroup;
-  columns: { groups: PanelGroup[]; size: number }[];
-}
+// Earlier versions kept the viewport fixed, with a group under it and the right
+// side either as a tree or as columns of stacked groups.
+type Saved =
+  | PanelLayout
+  | { under: PanelGroup; side: PanelNode }
+  | { under: PanelGroup; columns: { groups: PanelGroup[]; size: number }[] };
 
-function fromColumns(old: ColumnsLayout): PanelLayout {
-  const column = (c: ColumnsLayout["columns"][number]): PanelNode => ({
-    kind: "split",
-    dir: "column",
-    children: c.groups.map((g) => ({ ...g, kind: "group" as const })),
-    size: c.size,
-  });
-  return { under: { ...old.under, kind: "group" }, side: { kind: "split", dir: "row", children: old.columns.map(column), size: 1 } };
+function upgrade(saved: Saved): PanelLayout {
+  if ("root" in saved) return saved;
+  const under = { ...saved.under, kind: "group" as const };
+  if ("side" in saved) return { root: around(under, saved.side) };
+  const columns = saved.columns.map((c) => split("column", c.groups.map((g) => ({ ...g, kind: "group" as const })), c.size));
+  return { root: around(under, split("row", columns)) };
 }
 
 /** Parses a saved layout, falling back to the default (from the old tab order) when it's missing or broken. */
 export function loadLayout(saved: string, tabOrder: readonly string[]): PanelLayout {
   if (saved) {
     try {
-      const parsed = JSON.parse(saved);
-      return normalize("columns" in parsed ? fromColumns(parsed) : parsed);
+      return normalize(upgrade(JSON.parse(saved)));
     } catch {
       /* fall through to the default */
     }
@@ -171,12 +163,12 @@ export function moveTab(layout: PanelLayout, tab: TabId, to: GroupRef, index?: n
 }
 
 /**
- * Splits one right-side group: `beside` puts the tab in a new group to its
- * right, `below` under it. Only that group is divided; when its parent already
- * runs the same way, the new group simply joins it.
+ * Splits one group: `beside` puts the tab in a new group to its right, `below`
+ * under it. Only that group is divided; when its parent already runs the same
+ * way, the new group simply joins it.
  */
 export function splitWith(layout: PanelLayout, tab: TabId, at: GroupRef, where: "below" | "beside"): PanelLayout {
-  if (at === "under" || sideGroupCount(layout) >= MAX_SIDE_GROUPS) return layout;
+  if (allGroups(layout).length >= MAX_GROUPS) return layout;
   const source = groupAt(layout, at);
   if (!source || (source.tabs.length === 1 && source.tabs[0] === tab)) return layout;
   const next = clone(layout);
@@ -187,9 +179,9 @@ export function splitWith(layout: PanelLayout, tab: TabId, at: GroupRef, where: 
   if (parent && parent.dir === dir) {
     parent.children.splice(at.at(-1)! + 1, 0, group([tab], target.size));
   } else {
-    const split: PanelSplit = { kind: "split", dir, children: [{ ...target, size: 1 }, group([tab])], size: target.size };
-    if (parent) parent.children[at.at(-1)!] = split;
-    else next.side = split;
+    const wrapped = split(dir, [{ ...target, size: 1 }, group([tab])], target.size);
+    if (parent) parent.children[at.at(-1)!] = wrapped;
+    else next.root = wrapped;
   }
   return normalize(next);
 }
@@ -208,5 +200,5 @@ export function resizeSplit(layout: PanelLayout, path: number[], sizes: number[]
   return next;
 }
 
-/** Every tab in layout order, for portrait's single strip. */
+/** Every tab in layout order. */
 export const flatTabs = (layout: PanelLayout): TabId[] => allGroups(layout).flatMap(({ group: g }) => g.tabs);

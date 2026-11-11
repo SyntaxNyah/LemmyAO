@@ -4,7 +4,7 @@ import {
   defaultLayout,
   flatTabs,
   loadLayout,
-  MAX_SIDE_GROUPS,
+  MAX_GROUPS,
   moveTab,
   normalize,
   showTab,
@@ -15,104 +15,102 @@ import {
 import { DEFAULT_TABS } from "../ui/client/tabs";
 
 const ALL = DEFAULT_TABS.map((t) => t.id);
-// The right side as nested arrays: a group is its tabs, a split is { row | column: children }.
+// The tree as nested arrays: a group is its tabs, a split is { row | column: children }.
 const tree = (n: PanelNode): unknown => (n.kind === "group" ? n.tabs : { [n.dir]: n.children.map(tree) });
-const side = (l: PanelLayout) => tree(l.side);
-const rest = (...without: string[]) => ALL.slice(1).filter((t) => !without.includes(t));
+const shape = (l: PanelLayout) => tree(l.root);
+const side = (...without: string[]) => ALL.filter((t) => !["viewport", "emotes", ...without].includes(t));
+// The default's right side is root.children[1]; its path is [1].
+const SIDE = [1];
 
 describe("panel layout", () => {
-  test("by default the first tab is under the viewport and the rest share one group", () => {
+  test("by default the viewport is above IC options, beside one group of the rest", () => {
     const l = defaultLayout();
-    expect(l.under.tabs).toEqual(["emotes"]);
-    expect(side(l)).toEqual(ALL.slice(1));
-    expect(allGroups(l)[1].group.active).toBe("log");
+    expect(shape(l)).toEqual({ row: [{ column: [["viewport"], ["emotes"]] }, side()] });
+    expect(allGroups(l)[2].group.active).toBe("log");
   });
 
   test("the old tab order seeds the first layout", () => {
     const l = loadLayout("", ["log", "emotes"]);
-    expect(l.under.tabs).toEqual(["log"]);
-    expect(flatTabs(l).slice(1, 3)).toEqual(["emotes", "ooc"]);
+    expect(shape(l)).toEqual({ row: [{ column: [["viewport"], ["log"]] }, ["emotes", ...side("log")]] });
   });
 
   test("a broken or partial saved layout is repaired: every tab exactly once", () => {
     expect(flatTabs(loadLayout("{not json", [])).sort()).toEqual([...ALL].sort());
-    const partial = loadLayout(JSON.stringify({ under: { tabs: ["ooc", "ooc", "nope"] }, side: { kind: "split", children: [] } }), []);
-    expect(partial.under.tabs).toEqual(["ooc"]);
+    const partial = loadLayout(JSON.stringify({ root: { kind: "split", dir: "row", children: [{ kind: "group", tabs: ["ooc", "ooc", "nope"] }] } }), []);
+    expect(allGroups(partial)[0].group.tabs.slice(0, 1)).toEqual(["ooc"]);
     expect(flatTabs(partial).sort()).toEqual([...ALL].sort());
   });
 
-  test("a layout saved as columns of groups carries over", () => {
-    const old = {
-      under: { tabs: ["emotes"], active: "emotes", size: 1 },
-      columns: [
-        { groups: [{ tabs: rest("music"), active: "log", size: 2 }], size: 1 },
-        { groups: [{ tabs: ["music"], active: "music", size: 1 }], size: 1 },
-      ],
-    };
-    expect(side(loadLayout(JSON.stringify(old), []))).toEqual({ row: [rest("music"), ["music"]] });
+  test("layouts saved with a fixed viewport carry over", () => {
+    const g = (tabs: string[]) => ({ kind: "group", tabs, active: tabs[0], size: 1 });
+    const withSide = { under: g(["emotes"]), side: { kind: "split", dir: "column", size: 1, children: [g(side("music")), g(["music"])] } };
+    expect(shape(loadLayout(JSON.stringify(withSide), []))).toEqual({
+      row: [{ column: [["viewport"], ["emotes"]] }, { column: [side("music"), ["music"]] }],
+    });
+    const withColumns = { under: g([]), columns: [{ groups: [g(["emotes", ...side("music")])], size: 1 }, { groups: [g(["music"])], size: 1 }] };
+    expect(shape(loadLayout(JSON.stringify(withColumns), []))).toEqual({ row: [["viewport"], ["emotes", ...side("music")], ["music"]] });
   });
 
   test("moving a tab between groups shows it in the new one", () => {
-    const l = moveTab(defaultLayout(), "ooc", "under", 0);
-    expect(l.under.tabs).toEqual(["ooc", "emotes"]);
-    expect(l.under.active).toBe("ooc");
-    expect(side(l)).toEqual(rest("ooc"));
+    const l = moveTab(defaultLayout(), "ooc", [0, 1], 0);
+    expect(allGroups(l)[1].group).toMatchObject({ tabs: ["ooc", "emotes"], active: "ooc" });
+    expect(allGroups(l)[2].group.tabs).toEqual(side("ooc"));
+  });
+
+  test("the viewport is a tab like the others", () => {
+    const l = moveTab(defaultLayout(), "viewport", SIDE, 0);
+    expect(shape(l)).toEqual({ row: [["emotes"], ["viewport", ...side()]] });
   });
 
   test("reordering inside a group lands where it was dropped", () => {
-    const l = moveTab(defaultLayout(), "log", [], 3);
-    expect(flatTabs(l).slice(1, 4)).toEqual(["ooc", "areas", "log"]);
+    const l = moveTab(defaultLayout(), "log", SIDE, 3);
+    expect(allGroups(l)[2].group.tabs.slice(0, 3)).toEqual(["ooc", "areas", "log"]);
   });
 
   test("splitting beside a stacked group divides only that group", () => {
-    let l = splitWith(defaultLayout(), "background", [], "below");
-    expect(side(l)).toEqual({ column: [rest("background"), ["background"]] });
-    l = splitWith(l, "music", [0], "beside");
-    expect(side(l)).toEqual({ column: [{ row: [rest("background", "music"), ["music"]] }, ["background"]] });
+    let l = splitWith(defaultLayout(), "background", SIDE, "below");
+    expect(shape(l)).toEqual({ row: [{ column: [["viewport"], ["emotes"]] }, { column: [side("background"), ["background"]] }] });
+    l = splitWith(l, "music", [1, 0], "beside");
+    expect(shape(l)).toEqual({
+      row: [{ column: [["viewport"], ["emotes"]] }, { column: [{ row: [side("background", "music"), ["music"]] }, ["background"]] }],
+    });
   });
 
   test("a split joins its parent when that runs the same way", () => {
-    let l = splitWith(defaultLayout(), "ooc", [], "below");
-    l = splitWith(l, "music", [0], "below");
-    expect(side(l)).toEqual({ column: [rest("ooc", "music"), ["music"], ["ooc"]] });
+    const l = splitWith(defaultLayout(), "music", SIDE, "beside");
+    expect(shape(l)).toEqual({ row: [{ column: [["viewport"], ["emotes"]] }, side("music"), ["music"]] });
   });
 
   test("an emptied group disappears and a split of one collapses", () => {
-    let l = splitWith(defaultLayout(), "background", [], "below");
-    l = splitWith(l, "music", [0], "beside");
-    l = moveTab(l, "music", [1]);
-    expect(side(l)).toEqual({ column: [rest("background", "music"), ["background", "music"]] });
-    l = moveTab(l, "background", [0]);
-    l = moveTab(l, "music", [0]);
-    expect(side(l)).toEqual(rest("background", "music").concat("background", "music"));
+    let l = splitWith(defaultLayout(), "background", SIDE, "below");
+    l = moveTab(l, "background", SIDE.concat(0));
+    const rest = [...side("background"), "background"];
+    expect(shape(l)).toEqual({ row: [{ column: [["viewport"], ["emotes"]] }, rest] });
+    l = moveTab(l, "emotes", [0, 0]);
+    expect(shape(l)).toEqual({ row: [["viewport", "emotes"], rest] });
   });
 
   test("a split nested in one running the same way merges into it", () => {
     const g = (tabs: string[]) => ({ kind: "group", tabs, active: tabs[0], size: 1 });
     const l = normalize({
-      under: g([]),
-      side: { kind: "split", dir: "row", size: 1, children: [{ kind: "split", dir: "row", size: 1, children: [g(["log"]), g(["ooc"])] }, g(rest("log", "ooc"))] },
+      root: { kind: "split", dir: "row", size: 1, children: [{ kind: "split", dir: "row", size: 1, children: [g(["log"]), g(["ooc"])] }, g(side("log", "ooc"))] },
     } as unknown as PanelLayout);
-    expect(side(l)).toEqual({ row: [["log"], ["ooc"], rest("log", "ooc").concat("emotes")] });
+    expect(shape(l)).toEqual({ row: [["log"], ["ooc"], [...side("log", "ooc"), "viewport", "emotes"]] });
   });
 
-  test("the right side holds at most four groups, and a lone tab can't split its own group", () => {
-    let l = splitWith(defaultLayout(), "ooc", [], "below");
-    for (const tab of ["areas", "music", "players"] as const) l = splitWith(l, tab, [0], "below");
-    expect(allGroups(l).length - 1).toBe(MAX_SIDE_GROUPS);
-    const lone = splitWith(defaultLayout(), "ooc", [], "below");
-    expect(splitWith(lone, "ooc", [1], "beside")).toBe(lone);
+  test("there are at most six groups, and a lone tab can't split its own group", () => {
+    let l = splitWith(splitWith(defaultLayout(), "ooc", SIDE, "below"), "areas", [1, 0], "below");
+    for (const tab of ["music", "players", "evidence"] as const) l = splitWith(l, tab, [1, 0], "below");
+    expect(allGroups(l)).toHaveLength(MAX_GROUPS);
+    expect(splitWith(defaultLayout(), "emotes", [0, 1], "beside")).toEqual(defaultLayout());
   });
 
-  test("the group under the viewport may be emptied, and showTab picks a group's tab", () => {
-    const l = moveTab(defaultLayout(), "emotes", []);
-    expect(l.under.tabs).toEqual([]);
-    expect(l.under.active).toBeNull();
-    expect(allGroups(showTab(l, "music"))[1].group.active).toBe("music");
+  test("showTab picks a group's tab", () => {
+    expect(allGroups(showTab(defaultLayout(), "music"))[2].group.active).toBe("music");
   });
 
   test("normalize keeps a valid active tab", () => {
-    const l = normalize({ under: { kind: "group", tabs: ["emotes"], active: "log", size: 1 }, side: { kind: "group", tabs: [], active: null, size: 1 } });
-    expect(l.under.active).toBe("emotes");
+    const l = normalize({ root: { kind: "group", tabs: ["emotes"], active: "log", size: 1 } });
+    expect(allGroups(l)[0].group.active).toBe("emotes");
   });
 });

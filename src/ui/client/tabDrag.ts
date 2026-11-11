@@ -2,9 +2,9 @@ import { moveTab, splitWith, type GroupRef } from "./panelLayout";
 import { panels, savePanels, tabDrag } from "./layout";
 import type { TabId } from "./tabs";
 
-/** Groups are addressed in the DOM as "under", or "side" followed by their path ("side.0.1"). */
-export const groupKey = (ref: GroupRef) => (ref === "under" ? "under" : ["side", ...ref].join("."));
-const parseKey = (key: string): GroupRef => (key === "under" ? "under" : key.split(".").slice(1).map(Number));
+/** Groups are addressed in the DOM by their path ("g.0.1"). */
+export const groupKey = (ref: GroupRef) => ["g", ...ref].join(".");
+const parseKey = (key: string): GroupRef => key.split(".").slice(1).map(Number);
 
 // The edge of a panel area that splits it rather than moving the tab into it.
 const SPLIT_EDGE = 0.25;
@@ -26,10 +26,10 @@ function targetAt(x: number, y: number): typeof tabDrag.target {
     if (slot) {
       const group = parseKey(slot.dataset.dropSlot!);
       const r = slot.getBoundingClientRect();
-      if (group !== "under" && x > r.right - r.width * SPLIT_EDGE) {
+      if (x > r.right - r.width * SPLIT_EDGE) {
         return { kind: "split", group, where: "beside", rect: new DOMRect(r.left + r.width / 2, r.top, r.width / 2, r.height), label: "New panel beside" };
       }
-      if (group !== "under" && y > r.bottom - r.height * SPLIT_EDGE) {
+      if (y > r.bottom - r.height * SPLIT_EDGE) {
         return { kind: "split", group, where: "below", rect: new DOMRect(r.left, r.top + r.height / 2, r.width, r.height / 2), label: "New panel below" };
       }
       return { kind: "into", group, index: Infinity, rect: r, label: "Move here" };

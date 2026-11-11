@@ -102,9 +102,7 @@ const schema = {
   tabOrder: field("tabOrder", stringList, [] as string[]),
   /** The landscape panel arrangement (ui/client/panelLayout.ts) as JSON; "" for the default. */
   panelLayout: field("panelLayout", text, ""),
-  /** Layout ratios set in edit mode, as fractions of the window; 0 keeps the default. */
-  layoutSidebar: field("layoutSidebar", range(0, 1), 0),
-  layoutViewportLandscape: field("layoutViewportLandscape", range(0, 1), 0),
+  /** Portrait's viewport height set in edit mode, as a fraction of the window; 0 keeps the default. */
   layoutViewportPortrait: field("layoutViewportPortrait", range(0, 1), 0),
 };
 

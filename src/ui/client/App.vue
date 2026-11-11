@@ -23,28 +23,28 @@ import ConnectionOverlay from "./ConnectionOverlay.vue";
 import ServerAlert from "./ServerAlert.vue";
 import { offsetPreview } from "./offsetPreview";
 import SeamKnob from "./SeamKnob.vue";
-import { editingLayout, panels, ratio, savePanels, tabDrag } from "./layout";
+import { editingLayout, panels, portraitViewport, savePanels, tabDrag } from "./layout";
+import { settings } from "../../core/settings";
 import { allGroups, flatTabs, showTab } from "./panelLayout";
 import { groupKey } from "./tabDrag";
 import TabStrip from "./TabStrip.vue";
 import PanelTree from "./PanelTree.vue";
 
-// Landscape: the viewport with a group of tabs under it, beside the right side's
-// splits of groups (see panelLayout.ts). Portrait: the viewport, the message
-// bar, then every tab in one strip. Panels stay mounted in one layer and are
-// placed over the slot of the group showing them, so moving a tab never remounts it.
+// Landscape: a tree of split groups (see panelLayout.ts), the viewport among the
+// tabs. Portrait: the viewport on top, then every other tab in one strip. Panels
+// stay mounted in one layer and are placed over the slot of the group showing
+// them, so moving a tab never remounts it.
 const landscapeQuery = window.matchMedia("(orientation: landscape)");
 const isLandscape = ref(landscapeQuery.matches);
 const onOrientation = (e: MediaQueryListEvent) => (isLandscape.value = e.matches);
 
-const portraitTabs = computed(() => flatTabs(panels.value));
-const portraitTab = ref<TabId>(panels.value.under.active ?? portraitTabs.value[0]);
-// Turning to portrait lands on what was under the viewport.
+const portraitTabs = computed(() => flatTabs(panels.value).filter((t) => t !== "viewport"));
+// Turning to portrait lands on the first tab showing in landscape.
+const firstShown = () => allGroups(panels.value).map(({ group }) => group.active).find((t) => t && t !== "viewport") ?? portraitTabs.value[0];
+const portraitTab = ref<TabId>(firstShown());
 watch(isLandscape, (landscape) => {
-  if (!landscape) portraitTab.value = panels.value.under.active ?? portraitTabs.value[0];
+  if (!landscape) portraitTab.value = firstShown();
 });
-
-const showUnder = computed(() => panels.value.under.tabs.length > 0 || editingLayout.value);
 
 function select(tab: TabId) {
   if (isLandscape.value) savePanels(showTab(panels.value, tab));
@@ -53,7 +53,7 @@ function select(tab: TabId) {
 
 /** The slot a tab's panel is shown in, or null when it's hidden. */
 function slotOf(tab: TabId): string | null {
-  if (!isLandscape.value) return portraitTab.value === tab ? "portrait" : null;
+  if (!isLandscape.value) return tab === "viewport" ? "portrait-viewport" : portraitTab.value === tab ? "portrait" : null;
   const found = allGroups(panels.value).find(({ group }) => group.active === tab);
   return found ? groupKey(found.ref) : null;
 }
@@ -106,7 +106,7 @@ function panelStyle(tab: TabId) {
   return { left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px` };
 }
 
-watch([panels, isLandscape, editingLayout, showUnder], () => void nextTick(measureSlots), { deep: true });
+watch([panels, isLandscape, editingLayout], () => void nextTick(measureSlots), { deep: true });
 
 const tabLabel = (id: TabId) => DEFAULT_TABS.find((t) => t.id === id)!.label;
 
@@ -118,21 +118,16 @@ const dropZones = computed(() => {
   if (!tabDrag.tab || !shell.value) return [];
   const base = shell.value.getBoundingClientRect();
   return Object.entries(slotRects)
-    .filter(([key]) => key !== "portrait")
+    .filter(([key]) => !key.startsWith("portrait"))
     .map(([key, r]) => ({
       key,
-      splits: key !== "under",
       style: { left: `${base.left + r.left}px`, top: `${base.top + r.top}px`, width: `${r.width}px`, height: `${r.height}px` },
     }));
 });
 
-// Ratios set in edit mode; without one, the CSS fallbacks keep the default layout.
 const layoutVars = computed(() => {
-  const vars: Record<string, string> = {};
-  const sidebar = ratio("sidebar");
-  const viewport = ratio(isLandscape.value ? "viewportLandscape" : "viewportPortrait");
-  if (sidebar) vars["--sidebar"] = `${sidebar * 100}%`;
-  if (viewport) vars["--viewport-height"] = `${viewport * 100}dvh`;
+  const vars: Record<string, string> = { "--aspect": settings.widescreen ? `${16 / 9}` : `${4 / 3}` };
+  if (portraitViewport()) vars["--viewport-height"] = `${portraitViewport() * 100}dvh`;
   return vars;
 });
 
@@ -144,9 +139,12 @@ function sendMessage() {
 
 const presenting = computed(() => (draft.evidence >= 0 ? state.evidence[draft.evidence] : undefined));
 
-const viewportHost = ref<HTMLElement>();
-const icInput = ref<HTMLInputElement>();
-provide(focusICInput, () => icInput.value?.focus());
+// Function refs: inside the panels' v-for, plain refs would collect arrays.
+let viewportHost: HTMLElement | undefined;
+let icInput: HTMLInputElement | undefined;
+const setViewportHost = (el: unknown) => (viewportHost = el as HTMLElement);
+const setICInput = (el: unknown) => (icInput = el as HTMLInputElement);
+provide(focusICInput, () => icInput?.focus());
 const scrollers: Partial<Record<TabId, { onVisible: () => void }>> = {};
 const keepRef = (id: TabId) => (el: unknown) => {
   if (el) scrollers[id] = el as { onVisible: () => void };
@@ -166,7 +164,7 @@ onMounted(() => {
   slotObserver.observe(shell.value!);
   for (const el of slotEls.values()) slotObserver.observe(el);
   measureSlots();
-  mountViewport(viewportHost.value!);
+  mountViewport(viewportHost!);
   landscapeQuery.addEventListener("change", onOrientation);
   window.addEventListener("resize", measureSlots);
 });
@@ -179,53 +177,15 @@ onUnmounted(() => {
 
 <template>
   <div ref="shell" class="shell" :class="[isLandscape ? 'landscape' : 'portrait', { editing: editingLayout }]" :style="layoutVars">
-    <div class="viewport-frame">
-      <div ref="viewportHost" class="legacy viewport"></div>
-      <OffsetGhost v-if="offsetPreview" />
-      <VoiceSpeakers />
-    </div>
-
-    <form class="ic-input" @submit.prevent="sendMessage">
-      <button
-        v-if="presenting"
-        type="button"
-        class="presenting"
-        :title="`Presenting ${presenting.name} with your next message. Click to cancel.`"
-        @click="draft.evidence = -1"
-      >
-        Presenting {{ presenting.name }} <span aria-hidden="true">×</span>
-      </button>
-      <input
-        id="client_inputbox"
-        ref="icInput"
-        v-model="draft.message"
-        class="input"
-        type="text"
-        placeholder="Say something…"
-        aria-label="IC message"
-        autocomplete="off"
-        enterkeyhint="send"
-      />
-      <button class="btn btn-primary send" type="submit" aria-label="Send" title="Send">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.1 15 12 3.4 13.9Z" fill="currentColor" />
-        </svg>
-      </button>
-    </form>
-
-    <div v-if="!isLandscape" class="group under">
-      <TabStrip :tabs="portraitTabs" :active="portraitTab" :group="null" @select="select" />
-      <div :ref="slotRef('portrait')" class="slot"></div>
-    </div>
-    <div v-else-if="showUnder" class="group under">
-      <TabStrip v-if="panels.under.tabs.length > 1 || editingLayout" :tabs="panels.under.tabs" :active="panels.under.active" group="under" @select="select" />
-      <div :ref="slotRef('under')" class="slot" data-drop-slot="under">
-        <p v-if="editingLayout && !panels.under.tabs.length" class="drop-hint">Drop a tab here</p>
+    <template v-if="!isLandscape">
+      <div :ref="slotRef('portrait-viewport')" class="portrait-viewport"></div>
+      <div class="portrait-tabs">
+        <TabStrip :tabs="portraitTabs" :active="portraitTab" :group="null" @select="select" />
+        <div :ref="slotRef('portrait')" class="slot"></div>
       </div>
-    </div>
-
-    <div v-if="isLandscape" class="side">
-      <PanelTree :node="panels.side" :path="[]" :slot-ref="slotRef" @select="select" />
+    </template>
+    <div v-else class="tree">
+      <PanelTree :node="panels.root" :path="[]" :slot-ref="slotRef" @select="select" />
     </div>
 
     <!-- Every panel stays mounted, placed over the slot of the group showing it. -->
@@ -237,7 +197,43 @@ onUnmounted(() => {
       role="tabpanel"
       :aria-label="t.label"
     >
-      <ICControls v-if="t.id === 'emotes'" />
+      <div v-if="t.id === 'viewport'" class="viewport-panel">
+        <div class="viewport-box">
+          <div class="viewport-frame">
+            <div :ref="setViewportHost" class="legacy viewport"></div>
+            <OffsetGhost v-if="offsetPreview" />
+            <VoiceSpeakers />
+          </div>
+        </div>
+        <form class="ic-input" @submit.prevent="sendMessage">
+          <button
+            v-if="presenting"
+            type="button"
+            class="presenting"
+            :title="`Presenting ${presenting.name} with your next message. Click to cancel.`"
+            @click="draft.evidence = -1"
+          >
+            Presenting {{ presenting.name }} <span aria-hidden="true">×</span>
+          </button>
+          <input
+            id="client_inputbox"
+            :ref="setICInput"
+            v-model="draft.message"
+            class="input"
+            type="text"
+            placeholder="Say something…"
+            aria-label="IC message"
+            autocomplete="off"
+            enterkeyhint="send"
+          />
+          <button class="btn btn-primary send" type="submit" aria-label="Send" title="Send">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.1 15 12 3.4 13.9Z" fill="currentColor" />
+            </svg>
+          </button>
+        </form>
+      </div>
+      <ICControls v-else-if="t.id === 'emotes'" />
       <ICLog v-else-if="t.id === 'log'" :ref="keepRef('log')" />
       <OOCChat v-else-if="t.id === 'ooc'" :ref="keepRef('ooc')" />
       <AreasPanel v-else-if="t.id === 'areas'" />
@@ -249,12 +245,10 @@ onUnmounted(() => {
     </div>
 
     <template v-if="tabDrag.tab">
-      <!-- Where a tab can go: every panel, and the edges of the right side's panels that split them. -->
+      <!-- Where a tab can go: every panel, and the edges that split it. -->
       <div v-for="zone in dropZones" :key="zone.key" class="drop-zone" :style="zone.style">
-        <template v-if="zone.splits">
-          <span class="split-zone beside">→ New panel</span>
-          <span class="split-zone below">↓ New panel</span>
-        </template>
+        <span class="split-zone beside">→ New panel</span>
+        <span class="split-zone below">↓ New panel</span>
       </div>
       <div v-if="tabDrag.target && !tabDrag.target.marker" class="drop-target" :style="boxStyle(tabDrag.target.rect)">
         <span class="drop-label">{{ tabDrag.target.label }}</span>
@@ -268,10 +262,7 @@ onUnmounted(() => {
       </div>
     </template>
 
-    <template v-if="editingLayout">
-      <SeamKnob v-if="isLandscape" seam="sidebar" class="seam-sidebar" />
-      <SeamKnob :seam="isLandscape ? 'viewportLandscape' : 'viewportPortrait'" class="seam-viewport" />
-    </template>
+    <SeamKnob v-if="editingLayout && !isLandscape" class="seam-viewport" />
 
     <CharacterSelect />
     <LoadingOverlay />
@@ -293,53 +284,44 @@ onUnmounted(() => {
 .portrait {
   grid-template:
     "viewport" auto
-    "input" auto
-    "under" 1fr
+    "tabs" 1fr
     / minmax(0, 1fr);
 }
 
 .landscape {
-  grid-template:
-    "viewport side" auto
-    "input side" auto
-    "under side" 1fr
-    / minmax(0, 1fr) var(--sidebar-track);
-  /* The left side (viewport and IC options) keeps at least 360px; the tab column gives way. */
-  --sidebar-track: max(0px, min(var(--sidebar, clamp(340px, 32vw, 480px)), 100% - 360px));
+  grid-template: "tree" 1fr / minmax(0, 1fr);
+}
+
+/* Room for the viewport and the message bar; the panel shows both. */
+.portrait-viewport {
+  grid-area: viewport;
+  height: calc(min(100vw / var(--aspect), var(--viewport-height, 55dvh)) + 52px);
+}
+
+.viewport-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The viewport fits its panel at its aspect ratio, letterboxed. */
+.viewport-box {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 0;
+  container-type: size;
+  background: #000;
 }
 
 .viewport-frame {
-  grid-area: viewport;
   position: relative;
-  width: 100%;
-  margin: 0 auto;
-  background: #000;
+  width: min(100cqw, 100cqh * var(--aspect));
 }
 
 /* The full courtroom view is three screens wide and pans inside the frame. */
 .viewport {
   position: relative;
   overflow: hidden;
-}
-
-/* Leave room for the message bar and a panel. */
-.portrait .viewport-frame {
-  max-width: calc(var(--viewport-height, 55dvh) * 4 / 3);
-}
-
-/* Keep the 4:3 viewport from pushing the controls off screen: tall screens keep
-   260px for them, short ones (landscape phones) give the viewport 60%. */
-.landscape .viewport-frame {
-  max-width: calc(var(--viewport-height, min(100dvh - 120px, max(60dvh, 100dvh - 260px))) * 4 / 3);
-}
-
-/* Knobs sit centered on the seams they move. */
-.seam-sidebar {
-  grid-column: 2;
-  grid-row: 1 / -1;
-  align-self: center;
-  justify-self: start;
-  transform: translateX(-50%);
 }
 
 .seam-viewport {
@@ -349,12 +331,7 @@ onUnmounted(() => {
   transform: translateY(50%);
 }
 
-.editing .viewport-frame {
-  outline: 1px dashed var(--accent);
-}
-
 .ic-input {
-  grid-area: input;
   display: flex;
   gap: 6px;
   width: 100%;
@@ -396,23 +373,18 @@ onUnmounted(() => {
   position: relative;
 }
 
-.group {
+.portrait-tabs {
+  grid-area: tabs;
   display: flex;
   flex-direction: column;
-  min-width: 0;
   min-height: 0;
 }
 
-.under {
-  grid-area: under;
-}
-
-.side {
-  grid-area: side;
+.tree {
+  grid-area: tree;
   display: flex;
   min-width: 0;
   min-height: 0;
-  border-left: 1px solid var(--border);
 }
 
 /* Empty boxes the panels are placed over. */
@@ -436,14 +408,6 @@ onUnmounted(() => {
 .editing .slot {
   outline: 1px dashed color-mix(in srgb, var(--accent) 40%, transparent);
   outline-offset: -4px;
-}
-
-.drop-hint {
-  display: grid;
-  place-items: center;
-  height: 100%;
-  margin: 0;
-  color: var(--text-muted);
 }
 
 /* Drag feedback sits above the panels and never takes the pointer. */
