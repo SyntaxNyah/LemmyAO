@@ -82,12 +82,17 @@ function key(e: KeyboardEvent) {
   touch-action: none;
 }
 
+/* Only as long as the grip, so the resize cursor shows at the knob, not along the whole seam. */
 .sideways {
+  align-self: center;
   width: 0;
+  height: 48px;
   cursor: col-resize;
 }
 
 .updown {
+  align-self: center;
+  width: 48px;
   height: 0;
   cursor: row-resize;
 }
