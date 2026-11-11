@@ -105,6 +105,10 @@ export function selectEmote(index: number) {
   const emote = state.self.character?.emotes[index];
   if (!emote) return;
   state.self.emoteIndex = index;
+  useEmote(emote);
+}
+
+function useEmote(emote: Emote) {
   draft.emote = {
     preanim: emote.preanim,
     anim: emote.anim,
@@ -143,6 +147,9 @@ export async function loadOwnCharacter(charId: number) {
   if (state.self.charId !== charId) return;
   if (info.failed) {
     state.self.characterLoad = "failed";
+    // Without the character's files (e.g. an asset host that blocks this site), still allow talking with the stub's emote.
+    setPosition(state.self.position);
+    useEmote(emotesFromIni(info.ini)[0]);
     return;
   }
   state.self.characterLoad = "idle";

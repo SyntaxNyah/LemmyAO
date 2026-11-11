@@ -112,7 +112,8 @@ export function sendIC(): boolean {
     emote: emote.anim,
     message: draft.message,
     side: draft.side,
-    sfx_name: draft.sendSfx ? emote.sfx : "0",
+    // Servers reject an empty sfx slot; "0" means none.
+    sfx_name: (draft.sendSfx && emote.sfx) || "0",
     emote_modifier: emoteModifier(emote, draft.sendPreanim),
     char_id: state.self.charId,
     // The wire carries 40 ms ticks.

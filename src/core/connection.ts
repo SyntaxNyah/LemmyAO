@@ -17,6 +17,32 @@ export interface ConnectionOptions {
 
 const OPEN_TIMEOUT_MS = 5000;
 
+/**
+ * Repairs incoming packets some servers send short or with blank numbers, which
+ * aolib can't decode (CSDWASASH): an ID without a version, an SI with empty counts,
+ * a PV with a blank player ID.
+ */
+export function repairInbound(wire: string): string {
+  const id = /^ID#([^#]*)#([^#]*)#%$/.exec(wire);
+  if (id) return `ID#${id[1]}#${id[2]}##%`;
+  if (wire.startsWith("SI#")) return wire.replace(/#(?=#)/g, "#0");
+  const pv = /^PV#([^#]*)#([^#]*)#([^#]*)#%$/.exec(wire);
+  if (pv) return `PV#${pv[1] || "-1"}#CID#${pv[3]}#%`;
+  return wire;
+}
+
+/**
+ * aolib sends an MS without a screen effect with an empty effect slot. KFO-Server
+ * rejects that 2.8 packet outright, so send it the way AO2 does: `||`.
+ */
+export function withEffectSlot(wire: string): string {
+  if (!wire.startsWith("MS#")) return wire;
+  const args = wire.slice(3, -2).split("#");
+  if (args.length !== 26 || args[25] !== "") return wire;
+  args[25] = "||";
+  return `MS#${args.join("#")}#%`;
+}
+
 let current: Connection | undefined;
 
 /** The connection commands go through: the one most recently connected. */
@@ -59,7 +85,8 @@ export class Connection {
 
     this.server = aolib.server({
       disableAutoJson: disableJson,
-      send: (wire) => {
+      send: (encoded) => {
+        const wire = withEffectSlot(encoded);
         console.debug(`C: ${wire}`);
         if (local) this.clientSession.receive(wire);
         else this.socket?.send(wire);
@@ -131,7 +158,7 @@ export class Connection {
 
   private onMessage(e: MessageEvent) {
     console.debug(`S: ${e.data}`);
-    this.server.receive(e.data);
+    this.server.receive(typeof e.data === "string" ? repairInbound(e.data) : e.data);
   }
 
   private onClosed(code: number, reason: string) {
