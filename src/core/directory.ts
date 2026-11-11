@@ -95,9 +95,9 @@ export function clientUrl(
   if (socket.startsWith("ws://")) url.protocol = "http:";
   url.search = "";
   url.searchParams.set("mode", options.watch ? "watch" : "join");
-  url.searchParams.set("connect", socket);
   if (options.name) url.searchParams.set("serverName", options.name);
-  return url.href;
+  // The socket stays readable (connect=ws://...) so a server rule can send https visits to http.
+  return `${url.href}&connect=${socket}`;
 }
 
 /**
