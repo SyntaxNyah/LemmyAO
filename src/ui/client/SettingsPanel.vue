@@ -213,6 +213,18 @@ const checkbox = (key: SettingKey) => ({
       </label>
     </section>
 
+    <section v-show="visible('layout')" class="section">
+      <h3>Layout</h3>
+      <div class="buttons">
+        <label class="check"><input v-model="editingLayout" type="checkbox" /> Edit mode</label>
+        <button class="btn" :disabled="!layoutChanged()" @click="resetLayout">Reset layout</button>
+      </div>
+      <p v-if="editingLayout" class="muted">
+        Drag the knobs on the seams to resize. Drag a tab onto another tab bar to move it, onto the edge of a panel to
+        split it, or onto the edge of the screen for a full-height or full-width panel (in landscape).
+      </p>
+    </section>
+
     <section v-show="visible('voice')" class="section">
       <h3>Voice chat</h3>
       <p v-if="!voiceUi.available" class="muted">This server doesn't have voice chat.</p>
@@ -289,18 +301,6 @@ const checkbox = (key: SettingKey) => ({
         <button class="btn" type="submit" :disabled="!newCallword.trim()">Add callword</button>
       </form>
       <div><button class="btn" @click="modcall_test">Test mod call sound</button></div>
-    </section>
-
-    <section v-show="visible('layout')" class="section">
-      <h3>Layout</h3>
-      <div class="buttons">
-        <label class="check"><input v-model="editingLayout" type="checkbox" /> Edit mode</label>
-        <button class="btn" :disabled="!layoutChanged()" @click="resetLayout">Reset layout</button>
-      </div>
-      <p v-if="editingLayout" class="muted">
-        Drag the knobs on the seams to resize. Drag a tab onto another tab bar to move it, onto the edge of a panel to
-        split it, or onto the edge of the screen for a full-height or full-width panel (in landscape).
-      </p>
     </section>
 
     <section v-show="visible('server')" class="section">
