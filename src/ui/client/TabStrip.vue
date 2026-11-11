@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { DEFAULT_TABS, type TabId } from "./tabs";
-import { editingLayout, panels, savePanels } from "./layout";
-import { allGroups, MAX_SIDE_GROUPS, moveTab, sideGroupCount, splitWith, type GroupRef } from "./panelLayout";
+import { editingLayout } from "./layout";
+import type { GroupRef } from "./panelLayout";
 import { groupKey, startTabDrag } from "./tabDrag";
 
 // `group` is null for portrait's single strip, which isn't part of the arrangement.
@@ -42,31 +42,6 @@ function down(tab: TabId, e: PointerEvent) {
   startTabDrag(tab, e, () => emit("select", tab));
 }
 
-// Moving the shown tab without dragging (keyboard, or where dragging is awkward).
-const destinations = computed(() => {
-  if (!props.group || !props.active) return [];
-  const here = groupKey(props.group);
-  let n = 0;
-  const options = allGroups(panels.value).flatMap(({ ref, group }) => {
-    const name = ref === "under" ? "Under the viewport" : `Panel ${++n}`;
-    return groupKey(ref) === here ? [] : [{ value: `into:${groupKey(ref)}`, label: `${name} (${group.tabs.map(label).join(", ") || "empty"})` }];
-  });
-  if (props.group !== "under" && sideGroupCount(panels.value) < MAX_SIDE_GROUPS) {
-    options.push({ value: "split:below", label: "New panel below" }, { value: "split:beside", label: "New panel beside" });
-  }
-  return options;
-});
-
-function moveShown(e: Event) {
-  const select = e.target as HTMLSelectElement;
-  const [kind, where] = select.value.split(":");
-  select.value = "";
-  const tab = props.active!;
-  if (kind === "split") return savePanels(splitWith(panels.value, tab, props.group!, where as "below" | "beside"));
-  const [column, group] = where.split("-").map(Number);
-  savePanels(moveTab(panels.value, tab, where === "under" ? "under" : { column, group }));
-}
-
 let observer: ResizeObserver | undefined;
 onMounted(() => {
   observer = new ResizeObserver(measure);
@@ -91,10 +66,6 @@ onUnmounted(() => observer?.disconnect());
         {{ label(t) }}
       </button>
     </nav>
-    <select v-if="editing && destinations.length" class="move" aria-label="Move this tab" @change="moveShown">
-      <option value="">Move…</option>
-      <option v-for="d in destinations" :key="d.value" :value="d.value">{{ d.label }}</option>
-    </select>
     <button v-if="overflow.left" class="tab-scroll left" tabindex="-1" aria-label="Show earlier tabs" @click="scrollBy(-1)">‹</button>
     <button v-if="overflow.right && !editing" class="tab-scroll right" tabindex="-1" aria-label="Show more tabs" @click="scrollBy(1)">
       ›
@@ -148,17 +119,6 @@ onUnmounted(() => observer?.disconnect());
   touch-action: none;
 }
 
-.move {
-  flex: none;
-  max-width: 7em;
-  margin: 6px 8px 4px 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
-}
 
 /* Fade the cut-off edge and offer a chevron so hidden tabs are discoverable. */
 .more-left .tabs {
