@@ -1,14 +1,4 @@
-export type TabId =
-  | "viewport"
-  | "emotes"
-  | "log"
-  | "ooc"
-  | "areas"
-  | "music"
-  | "background"
-  | "evidence"
-  | "players"
-  | "settings";
+export type TabId = "viewport" | "emotes" | "log" | "ooc" | "areas" | "music" | "background" | "evidence" | "players" | "settings";
 
 export interface TabDef {
   id: TabId;

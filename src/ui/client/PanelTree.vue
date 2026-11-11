@@ -12,7 +12,14 @@ const emit = defineEmits<{ select: [tab: TabId] }>();
 
 <template>
   <div v-if="node.kind === 'group'" class="group" data-split-item :style="{ flexGrow: node.size }">
-    <TabStrip v-if="node.tabs.length > 1 || editingLayout" :tabs="node.tabs" :active="node.active" :group="path" @select="emit('select', $event)" />
+    <TabStrip
+      v-if="node.tabs.length > 1 || editingLayout"
+      :class="{ floating: node.tabs.length === 1 }"
+      :tabs="node.tabs"
+      :active="node.active"
+      :group="path"
+      @select="emit('select', $event)"
+    />
     <div :ref="slotRef(groupKey(path))" class="slot" :data-drop-slot="groupKey(path)"></div>
   </div>
   <div v-else class="split" :class="node.dir" data-split-item :style="{ flexGrow: node.size }">
@@ -35,6 +42,21 @@ const emit = defineEmits<{ select: [tab: TabId] }>();
 .group,
 .split.column {
   flex-direction: column;
+}
+
+.group {
+  position: relative;
+}
+
+/* A lone tab has no tab bar; in edit mode its handle floats over the panel so nothing shifts. */
+.group > .floating {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  max-width: 100%;
+  border-bottom: 0;
+  background: none;
 }
 
 .row > [data-split-item]:not(:first-child) {
