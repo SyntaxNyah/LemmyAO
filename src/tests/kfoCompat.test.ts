@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import * as aolib from "aolib-ts";
-import { repairInbound, withEffectSlot } from "../core/connection";
+import { repairInbound } from "../core/connection";
 
 // KFO-Server's 2.8 MS validation (server/network/aoprotocol.py, net_cmd_ms): exactly
 // these 26 fields, STR non-empty, INT an integer. Anything else is dropped.
@@ -19,7 +19,7 @@ function kfoAccepts(wire: string) {
 
 function sent(effect: { name: string; folder: string; sound: string }) {
   let wire = "";
-  const server = aolib.server({ send: (w) => (wire = withEffectSlot(w)) });
+  const server = aolib.server({ send: (w) => (wire = w) });
   server.send.MS({
     preanim: "-",
     character: "Phoenix",
@@ -47,11 +47,6 @@ describe("KFO-Server compatibility", () => {
     const wire = sent({ name: "rain", folder: "effects", sound: "" });
     expect(wire).toEndWith("#rain|effects|#%");
     expect(kfoAccepts(wire)).toBe(true);
-  });
-
-  test("other packets pass through untouched", () => {
-    expect(withEffectSlot("CT#name#hi#%")).toBe("CT#name#hi#%");
-    expect(withEffectSlot('{"header":"MS"}')).toBe('{"header":"MS"}');
   });
 
   test("an ID without a version, an SI with blank counts and a PV with a blank player ID still decode", () => {
