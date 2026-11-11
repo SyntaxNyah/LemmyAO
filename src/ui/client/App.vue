@@ -27,10 +27,10 @@ import { editingLayout, panels, ratio, savePanels, tabDrag } from "./layout";
 import { allGroups, flatTabs, showTab } from "./panelLayout";
 import { groupKey } from "./tabDrag";
 import TabStrip from "./TabStrip.vue";
-import SplitKnob from "./SplitKnob.vue";
+import PanelTree from "./PanelTree.vue";
 
 // Landscape: the viewport with a group of tabs under it, beside the right side's
-// columns of groups (see panelLayout.ts). Portrait: the viewport, the message
+// splits of groups (see panelLayout.ts). Portrait: the viewport, the message
 // bar, then every tab in one strip. Panels stay mounted in one layer and are
 // placed over the slot of the group showing them, so moving a tab never remounts it.
 const landscapeQuery = window.matchMedia("(orientation: landscape)");
@@ -225,18 +225,7 @@ onUnmounted(() => {
     </div>
 
     <div v-if="isLandscape" class="side">
-      <template v-for="(column, c) in panels.columns" :key="c">
-        <SplitKnob v-if="editingLayout && c > 0" :index="c - 1" />
-        <div class="column" data-split-item :style="{ flexGrow: column.size }">
-          <template v-for="(g, i) in column.groups" :key="i">
-            <SplitKnob v-if="editingLayout && i > 0" :column="c" :index="i - 1" />
-            <div class="group" data-split-item :style="{ flexGrow: g.size }">
-              <TabStrip :tabs="g.tabs" :active="g.active" :group="{ column: c, group: i }" @select="select" />
-              <div :ref="slotRef(`${c}-${i}`)" class="slot" :data-drop-slot="`${c}-${i}`"></div>
-            </div>
-          </template>
-        </div>
-      </template>
+      <PanelTree :node="panels.side" :path="[]" :slot-ref="slotRef" @select="select" />
     </div>
 
     <!-- Every panel stays mounted, placed over the slot of the group showing it. -->
@@ -295,7 +284,7 @@ onUnmounted(() => {
 .shell {
   display: grid;
   height: 100dvh;
-  overflow: hidden;
+  overflow: clip;
   /* Installed on a phone, the page runs under the status bar and notch; the panels pad the bottom themselves. */
   padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
   background: var(--bg);
@@ -424,27 +413,6 @@ onUnmounted(() => {
   min-width: 0;
   min-height: 0;
   border-left: 1px solid var(--border);
-}
-
-.column {
-  display: flex;
-  flex: 1 1 0;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.side .group {
-  flex: 1 1 0;
-}
-
-.column + .column,
-.column + .split-knob + .column {
-  border-left: 1px solid var(--border);
-}
-
-.group + .group,
-.group + .split-knob + .group {
-  border-top: 1px solid var(--border);
 }
 
 /* Empty boxes the panels are placed over. */

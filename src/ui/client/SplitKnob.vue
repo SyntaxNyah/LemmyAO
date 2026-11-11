@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { panels, previewPanels, savePanels } from "./layout";
-import type { PanelLayout } from "./panelLayout";
+import { nodeAt, resizeSplit } from "./panelLayout";
 
-// Between columns `index` and `index + 1` (sideways), or between groups
-// `index` and `index + 1` of `column` (up and down).
-const props = defineProps<{ column?: number; index: number }>();
+// Between children `index` and `index + 1` of the split at `path`.
+const props = defineProps<{ path: number[]; index: number; dir: "row" | "column" }>();
 const knob = ref<HTMLElement>();
-const sideways = () => props.column === undefined;
+const sideways = () => props.dir === "row";
 const MIN_SHARE = 0.15;
 
 // The two neighbours this knob sits between, from the DOM.
@@ -18,15 +17,14 @@ function neighbours() {
 }
 
 function resize(share: number) {
-  const next: PanelLayout = JSON.parse(JSON.stringify(panels.value));
-  const sized = sideways() ? next.columns : next.columns[props.column!].groups;
-  const a = sized[props.index];
-  const b = sized[props.index + 1];
-  const total = a.size + b.size;
+  const node = nodeAt(panels.value, props.path);
+  if (node?.kind !== "split") return;
+  const sizes = node.children.map((c) => c.size);
+  const total = sizes[props.index] + sizes[props.index + 1];
   const clamped = Math.min(1 - MIN_SHARE, Math.max(MIN_SHARE, share));
-  a.size = total * clamped;
-  b.size = total * (1 - clamped);
-  previewPanels(next);
+  sizes[props.index] = total * clamped;
+  sizes[props.index + 1] = total * (1 - clamped);
+  previewPanels(resizeSplit(panels.value, props.path, sizes));
 }
 
 function moveTo(e: PointerEvent) {

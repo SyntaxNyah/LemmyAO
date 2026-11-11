@@ -2,13 +2,9 @@ import { moveTab, splitWith, type GroupRef } from "./panelLayout";
 import { panels, savePanels, tabDrag } from "./layout";
 import type { TabId } from "./tabs";
 
-/** Groups are addressed in the DOM as "under" or "column-group". */
-export const groupKey = (ref: GroupRef) => (ref === "under" ? "under" : `${ref.column}-${ref.group}`);
-const parseKey = (key: string): GroupRef => {
-  if (key === "under") return "under";
-  const [column, group] = key.split("-").map(Number);
-  return { column, group };
-};
+/** Groups are addressed in the DOM as "under", or "side" followed by their path ("side.0.1"). */
+export const groupKey = (ref: GroupRef) => (ref === "under" ? "under" : ["side", ...ref].join("."));
+const parseKey = (key: string): GroupRef => (key === "under" ? "under" : key.split(".").slice(1).map(Number));
 
 // The edge of a panel area that splits it rather than moving the tab into it.
 const SPLIT_EDGE = 0.25;
