@@ -32,12 +32,12 @@ const detailsId = computed(() => `server-${props.server.id.replace(/[^a-z0-9]/gi
         ★
       </button>
       <button class="title" :aria-expanded="open" :aria-controls="detailsId" @click="open = !open">
-        <span class="name">{{ server.name }}</span>
+        <span class="label">
+          <span class="name">{{ server.name }}</span>
+          <span v-if="server.wssPort" class="badge ok">Secure</span>
+        </span>
         <span class="meta">
           <span class="players">{{ server.players }} online</span>
-          <span v-if="server.wssPort" class="badge ok">Secure</span>
-          <span v-else-if="server.wsPort" class="badge warn" title="Unencrypted connection; joins over http">Insecure</span>
-          <span v-else class="badge" title="Only the desktop client can join this server">Desktop only</span>
         </span>
       </button>
       <a v-if="joinUrl" class="btn btn-primary join" :href="joinUrl">Join</a>
@@ -115,8 +115,14 @@ const detailsId = computed(() => `server-${props.server.id.replace(/[^a-z0-9]/gi
   background: var(--surface-hover);
 }
 
+.label {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
 .name {
-  flex: 1;
   min-width: 0;
   overflow: hidden;
   font-weight: 600;
@@ -127,6 +133,7 @@ const detailsId = computed(() => `server-${props.server.id.replace(/[^a-z0-9]/gi
 .meta {
   flex: none;
   display: flex;
+  margin-left: auto;
   align-items: center;
   gap: 8px;
   color: var(--text-muted);
@@ -134,6 +141,7 @@ const detailsId = computed(() => `server-${props.server.id.replace(/[^a-z0-9]/gi
 }
 
 .badge {
+  flex: none;
   padding: 1px 8px;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -143,11 +151,6 @@ const detailsId = computed(() => `server-${props.server.id.replace(/[^a-z0-9]/gi
 .badge.ok {
   border-color: color-mix(in srgb, var(--ok) 40%, transparent);
   color: var(--ok);
-}
-
-.badge.warn {
-  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
-  color: var(--warn);
 }
 
 .join {
@@ -185,6 +188,10 @@ const detailsId = computed(() => `server-${props.server.id.replace(/[^a-z0-9]/gi
 
   .name {
     white-space: normal;
+  }
+
+  .meta {
+    margin-left: 0;
   }
 
   .details {
