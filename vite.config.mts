@@ -81,6 +81,8 @@ const pwa = VitePWA({
     // client.html?connect=... must match the precached client.html.
     ignoreURLParametersMatching: [/.*/],
     navigateFallback: null,
+    // Registers its fetch handler before workbox's, so it runs first.
+    importScripts: ["insecure-redirect.js"],
     cleanupOutdatedCaches: true,
     maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
     runtimeCaching: [

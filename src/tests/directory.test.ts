@@ -81,7 +81,7 @@ describe("clientUrl", () => {
     });
   });
   test("insecure sockets switch the client to http", () => {
-    expect(clientUrl("ws://h:80", { page, watch: true })).toStartWith("http://webao.example/app/client.html?mode=watch");
+    expect(clientUrl("ws://h:80", { page, watch: true })).toBe("http://webao.example/app/client.html?mode=watch&connect=ws://h:80");
   });
 });
 
