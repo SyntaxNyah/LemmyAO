@@ -36,8 +36,6 @@ const detailsId = computed(() => `server-${props.server.id.replace(/[^a-z0-9]/gi
         <span class="meta">
           <span class="players">{{ server.players }} online</span>
           <span v-if="server.wssPort" class="badge ok">Secure</span>
-          <span v-else-if="server.wsPort" class="badge warn" title="Unencrypted connection; joins over http">Insecure</span>
-          <span v-else class="badge" title="Only the desktop client can join this server">Desktop only</span>
         </span>
       </button>
       <a v-if="joinUrl" class="btn btn-primary join" :href="joinUrl">Join</a>
@@ -143,11 +141,6 @@ const detailsId = computed(() => `server-${props.server.id.replace(/[^a-z0-9]/gi
 .badge.ok {
   border-color: color-mix(in srgb, var(--ok) 40%, transparent);
   color: var(--ok);
-}
-
-.badge.warn {
-  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
-  color: var(--warn);
 }
 
 .join {

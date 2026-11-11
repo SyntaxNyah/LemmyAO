@@ -90,7 +90,9 @@ onMounted(() => {
     </p>
 
     <details v-if="desktopOnly.length" class="desktop-only">
-      <summary>{{ desktopOnly.length }} more need the desktop client</summary>
+      <summary>
+        {{ desktopOnly.length }} {{ desktopOnly.length === 1 ? "server doesn't" : "servers don't" }} support web
+      </summary>
       <ul class="card list">
         <ServerRow
           v-for="server in desktopOnly"
