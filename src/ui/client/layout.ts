@@ -1,5 +1,7 @@
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { settings, setSetting } from "../../core/settings";
+import { loadLayout, type GroupRef, type PanelLayout } from "./panelLayout";
+import type { TabId } from "./tabs";
 
 /** Edit mode shows knobs in the seams between panels; it isn't remembered. */
 export const editingLayout = ref(false);
@@ -38,8 +40,35 @@ export function commit(seam: Seam) {
   setSetting(KEYS[seam], value);
 }
 
-export const layoutChanged = () => Object.values(KEYS).some((key) => settings[key] !== 0);
+export const layoutChanged = () =>
+  Object.values(KEYS).some((key) => settings[key] !== 0) || settings.panelLayout !== "" || settings.tabOrder.length > 0;
 
 export function resetLayout() {
   for (const key of Object.values(KEYS)) setSetting(key, 0);
+  setSetting("panelLayout", "");
+  setSetting("tabOrder", []);
 }
+
+/** The landscape panel arrangement; a draft overrides the saved one while something is dragged. */
+const draftPanels = ref<PanelLayout | null>(null);
+const savedPanels = computed(() => loadLayout(settings.panelLayout, settings.tabOrder));
+export const panels = computed(() => draftPanels.value ?? savedPanels.value);
+
+export const previewPanels = (layout: PanelLayout) => (draftPanels.value = layout);
+
+export function savePanels(layout: PanelLayout = panels.value) {
+  draftPanels.value = null;
+  setSetting("panelLayout", JSON.stringify(layout));
+}
+
+/** A tab being dragged in edit mode, and where it would land. */
+export const tabDrag = reactive({
+  tab: null as TabId | null,
+  x: 0,
+  y: 0,
+  /** Where it lands: into a group at an index, or splitting a group. */
+  target: null as
+    | { kind: "into"; group: GroupRef; index: number; rect: DOMRect }
+    | { kind: "split"; group: GroupRef; where: "below" | "beside"; rect: DOMRect }
+    | null,
+});

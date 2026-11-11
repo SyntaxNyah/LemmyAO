@@ -16,7 +16,6 @@ import {
   chooseDevice,
   setVoiceVolume,
 } from "../../voice/voiceUI";
-import TabOrderSettings from "./TabOrderSettings.vue";
 import { editingLayout, layoutChanged, resetLayout } from "./layout";
 import { state } from "../../core/state";
 import queryParser from "../../utils/queryParser";
@@ -35,7 +34,7 @@ const SECTIONS: Record<string, string> = {
   appearance:
     "appearance theme modern classic accent colour color chatbox style font dialogue courtroom 16:9 widescreen aspect inset offset pan tilt desks",
   chat: "chat callwords mention modcall sound",
-  layout: "layout tabs tab order edit mode resize size panels",
+  layout: "layout tabs tab order arrange move split edit mode resize size panels",
   log: "log chat log download export transcript txt html",
   server: "server name address software version players description list leave disconnect exit",
   advanced: "advanced reset defaults",
@@ -298,8 +297,10 @@ const checkbox = (key: SettingKey) => ({
         <label class="check"><input v-model="editingLayout" type="checkbox" /> Edit mode</label>
         <button class="btn" :disabled="!layoutChanged()" @click="resetLayout">Reset layout</button>
       </div>
-      <p v-if="editingLayout" class="muted">Drag the knobs between the viewport and the panels to resize them.</p>
-      <TabOrderSettings />
+      <p v-if="editingLayout" class="muted">
+        Drag the knobs on the seams to resize. Drag a tab onto another tab bar to move it, or onto the right or bottom
+        edge of a panel to split it (in landscape).
+      </p>
     </section>
 
     <section v-show="visible('server')" class="section">
