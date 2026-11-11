@@ -31,18 +31,6 @@ export function repairInbound(wire: string): string {
   return wire;
 }
 
-/**
- * aolib sends an MS without a screen effect with an empty effect slot. KFO-Server
- * rejects that 2.8 packet outright, so send it the way AO2 does: `||`.
- */
-export function withEffectSlot(wire: string): string {
-  if (!wire.startsWith("MS#")) return wire;
-  const args = wire.slice(3, -2).split("#");
-  if (args.length !== 26 || args[25] !== "") return wire;
-  args[25] = "||";
-  return `MS#${args.join("#")}#%`;
-}
-
 let current: Connection | undefined;
 
 /** The connection commands go through: the one most recently connected. */
@@ -85,8 +73,7 @@ export class Connection {
 
     this.server = aolib.server({
       disableAutoJson: disableJson,
-      send: (encoded) => {
-        const wire = withEffectSlot(encoded);
+      send: (wire) => {
         console.debug(`C: ${wire}`);
         if (local) this.clientSession.receive(wire);
         else this.socket?.send(wire);
