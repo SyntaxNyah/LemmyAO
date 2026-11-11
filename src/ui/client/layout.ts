@@ -1,6 +1,6 @@
 import { computed, reactive, ref } from "vue";
 import { settings, setSetting } from "../../core/settings";
-import { loadLayout, type GroupRef, type PanelLayout } from "./panelLayout";
+import { loadLayout, type GroupRef, type PanelLayout, type Side } from "./panelLayout";
 import type { TabId } from "./tabs";
 
 /** Edit mode shows knobs in the seams between panels; it isn't remembered. */
@@ -48,6 +48,6 @@ export const tabDrag = reactive({
   /** Where it lands: into a group at an index, or splitting a group. */
   target: null as
     | { kind: "into"; group: GroupRef; index: number; rect: DOMRect; label: string; marker?: DOMRect }
-    | { kind: "split"; group: GroupRef; where: "below" | "beside"; rect: DOMRect; label: string; marker?: undefined }
+    | { kind: "split"; at: number[]; side: Side; rect: DOMRect; label: string; marker?: undefined }
     | null,
 });

@@ -1,4 +1,4 @@
-import { moveTab, splitWith, type GroupRef } from "./panelLayout";
+import { moveTab, splitWith, type GroupRef, type Side } from "./panelLayout";
 import { panels, savePanels, tabDrag } from "./layout";
 import type { TabId } from "./tabs";
 
@@ -8,8 +8,36 @@ const parseKey = (key: string): GroupRef => key.split(".").slice(1).map(Number);
 
 // The edge of a panel area that splits it rather than moving the tab into it.
 const SPLIT_EDGE = 0.25;
+// The band along the screen's edge that adds a full-height or full-width panel.
+export const SCREEN_EDGE = 16;
+
+/** Half of `r` on `side`, previewing where a new panel goes. */
+function half(r: DOMRect, side: Side, share = 0.5) {
+  const w = r.width * share;
+  const h = r.height * share;
+  if (side === "left") return new DOMRect(r.left, r.top, w, r.height);
+  if (side === "right") return new DOMRect(r.right - w, r.top, w, r.height);
+  if (side === "top") return new DOMRect(r.left, r.top, r.width, h);
+  return new DOMRect(r.left, r.bottom - h, r.width, h);
+}
+
+/** The side of `r` within `band` (a fraction of its size, or pixels) of the point, nearest first. */
+function edgeOf(r: DOMRect, x: number, y: number, band: (size: number) => number): Side | null {
+  const near = [
+    { side: "left" as const, d: (x - r.left) / band(r.width) },
+    { side: "right" as const, d: (r.right - x) / band(r.width) },
+    { side: "top" as const, d: (y - r.top) / band(r.height) },
+    { side: "bottom" as const, d: (r.bottom - y) / band(r.height) },
+  ].filter((e) => e.d >= 0 && e.d < 1);
+  return near.sort((a, b) => a.d - b.d)[0]?.side ?? null;
+}
 
 function targetAt(x: number, y: number): typeof tabDrag.target {
+  const tree = document.querySelector(".tree")?.getBoundingClientRect();
+  const screenSide = tree && edgeOf(tree, x, y, () => SCREEN_EDGE);
+  if (tree && screenSide) {
+    return { kind: "split", at: [], side: screenSide, rect: half(tree, screenSide, 0.25), label: `New panel at the ${screenSide} of the screen` };
+  }
   for (const el of document.elementsFromPoint(x, y)) {
     const strip = (el as HTMLElement).closest<HTMLElement>("[data-drop-strip]");
     if (strip) {
@@ -26,12 +54,8 @@ function targetAt(x: number, y: number): typeof tabDrag.target {
     if (slot) {
       const group = parseKey(slot.dataset.dropSlot!);
       const r = slot.getBoundingClientRect();
-      if (x > r.right - r.width * SPLIT_EDGE) {
-        return { kind: "split", group, where: "beside", rect: new DOMRect(r.left + r.width / 2, r.top, r.width / 2, r.height), label: "New panel beside" };
-      }
-      if (y > r.bottom - r.height * SPLIT_EDGE) {
-        return { kind: "split", group, where: "below", rect: new DOMRect(r.left, r.top + r.height / 2, r.width, r.height / 2), label: "New panel below" };
-      }
+      const side = edgeOf(r, x, y, (size) => size * SPLIT_EDGE);
+      if (side) return { kind: "split", at: group, side, rect: half(r, side), label: `New panel ${side === "left" || side === "right" ? `on the ${side}` : side === "top" ? "above" : "below"}` };
       return { kind: "into", group, index: Infinity, rect: r, label: "Move here" };
     }
   }
@@ -65,7 +89,7 @@ export function startTabDrag(tab: TabId, down: PointerEvent, onClick: () => void
     if (!target) return;
     const index = target.kind === "into" && Number.isFinite(target.index) ? target.index : undefined;
     savePanels(
-      target.kind === "into" ? moveTab(panels.value, tab, target.group, index) : splitWith(panels.value, tab, target.group, target.where),
+      target.kind === "into" ? moveTab(panels.value, tab, target.group, index) : splitWith(panels.value, tab, target.at, target.side),
     );
   };
   from.addEventListener("pointermove", move);

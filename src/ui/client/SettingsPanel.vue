@@ -298,8 +298,8 @@ const checkbox = (key: SettingKey) => ({
         <button class="btn" :disabled="!layoutChanged()" @click="resetLayout">Reset layout</button>
       </div>
       <p v-if="editingLayout" class="muted">
-        Drag the knobs on the seams to resize. Drag a tab onto another tab bar to move it, or onto the right or bottom
-        edge of a panel to split it (in landscape).
+        Drag the knobs on the seams to resize. Drag a tab onto another tab bar to move it, onto the edge of a panel to
+        split it, or onto the edge of the screen for a full-height or full-width panel (in landscape).
       </p>
     </section>
 

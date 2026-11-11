@@ -68,21 +68,35 @@ describe("panel layout", () => {
   });
 
   test("splitting beside a stacked group divides only that group", () => {
-    let l = splitWith(defaultLayout(), "background", SIDE, "below");
+    let l = splitWith(defaultLayout(), "background", SIDE, "bottom");
     expect(shape(l)).toEqual({ row: [{ column: [["viewport"], ["emotes"]] }, { column: [side("background"), ["background"]] }] });
-    l = splitWith(l, "music", [1, 0], "beside");
+    l = splitWith(l, "music", [1, 0], "right");
     expect(shape(l)).toEqual({
       row: [{ column: [["viewport"], ["emotes"]] }, { column: [{ row: [side("background", "music"), ["music"]] }, ["background"]] }],
     });
   });
 
   test("a split joins its parent when that runs the same way", () => {
-    const l = splitWith(defaultLayout(), "music", SIDE, "beside");
+    const l = splitWith(defaultLayout(), "music", SIDE, "right");
     expect(shape(l)).toEqual({ row: [{ column: [["viewport"], ["emotes"]] }, side("music"), ["music"]] });
   });
 
+  test("a panel can go on any side of another", () => {
+    expect(shape(splitWith(defaultLayout(), "music", SIDE, "left"))).toEqual({ row: [{ column: [["viewport"], ["emotes"]] }, ["music"], side("music")] });
+    expect(shape(splitWith(defaultLayout(), "music", [0, 0], "top"))).toEqual({ row: [{ column: [["music"], ["viewport"], ["emotes"]] }, side("music")] });
+  });
+
+  test("the screen's edge adds a panel spanning it", () => {
+    const left = splitWith(defaultLayout(), "music", [], "left");
+    expect(shape(left)).toEqual({ row: [["music"], { column: [["viewport"], ["emotes"]] }, side("music")] });
+    expect(shape(splitWith(defaultLayout(), "music", [], "bottom"))).toEqual({
+      column: [{ row: [{ column: [["viewport"], ["emotes"]] }, side("music")] }, ["music"]],
+    });
+    expect(shape(splitWith(left, "viewport", [], "right"))).toEqual({ row: [["music"], ["emotes"], side("music"), ["viewport"]] });
+  });
+
   test("an emptied group disappears and a split of one collapses", () => {
-    let l = splitWith(defaultLayout(), "background", SIDE, "below");
+    let l = splitWith(defaultLayout(), "background", SIDE, "bottom");
     l = moveTab(l, "background", SIDE.concat(0));
     const rest = [...side("background"), "background"];
     expect(shape(l)).toEqual({ row: [{ column: [["viewport"], ["emotes"]] }, rest] });
@@ -99,10 +113,10 @@ describe("panel layout", () => {
   });
 
   test("there are at most six groups, and a lone tab can't split its own group", () => {
-    let l = splitWith(splitWith(defaultLayout(), "ooc", SIDE, "below"), "areas", [1, 0], "below");
-    for (const tab of ["music", "players", "evidence"] as const) l = splitWith(l, tab, [1, 0], "below");
+    let l = splitWith(splitWith(defaultLayout(), "ooc", SIDE, "bottom"), "areas", [1, 0], "bottom");
+    for (const tab of ["music", "players", "evidence"] as const) l = splitWith(l, tab, [1, 0], "bottom");
     expect(allGroups(l)).toHaveLength(MAX_GROUPS);
-    expect(splitWith(defaultLayout(), "emotes", [0, 1], "beside")).toEqual(defaultLayout());
+    expect(splitWith(defaultLayout(), "emotes", [0, 1], "right")).toEqual(defaultLayout());
   });
 
   test("showTab picks a group's tab", () => {

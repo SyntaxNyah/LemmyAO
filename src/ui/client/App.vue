@@ -26,7 +26,7 @@ import SeamKnob from "./SeamKnob.vue";
 import { editingLayout, panels, portraitViewport, savePanels, tabDrag } from "./layout";
 import { settings } from "../../core/settings";
 import { allGroups, flatTabs, showTab } from "./panelLayout";
-import { groupKey } from "./tabDrag";
+import { groupKey, SCREEN_EDGE } from "./tabDrag";
 import TabStrip from "./TabStrip.vue";
 import PanelTree from "./PanelTree.vue";
 
@@ -125,6 +125,14 @@ const dropZones = computed(() => {
     }));
 });
 
+// The band along the screen's edges that adds a full-height or full-width panel.
+const treeEl = ref<HTMLElement>();
+const screenEdge = computed(() => {
+  if (!tabDrag.tab || !treeEl.value) return null;
+  const r = treeEl.value.getBoundingClientRect();
+  return { ...boxStyle(r), borderWidth: `${SCREEN_EDGE}px` };
+});
+
 const layoutVars = computed(() => {
   const vars: Record<string, string> = { "--aspect": settings.widescreen ? `${16 / 9}` : `${4 / 3}` };
   if (portraitViewport()) vars["--viewport-height"] = `${portraitViewport() * 100}dvh`;
@@ -184,7 +192,7 @@ onUnmounted(() => {
         <div :ref="slotRef('portrait')" class="slot"></div>
       </div>
     </template>
-    <div v-else class="tree">
+    <div v-else ref="treeEl" class="tree">
       <PanelTree :node="panels.root" :path="[]" :slot-ref="slotRef" @select="select" />
     </div>
 
@@ -247,9 +255,12 @@ onUnmounted(() => {
     <template v-if="tabDrag.tab">
       <!-- Where a tab can go: every panel, and the edges that split it. -->
       <div v-for="zone in dropZones" :key="zone.key" class="drop-zone" :style="zone.style">
-        <span class="split-zone beside">→ New panel</span>
-        <span class="split-zone below">↓ New panel</span>
+        <span class="split-zone left">←</span>
+        <span class="split-zone right">→</span>
+        <span class="split-zone top">↑</span>
+        <span class="split-zone bottom">↓</span>
       </div>
+      <div v-if="screenEdge" class="screen-edge" :style="screenEdge"></div>
       <div v-if="tabDrag.target && !tabDrag.target.marker" class="drop-target" :style="boxStyle(tabDrag.target.rect)">
         <span class="drop-label">{{ tabDrag.target.label }}</span>
       </div>
@@ -412,6 +423,7 @@ onUnmounted(() => {
 
 /* Drag feedback sits above the panels and never takes the pointer. */
 .drop-zone,
+.screen-edge,
 .drop-target,
 .drop-strip,
 .drop-marker,
@@ -428,32 +440,50 @@ onUnmounted(() => {
   background: color-mix(in srgb, var(--bg) 70%, transparent);
 }
 
-/* The right and bottom quarters of a right-side panel split it. */
+/* A panel's outer quarters split it. */
 .split-zone {
   position: absolute;
   display: grid;
   place-items: center;
   color: color-mix(in srgb, var(--accent) 70%, var(--text));
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
-.split-zone.beside {
+.split-zone.left,
+.split-zone.right {
   top: 0;
-  right: 0;
-  bottom: 25%;
+  bottom: 0;
   width: 25%;
-  border-left: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
-.split-zone.below {
-  right: 0;
-  bottom: 0;
+.split-zone.left {
   left: 0;
+}
+
+.split-zone.right {
+  right: 0;
+}
+
+.split-zone.top,
+.split-zone.bottom {
+  right: 25%;
+  left: 25%;
   height: 25%;
-  border-top: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.split-zone.top {
+  top: 0;
+}
+
+.split-zone.bottom {
+  bottom: 0;
+}
+
+.screen-edge {
+  z-index: 39;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .drop-target {

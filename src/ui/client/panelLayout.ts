@@ -162,28 +162,39 @@ export function moveTab(layout: PanelLayout, tab: TabId, to: GroupRef, index?: n
   return normalize(next);
 }
 
+export type Side = "left" | "right" | "top" | "bottom";
+
 /**
- * Splits one group: `beside` puts the tab in a new group to its right, `below`
- * under it. Only that group is divided; when its parent already runs the same
- * way, the new group simply joins it.
+ * Puts the tab in a new group on one side of the node at `at`: a group, or the
+ * root ([]) for the edge of the screen. Only that node is divided; when its
+ * parent already runs the same way, the new group simply joins it.
  */
-export function splitWith(layout: PanelLayout, tab: TabId, at: GroupRef, where: "below" | "beside"): PanelLayout {
-  if (allGroups(layout).length >= MAX_GROUPS) return layout;
-  const source = groupAt(layout, at);
-  if (!source || (source.tabs.length === 1 && source.tabs[0] === tab)) return layout;
+export function splitWith(layout: PanelLayout, tab: TabId, at: number[], side: Side): PanelLayout {
+  const source = nodeAt(layout, at);
+  if (!source || (source.kind === "group" && source.tabs.length === 1 && source.tabs[0] === tab)) return layout;
   const next = clone(layout);
   take(next, tab);
-  const dir = where === "beside" ? "row" : "column";
-  const target = groupAt(next, at)!;
+  const dir = side === "left" || side === "right" ? "row" : "column";
+  const after = side === "right" || side === "bottom";
+  const target = nodeAt(next, at)!;
+  // A new panel at the screen's edge takes a smaller share than one splitting a panel in two.
+  const share = at.length ? 1 : 0.4;
   const parent = at.length ? (nodeAt(next, at.slice(0, -1)) as PanelSplit) : null;
   if (parent && parent.dir === dir) {
-    parent.children.splice(at.at(-1)! + 1, 0, group([tab], target.size));
+    parent.children.splice(at.at(-1)! + (after ? 1 : 0), 0, group([tab], target.size));
+  } else if (!parent && target.kind === "split" && target.dir === dir) {
+    const total = target.children.reduce((sum, c) => sum + c.size, 0);
+    const fresh = group([tab], (total * share) / (1 - share) / 2);
+    if (after) target.children.push(fresh);
+    else target.children.unshift(fresh);
   } else {
-    const wrapped = split(dir, [{ ...target, size: 1 }, group([tab])], target.size);
+    const pair = [{ ...target, size: 1 }, group([tab], share)];
+    const wrapped = split(dir, after ? pair : pair.reverse(), target.size);
     if (parent) parent.children[at.at(-1)!] = wrapped;
     else next.root = wrapped;
   }
-  return normalize(next);
+  const result = normalize(next);
+  return allGroups(result).length > Math.max(MAX_GROUPS, allGroups(layout).length) ? layout : result;
 }
 
 export function showTab(layout: PanelLayout, tab: TabId): PanelLayout {
