@@ -234,7 +234,9 @@ onUnmounted(() => {
     "viewport panels" auto
     "input panels" auto
     "under panels" 1fr
-    / minmax(0, 1fr) var(--sidebar, clamp(340px, 32vw, 480px));
+    / minmax(0, 1fr) var(--sidebar-track);
+  /* The left side (viewport and IC options) keeps at least 360px; the tab column gives way. */
+  --sidebar-track: max(0px, min(var(--sidebar, clamp(340px, 32vw, 480px)), 100% - 360px));
 }
 
 .viewport-frame {
