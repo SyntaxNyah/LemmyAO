@@ -12,9 +12,10 @@ const KEYS = {
   viewportPortrait: "layoutViewportPortrait",
 } as const;
 
-// Fractions of the window: room for the controls on every side.
+// Fractions of the window. The side column has no upper cap: the layout keeps
+// 360px for the viewport and IC options regardless (App.vue).
 const LIMITS: Record<Seam, [number, number]> = {
-  sidebar: [0.2, 0.6],
+  sidebar: [0.2, 1],
   viewportLandscape: [0.3, 0.9],
   viewportPortrait: [0.2, 0.7],
 };
