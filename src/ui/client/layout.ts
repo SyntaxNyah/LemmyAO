@@ -68,7 +68,7 @@ export const tabDrag = reactive({
   y: 0,
   /** Where it lands: into a group at an index, or splitting a group. */
   target: null as
-    | { kind: "into"; group: GroupRef; index: number; rect: DOMRect }
-    | { kind: "split"; group: GroupRef; where: "below" | "beside"; rect: DOMRect }
+    | { kind: "into"; group: GroupRef; index: number; rect: DOMRect; label: string; marker?: DOMRect }
+    | { kind: "split"; group: GroupRef; where: "below" | "beside"; rect: DOMRect; label: string; marker?: undefined }
     | null,
 });

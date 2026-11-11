@@ -223,3 +223,9 @@ a {
     min-height: var(--tap);
   }
 }
+
+/* While a tab is dragged in layout edit mode. */
+html.dragging-tab,
+html.dragging-tab * {
+  cursor: grabbing !important;
+}

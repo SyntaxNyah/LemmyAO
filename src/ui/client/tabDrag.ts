@@ -18,23 +18,25 @@ function targetAt(x: number, y: number): typeof tabDrag.target {
     const strip = (el as HTMLElement).closest<HTMLElement>("[data-drop-strip]");
     if (strip) {
       const tabs = [...strip.querySelectorAll<HTMLElement>("[data-tab]")];
-      const index = tabs.filter((t) => {
-        const r = t.getBoundingClientRect();
-        return r.left + r.width / 2 < x;
-      }).length;
-      return { kind: "into", group: parseKey(strip.dataset.dropStrip!), index, rect: strip.getBoundingClientRect() };
+      const rects = tabs.map((t) => t.getBoundingClientRect());
+      const index = rects.filter((r) => r.left + r.width / 2 < x).length;
+      const area = strip.getBoundingClientRect();
+      // An insertion bar between the tabs where the dragged one would go.
+      const at = index < rects.length ? rects[index].left - 1 : (rects.at(-1)?.right ?? area.left) + 1;
+      const marker = new DOMRect(at - 1.5, area.top + 4, 3, area.height - 8);
+      return { kind: "into", group: parseKey(strip.dataset.dropStrip!), index, rect: area, label: "", marker };
     }
     const slot = (el as HTMLElement).closest<HTMLElement>("[data-drop-slot]");
     if (slot) {
       const group = parseKey(slot.dataset.dropSlot!);
       const r = slot.getBoundingClientRect();
       if (group !== "under" && x > r.right - r.width * SPLIT_EDGE) {
-        return { kind: "split", group, where: "beside", rect: new DOMRect(r.left + r.width / 2, r.top, r.width / 2, r.height) };
+        return { kind: "split", group, where: "beside", rect: new DOMRect(r.left + r.width / 2, r.top, r.width / 2, r.height), label: "New panel beside" };
       }
       if (group !== "under" && y > r.bottom - r.height * SPLIT_EDGE) {
-        return { kind: "split", group, where: "below", rect: new DOMRect(r.left, r.top + r.height / 2, r.width, r.height / 2) };
+        return { kind: "split", group, where: "below", rect: new DOMRect(r.left, r.top + r.height / 2, r.width, r.height / 2), label: "New panel below" };
       }
-      return { kind: "into", group, index: Infinity, rect: r };
+      return { kind: "into", group, index: Infinity, rect: r, label: "Move here" };
     }
   }
   return null;
@@ -48,6 +50,7 @@ export function startTabDrag(tab: TabId, down: PointerEvent, onClick: () => void
 
   const move = (e: PointerEvent) => {
     if (!dragging && Math.hypot(e.clientX - down.clientX, e.clientY - down.clientY) < 6) return;
+    if (!dragging) document.documentElement.classList.add("dragging-tab");
     dragging = true;
     tabDrag.tab = tab;
     tabDrag.x = e.clientX;
@@ -58,6 +61,7 @@ export function startTabDrag(tab: TabId, down: PointerEvent, onClick: () => void
     from.removeEventListener("pointermove", move);
     from.removeEventListener("pointerup", end);
     from.removeEventListener("pointercancel", end);
+    document.documentElement.classList.remove("dragging-tab");
     const target = tabDrag.target;
     tabDrag.tab = null;
     tabDrag.target = null;

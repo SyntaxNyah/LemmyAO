@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { DEFAULT_TABS, type TabId } from "./tabs";
-import { editingLayout } from "./layout";
+import { editingLayout, tabDrag } from "./layout";
 import type { GroupRef } from "./panelLayout";
 import { groupKey, startTabDrag } from "./tabDrag";
 
@@ -60,10 +60,12 @@ onUnmounted(() => observer?.disconnect());
         role="tab"
         :data-tab="t"
         :aria-selected="active === t"
+        :class="{ lifted: tabDrag.tab === t }"
+        :title="editing ? 'Drag to move this tab' : undefined"
         @click="!editing && emit('select', t)"
         @pointerdown="down(t, $event)"
       >
-        {{ label(t) }}
+        <span v-if="editing" class="grip" aria-hidden="true">⠿</span>{{ label(t) }}
       </button>
     </nav>
     <button v-if="overflow.left" class="tab-scroll left" tabindex="-1" aria-label="Show earlier tabs" @click="scrollBy(-1)">‹</button>
@@ -112,11 +114,39 @@ onUnmounted(() => observer?.disconnect());
 
 /* In edit mode the tabs are grabbed and dragged; pointer events do the work, so stop touch scrolling. */
 .editing .tabs button {
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  outline: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
-  outline-offset: -3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  padding: 6px 10px 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
   cursor: grab;
   touch-action: none;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.editing .tabs button:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.editing .tabs button[aria-selected="true"] {
+  border-color: var(--accent);
+}
+
+.grip {
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: -1px;
+}
+
+/* The tab being dragged stays as a faded placeholder. */
+.editing .tabs button.lifted {
+  opacity: 0.35;
 }
 
 

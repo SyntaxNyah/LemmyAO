@@ -110,6 +110,22 @@ watch([panels, isLandscape, editingLayout, showUnder], () => void nextTick(measu
 
 const tabLabel = (id: TabId) => DEFAULT_TABS.find((t) => t.id === id)!.label;
 
+const stripMarker = computed(() => (tabDrag.target?.kind === "into" ? (tabDrag.target.marker ?? null) : null));
+const boxStyle = (r: DOMRect) => ({ left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+
+// While a tab is dragged: every landscape panel area, in page coordinates.
+const dropZones = computed(() => {
+  if (!tabDrag.tab || !shell.value) return [];
+  const base = shell.value.getBoundingClientRect();
+  return Object.entries(slotRects)
+    .filter(([key]) => key !== "portrait")
+    .map(([key, r]) => ({
+      key,
+      splits: key !== "under",
+      style: { left: `${base.left + r.left}px`, top: `${base.top + r.top}px`, width: `${r.width}px`, height: `${r.height}px` },
+    }));
+});
+
 // Ratios set in edit mode; without one, the CSS fallbacks keep the default layout.
 const layoutVars = computed(() => {
   const vars: Record<string, string> = {};
@@ -244,12 +260,23 @@ onUnmounted(() => {
     </div>
 
     <template v-if="tabDrag.tab">
-      <div
-        v-if="tabDrag.target"
-        class="drop-target"
-        :style="{ left: `${tabDrag.target.rect.left}px`, top: `${tabDrag.target.rect.top}px`, width: `${tabDrag.target.rect.width}px`, height: `${tabDrag.target.rect.height}px` }"
-      ></div>
-      <div class="drag-ghost" :style="{ left: `${tabDrag.x}px`, top: `${tabDrag.y}px` }">{{ tabLabel(tabDrag.tab) }}</div>
+      <!-- Where a tab can go: every panel, and the edges of the right side's panels that split them. -->
+      <div v-for="zone in dropZones" :key="zone.key" class="drop-zone" :style="zone.style">
+        <template v-if="zone.splits">
+          <span class="split-zone beside">→ New panel</span>
+          <span class="split-zone below">↓ New panel</span>
+        </template>
+      </div>
+      <div v-if="tabDrag.target && !tabDrag.target.marker" class="drop-target" :style="boxStyle(tabDrag.target.rect)">
+        <span class="drop-label">{{ tabDrag.target.label }}</span>
+      </div>
+      <template v-if="tabDrag.target && stripMarker">
+        <div class="drop-strip" :style="boxStyle(tabDrag.target.rect)"></div>
+        <div class="drop-marker" :style="boxStyle(stripMarker)"></div>
+      </template>
+      <div class="drag-ghost" :style="{ left: `min(${tabDrag.x}px, calc(100vw - 160px))`, top: `${tabDrag.y}px` }">
+        <span aria-hidden="true">⠿</span>{{ tabLabel(tabDrag.tab) }}
+      </div>
     </template>
 
     <template v-if="editingLayout">
@@ -451,24 +478,95 @@ onUnmounted(() => {
   color: var(--text-muted);
 }
 
-.drop-target {
+/* Drag feedback sits above the panels and never takes the pointer. */
+.drop-zone,
+.drop-target,
+.drop-strip,
+.drop-marker,
+.drag-ghost {
   position: fixed;
-  z-index: 40;
-  border: 2px solid var(--accent);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
   pointer-events: none;
 }
 
-.drag-ghost {
-  position: fixed;
-  z-index: 41;
+/* Dims the panels so the drop areas read clearly. */
+.drop-zone {
+  z-index: 38;
+  border: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+}
+
+/* The right and bottom quarters of a right-side panel split it. */
+.split-zone {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--accent) 70%, var(--text));
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.split-zone.beside {
+  top: 0;
+  right: 0;
+  bottom: 25%;
+  width: 25%;
+  border-left: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.split-zone.below {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 25%;
+  border-top: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.drop-target {
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.drop-label {
   padding: 6px 12px;
   border-radius: 999px;
   background: var(--accent);
   color: var(--accent-contrast);
   font-weight: 600;
-  pointer-events: none;
-  transform: translate(-50%, -120%);
+}
+
+.drop-strip {
+  z-index: 40;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.drop-marker {
+  z-index: 41;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.drag-ghost {
+  z-index: 42;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+  /* Below and right of the pointer, so it never hides the spot being dropped on. */
+  transform: translate(14px, 16px) rotate(-2deg);
 }
 </style>
