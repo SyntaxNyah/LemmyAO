@@ -5,7 +5,17 @@ import { exportLog } from "../../dom/exportLog";
 import { modcall_test } from "../../dom/modCallTest";
 import chatboxStyles from "../../constants/chatboxes";
 import { version } from "../../version";
-import { voiceUi, toggleVoice, toggleTalk, setOpenMic, setVoiceMuted, chooseDevice, setVoiceVolume } from "../../voice/voiceUI";
+import {
+  voiceUi,
+  joinVoiceChat,
+  leaveVoiceChat,
+  toggleVoice,
+  toggleTalk,
+  setOpenMic,
+  setVoiceMuted,
+  chooseDevice,
+  setVoiceVolume,
+} from "../../voice/voiceUI";
 import TabOrderSettings from "./TabOrderSettings.vue";
 import { state } from "../../core/state";
 import queryParser from "../../utils/queryParser";
@@ -206,6 +216,10 @@ const checkbox = (key: SettingKey) => ({
     <section v-show="visible('voice')" class="section">
       <h3>Voice chat</h3>
       <p v-if="!voiceUi.available" class="muted">This server doesn't have voice chat.</p>
+      <template v-else-if="!voiceUi.joined">
+        <p class="muted">This server has voice chat. You're not in it.</p>
+        <div><button class="btn btn-primary" :disabled="voiceUi.busy" @click="joinVoiceChat">Join voice chat</button></div>
+      </template>
       <template v-else>
         <p class="muted" role="status">{{ voiceStatus }}</p>
         <div class="buttons">
@@ -221,6 +235,7 @@ const checkbox = (key: SettingKey) => ({
           >
             {{ voiceUi.talking ? "Stop talking" : "Tap to talk" }}
           </button>
+          <button class="btn" @click="leaveVoiceChat">Leave voice chat</button>
         </div>
         <div class="checks">
           <label class="check">

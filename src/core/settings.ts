@@ -83,6 +83,8 @@ const schema = {
   preanimGlowColor: field("preanimGlowColor", text, "#ffcf4d"),
   preanimGlowIntensity: field("preanimGlowIntensity", range(0, 100), 50),
 
+  /** Join voice chat (listening) on servers that offer it; off until the player opts in. */
+  voiceEnabled: field("voiceEnabled", flagText, false),
   voiceInputDevice: field("voiceInputDevice", text, ""),
   voiceMuted: field("vcMuted", flag01, false),
   voiceOpenMic: field("voiceOpenMic", flag01, false),

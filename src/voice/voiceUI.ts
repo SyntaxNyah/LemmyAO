@@ -82,6 +82,29 @@ async function loadDevices() {
   }
 }
 
+const joinListening = () => joinVoiceListenOnly().then(sync, (e) => console.error("Joining voice failed", e));
+
+/** Joins voice chat (listening only) and remembers it for next time. */
+export async function joinVoiceChat(): Promise<void> {
+  if (!isVoiceAvailable() || voiceUi.busy) return;
+  setSetting("voiceEnabled", true);
+  voiceUi.busy = true;
+  await joinListening();
+  voiceUi.busy = false;
+  sync();
+}
+
+/** Leaves voice chat entirely and stays out until joined again. */
+export function leaveVoiceChat(): void {
+  if (voiceUi.talking) {
+    voiceUi.talking = false;
+    setPTT(false);
+  }
+  setSetting("voiceEnabled", false);
+  leaveVoice();
+  sync();
+}
+
 /** Steps through listen-only, then microphone on, then back to listen-only. */
 export async function toggleVoice(): Promise<void> {
   if (!isVoiceAvailable() || voiceUi.busy) return;
@@ -186,7 +209,7 @@ export function installVoiceUI(): void {
   navigator.mediaDevices?.addEventListener?.("devicechange", () => void loadDevices());
 
   onCapsChange(() => {
-    if (isVoiceAvailable() && !isInVoice()) void joinVoiceListenOnly().then(sync, (e) => console.error("Joining voice failed", e));
+    if (settings.voiceEnabled && isVoiceAvailable() && !isInVoice()) void joinListening();
     sync();
   });
   onSpeakingChange(sync);
