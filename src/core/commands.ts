@@ -139,16 +139,20 @@ export function sendIC(): boolean {
   return true;
 }
 
-/** The OOC name, picking a random guest name the first time. */
+/**
+ * The name OOC messages go out under, the same as in IC: the showname, else the
+ * character's. Spectators have neither and get a guest name, picked once.
+ */
 export function oocName() {
+  const own = settings.showname.trim() || state.self.character?.showname || state.characters[state.self.charId]?.name;
+  if (own) return own;
   if (!settings.oocName) setSetting("oocName", `web${Math.floor(Math.random() * 900 + 100)}`);
   return settings.oocName;
 }
 
-/** Sends an OOC message (or server command) under the saved OOC name. */
-export function sendOOC(message: string, name = oocName()) {
-  if (name !== settings.oocName) setSetting("oocName", name);
-  server().CT({ name, message });
+/** Sends an OOC message (or server command). */
+export function sendOOC(message: string) {
+  server().CT({ name: oocName(), message });
 }
 
 /** Asks to play as a character; -1 spectates. */

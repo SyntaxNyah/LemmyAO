@@ -126,7 +126,7 @@ const pickedName = computed(() => state.characters[state.self.charId]?.name ?? "
 
     <div class="name-row">
       <label class="field grow">
-        <span class="field-label">Showname</span>
+        <span class="field-label">Name</span>
         <input v-model.lazy="showname" class="input" placeholder="Pick a name…" maxlength="30" />
       </label>
     </div>

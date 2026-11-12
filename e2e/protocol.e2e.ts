@@ -72,6 +72,47 @@ describe("protocol", () => {
     expect(wires(page).some((w) => w.startsWith("C: CT#") && w.includes("hello out of character"))).toBe(true);
   });
 
+  test("OOC goes out under the showname, else the character's name; there's no separate OOC name", async () => {
+    const page = await openClient(browser, server);
+    await joinAs(page, "Phoenix");
+    await page.click('[data-tab="ooc"]');
+    expect(await page.$('[aria-label="OOC name"]')).toBeNull();
+    const oocNames = () => wires(page).filter((w) => w.startsWith("C: CT#")).map((w) => w.split("#")[1]);
+    const say = async (text: string) => {
+      await page.type('[aria-label="OOC message"]', text);
+      await page.keyboard.press("Enter");
+      await page.waitForFunction((t) => document.querySelector('[aria-label="Out-of-character chat"]')?.textContent?.includes(t), {}, text);
+    };
+    await say("no showname yet");
+    await page.type('input[placeholder="Pick a name…"]', "Nick");
+    await page.keyboard.press("Enter");
+    await say("with a showname");
+    expect(oocNames()).toEqual(["Phoenix", "Nick"]);
+  });
+
+  test("the player list adds the OOC name in brackets when it differs from the name shown", async () => {
+    const player = await openClient(browser, server);
+    const watcher = await openClient(browser, server);
+    await spectate(player);
+    await spectate(watcher);
+    const ooc = async (text: string) => {
+      await player.click('[data-tab="ooc"]');
+      await player.type('[aria-label="OOC message"]', text);
+      await player.keyboard.press("Enter");
+      await player.waitForFunction((t) => document.querySelector('[aria-label="Out-of-character chat"]')?.textContent?.includes(t), {}, text);
+    };
+    await ooc("hello as a spectator");
+    const guest = wires(player).find((w) => w.startsWith("C: CT#"))!.split("#")[1];
+    await clickButton(player, ".panel", "Change character");
+    await joinAs(player, "Phoenix");
+    await watcher.click('[data-tab="players"]');
+    const listed = (want: string) =>
+      watcher.waitForFunction((w) => [...document.querySelectorAll(".players .name")].some((n) => n.textContent?.replace(/\s+/g, " ").trim() === w), {}, want);
+    await listed(`Phoenix [${guest}]`);
+    await ooc("hello as Phoenix");
+    await listed("Phoenix");
+  });
+
   test("moving to an area, and a locked area refusing", async () => {
     const page = await openClient(browser, server);
     await joinAs(page, "Phoenix");

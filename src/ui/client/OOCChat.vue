@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { state } from "../../core/state";
-import { settings, setSetting } from "../../core/settings";
-import { oocName, sendOOC } from "../../core/commands";
+import { sendOOC } from "../../core/commands";
 import { exportLog } from "../../dom/exportLog";
 import LinkifiedText from "../components/LinkifiedText.vue";
 import { useStickyScroll } from "./useStickyScroll";
@@ -10,11 +9,6 @@ import { useStickyScroll } from "./useStickyScroll";
 const { el, onScroll, onVisible } = useStickyScroll(() => state.oocLog.at(-1));
 defineExpose({ onVisible });
 
-oocName();
-const name = computed({
-  get: () => settings.oocName,
-  set: (v: string) => setSetting("oocName", v),
-});
 const message = ref("");
 
 const LOCAL_COMMANDS: Record<string, () => void> = { "/save_chatlog": () => exportLog("txt") };
@@ -24,7 +18,7 @@ function send() {
   if (!text) return;
   const local = LOCAL_COMMANDS[text.toLowerCase()];
   if (local) local();
-  else sendOOC(text, name.value.trim() || oocName());
+  else sendOOC(text);
   message.value = "";
 }
 </script>
@@ -52,16 +46,19 @@ function send() {
       </div>
     </div>
     <form class="composer" @submit.prevent="send">
-      <input v-model.lazy="name" class="input name-input" aria-label="OOC name" maxlength="30" />
       <input
         v-model="message"
         class="input"
-        placeholder="Chat out of character…"
+        placeholder="Say something out of character…"
         aria-label="OOC message"
         autocomplete="off"
         enterkeyhint="send"
       />
-      <button type="submit" class="visually-hidden">Send</button>
+      <button class="btn btn-primary send" type="submit" aria-label="Send" title="Send">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.1 15 12 3.4 13.9Z" fill="currentColor" />
+        </svg>
+      </button>
     </form>
   </div>
 </template>
@@ -135,8 +132,14 @@ function send() {
   background: var(--surface);
 }
 
-.name-input {
-  flex: 0 0 30%;
-  max-width: 140px;
+.composer .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.send {
+  width: 44px;
+  min-height: 40px;
+  padding: 0;
 }
 </style>
