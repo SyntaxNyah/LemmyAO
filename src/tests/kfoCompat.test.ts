@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import * as aolib from "aolib-ts";
-import { repairInbound } from "../core/connection";
 
 // KFO-Server's 2.8 MS validation (server/network/aoprotocol.py, net_cmd_ms): exactly
 // these 26 fields, STR non-empty, INT an integer. Anything else is dropped.
@@ -55,10 +54,9 @@ describe("KFO-Server compatibility", () => {
     server.on.ID((p) => got.push(`ID ${p.software} '${p.version}'`));
     server.on.SI((p) => got.push(`SI ${p.char_count} ${p.evi_count} ${p.mus_count}`));
     server.on.PV((p) => got.push(`PV ${p.char_id}`));
-    server.receive(repairInbound("ID#0#CSDWASASH#%"));
-    server.receive(repairInbound("SI#110###%"));
-    server.receive(repairInbound("PV###7#%"));
+    server.receive("ID#0#CSDWASASH#%");
+    server.receive("SI#110###%");
+    server.receive("PV###7#%");
     expect(got).toEqual(["ID CSDWASASH ''", "SI 110 0 0", "PV 7"]);
-    expect(repairInbound("ID#0#KFO-Server#3.3.0#%")).toBe("ID#0#KFO-Server#3.3.0#%");
   });
 });
