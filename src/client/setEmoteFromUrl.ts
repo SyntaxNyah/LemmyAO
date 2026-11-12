@@ -18,8 +18,11 @@ const setEmoteFromUrl = (url: string, pair: boolean, side: Side): void => {
     `client_${position}${pairID}_img`,
   ) as HTMLImageElement;
 
-  if (emoteSelector) {
-    emoteSelector.src = url || transparentPng;
+  // Reassigning the same URL restarts an animation in Chrome, which would
+  // desync a preanim from its timer.
+  const next = url || transparentPng;
+  if (emoteSelector && emoteSelector.src !== next) {
+    emoteSelector.src = next;
   }
 };
 

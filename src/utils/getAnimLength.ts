@@ -1,4 +1,4 @@
-import calculatorHandler from "./calculatorHandler";
+import { animationLength, MEASURABLE_EXTENSIONS } from "./calculatorHandler";
 import fileExists from "./fileExists";
 import { fileNameExtension } from "./assetName";
 import { requestBuffer } from "../services/request";
@@ -26,8 +26,8 @@ const getAnimLength = async (
   // in it ("…/11.1-presenting-gun") carries no extension, so it probes below.
   const explicit = fileNameExtension(url);
   if (explicit) {
-    if (!calculatorHandler[explicit] || !(await fileExists(url))) return 0;
-    return calculatorHandler[explicit](await requestBuffer(url));
+    if (!MEASURABLE_EXTENSIONS.includes(explicit) || !(await fileExists(url))) return 0;
+    return animationLength(await requestBuffer(url));
   }
 
   const exists = await Promise.all(
@@ -35,8 +35,6 @@ const getAnimLength = async (
   );
   const index = exists.findIndex(Boolean);
   if (index === -1) return 0;
-  const extension = extensions[index];
-  const fileBuffer = await requestBuffer(url + extension);
-  return calculatorHandler[extension](fileBuffer);
+  return animationLength(await requestBuffer(url + extensions[index]));
 };
 export default getAnimLength;

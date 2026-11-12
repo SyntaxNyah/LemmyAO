@@ -7,9 +7,9 @@ import { AO_HOST } from "../../client/aoHost";
 import { SHOUTS } from "../constants/shouts";
 import { setChatbox } from "../../dom/setChatbox";
 import { resizeChatbox } from "../../dom/resizeChatbox";
-import transparentPng from "../../constants/transparentPng";
 import mlConfig from "../../utils/aoml";
-import request from "../../services/request";
+import request, { requestBuffer } from "../../services/request";
+import { animationLength, animationLoops } from "../../utils/calculatorHandler";
 import { unescapeUnicode, safeHtmlTags } from "../../escaping";
 import * as aolib from "aolib-ts";
 import {
@@ -300,7 +300,7 @@ const applyShout = (chatmsg: ChatMsg, chatContainerBox: HTMLElement) => {
 };
 
 /** Spawns the rain-drop DOM into the foreground layer. */
-const applyRainEffect = (fg: HTMLImageElement, effectName: string) => {
+const applyRainEffect = (fg: HTMLDivElement, effectName: string) => {
   (<HTMLLinkElement>document.getElementById("effect_css")).href =
     "styles/effects/rain.css";
   let intensity = 200;
@@ -318,21 +318,31 @@ const applyRainEffect = (fg: HTMLImageElement, effectName: string) => {
 
 /**
  * Applies the foreground effects overlay: rain spawns drops, named
- * effects load a webp into `client_fg`, and absent/sentinel effects
+ * effects load an image inside `client_fg`, and absent/sentinel effects
  * clear the layer.
  */
-const applyEffectsOverlay = (fg: HTMLImageElement, effects: string[]) => {
+const applyEffectsOverlay = (fg: HTMLDivElement, effects: string[]) => {
   fg.style.animation = "";
   const effectName = effects[0].toLowerCase();
   if (effectName.startsWith("rain")) {
     applyRainEffect(fg, effectName);
   } else if (effects[0] && !BAD_EFFECTS.has(effectName)) {
     (<HTMLLinkElement>document.getElementById("effect_css")).href = "";
-    fg.innerHTML = "";
-    fg.src = `${AO_HOST}themes/default/effects/${encodeURI(effectName)}.webp`;
+    // The layer is a <div> (rain fills it with drops), so the effect is an image inside it.
+    const overlay = document.createElement("img");
+    overlay.className = "effect";
+    overlay.alt = "";
+    overlay.onerror = () => overlay.remove();
+    overlay.src = `${AO_HOST}themes/default/effects/${encodeURI(effectName)}.webp`;
+    fg.replaceChildren(overlay);
+    // An image stays on its last frame; a play-once effect (a flash) has to go when it ends.
+    const loaded = new Promise((resolve) => overlay.addEventListener("load", resolve, { once: true }));
+    void Promise.all([requestBuffer(overlay.src), loaded]).then(([bytes]) => {
+      const loops = animationLoops(bytes);
+      if (loops > 0) setTimeout(() => overlay.remove(), animationLength(bytes) * loops);
+    }).catch(() => {});
   } else {
-    fg.innerHTML = "";
-    fg.src = transparentPng;
+    fg.replaceChildren();
   }
 };
 
@@ -356,7 +366,7 @@ const renderICMessage = (chatmsg: ChatMsg) => {
   // stop last sfx from looping any longer
   client.viewport.getSfxAudio().loop = false;
 
-  const fg = <HTMLImageElement>document.getElementById("client_fg");
+  const fg = <HTMLDivElement>document.getElementById("client_fg");
   const gamewindow = document.getElementById("client_gamewindow")!;
   const waitingBox = document.getElementById("client_chatwaiting")!;
   gamewindow.style.animation = "";
@@ -409,7 +419,11 @@ const renderICMessage = (chatmsg: ChatMsg) => {
   // the speaker is 2D.
   setupCharacterSlot(chatmsg.side, chatmsg.model3d);
   if (!chatmsg.model3d) {
-    setEmoteFromUrl(preloaded.idleUrl, false, chatmsg.side);
+    // Without a shout the preanim starts on the first tick; showing it now
+    // avoids flashing the idle sprite for that tick. With a shout, the idle
+    // sprite waits under the bubble so the preanim doesn't start early.
+    const preanimNow = chatmsg.preanimdelay > 0 && !SHOUTS[chatmsg.shout_modifier];
+    setEmoteFromUrl(preanimNow ? preloaded.preanimUrl : preloaded.idleUrl, false, chatmsg.side);
   }
   if (chatmsg.paired_name) {
     setEmoteFromUrl(preloaded.pairIdleUrl, true, chatmsg.side);

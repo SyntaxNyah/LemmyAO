@@ -6,7 +6,7 @@ import { IMAGE_EXTENSIONS, fileNameExtension } from "./assetName";
  * The conventions, all reachable from a single character folder:
  *
  *   - `(a)<name>.<ext>` / `(b)<name>.<ext>` — idle/talking frames as prefixed
- *     filenames (the usual AO2 layout);
+ *     filenames (the usual AO2 layout), static `.png` frames included;
  *   - `(a)/<name>.<ext>` — the same frames nested in an `(a)`/`(b)` folder,
  *     which some packs use instead;
  *   - `<name>.<ext>` — the bare spelling (AO2's own `CharLayer::load_image`
@@ -43,20 +43,20 @@ export function buildEmoteUrls(
   }
 
   const urls: string[] = [];
+  const prefixed = (ext: string) =>
+    prefix
+      ? [`${base}${encodeURI(prefix)}${encodeURI(emotename)}${ext}`, `${base}${encodeURI(prefix)}/${encodeURI(emotename)}${ext}`]
+      : [];
   for (const extension of extensions) {
-    let url: string;
-    if (extension === ".png") {
-      url = `${base}${encodeURI(emotename)}${extension}`;
-    } else if (extension === ".webp.static") {
-      url = `${base}${encodeURI(emotename)}.webp`;
+    if (extension === ".webp.static") {
+      urls.push(`${base}${encodeURI(emotename)}.webp`);
+    } else if (extension === ".png") {
+      // Static frames: (a)/(b) PNGs, then the bare PNG shared by both.
+      urls.push(...prefixed(extension), `${base}${encodeURI(emotename)}${extension}`);
+    } else if (prefix) {
+      urls.push(...prefixed(extension));
     } else {
-      url = `${base}${encodeURI(prefix)}${encodeURI(emotename)}${extension}`;
-    }
-    urls.push(url);
-    // Some character packs nest idle/talking frames in a "(a)"/"(b)" folder
-    // instead of prefixing the filename. Try that layout too.
-    if (prefix && extension !== ".png" && extension !== ".webp.static") {
-      urls.push(`${base}${encodeURI(prefix)}/${encodeURI(emotename)}${extension}`);
+      urls.push(`${base}${encodeURI(emotename)}${extension}`);
     }
   }
 
