@@ -29,7 +29,7 @@ function send() {
       <p v-if="!state.oocLog.length" class="empty">Server messages and OOC chat appear here.</p>
       <div v-for="(e, i) in state.oocLog" :key="i" class="entry" :class="e.kind">
         <template v-if="e.kind === 'chat'">
-          <span class="name" :class="{ server: e.fromServer }">{{ e.name }}</span>
+          <span class="name" :class="{ server: e.fromServer }">{{ `${e.name}: ` }}</span>
           <LinkifiedText class="text" :text="e.message" />
         </template>
         <template v-else-if="e.kind === 'modcall'">
@@ -93,7 +93,6 @@ function send() {
 }
 
 .name {
-  margin-right: 8px;
   font-weight: 600;
 }
 
