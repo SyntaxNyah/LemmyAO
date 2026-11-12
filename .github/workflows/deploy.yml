@@ -41,6 +41,6 @@ jobs:
           # Pinned so the deploy refuses any other machine at that address.
           echo "$SERVER_IP ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICGYjaiBmS1OtKHgPi51928ebDlME+64Fq0q7c5gZdwz" > ~/.ssh/known_hosts
           ssh="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o LogLevel=ERROR"
-          # Assets first, then the pages and service worker that reference them.
-          rsync -rlz --chmod=D755,F644 -e "$ssh" --exclude '*.html' --exclude 'sw.js' dist/ "ubuntu@$SERVER_IP:$TARGET"
-          rsync -rlz --chmod=D755,F644 -e "$ssh" dist/ "ubuntu@$SERVER_IP:$TARGET"
+          # New assets first, then the pages and service worker that reference them, dropping what the build no longer has.
+          rsync -rltz --chmod=D755,F644 -e "$ssh" --exclude '*.html' --exclude 'sw.js' dist/ "ubuntu@$SERVER_IP:$TARGET"
+          rsync -rltz --chmod=D755,F644 -e "$ssh" --delete dist/ "ubuntu@$SERVER_IP:$TARGET"
