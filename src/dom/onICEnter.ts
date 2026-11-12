@@ -48,10 +48,12 @@ export function onICEnter(event: KeyboardEvent) {
     emote: my_emote.emote,
     message: input("client_inputbox").value,
     side,
-    sfx_name: sendSfx ? my_emote.sfx : "0",
+    // Servers reject an empty sfx slot; "0" means none.
+    sfx_name: (sendSfx && my_emote.sfx) || "0",
     emote_modifier,
     char_id: client.charID,
-    sfx_delay: sendSfx ? my_emote.sfxdelay : 0,
+    // The wire carries 40 ms ticks.
+    sfx_delay: sendSfx ? aolib.msToTicks(my_emote.sfxdelay) : 0,
     shout_modifier: enumByNumber(aolib.ShoutModifier, selectedShout),
     evidence_id: client.evidence + 1,
     flip: isToggled("button_flip") ? aolib.Flip.horizontal : aolib.Flip.none,

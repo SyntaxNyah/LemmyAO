@@ -45,6 +45,20 @@ export function setClient(val: Client) {
 
 export const UPDATE_INTERVAL = 60;
 
+/**
+ * Repairs incoming packets some servers send short or with blank numbers, which
+ * aolib can't decode (CSDWASASH): an ID without a version, an SI with empty counts,
+ * a PV with a blank player ID.
+ */
+function repairInbound(wire: string): string {
+  const id = /^ID#([^#]*)#([^#]*)#%$/.exec(wire);
+  if (id) return `ID#${id[1]}#${id[2]}##%`;
+  if (wire.startsWith("SI#")) return wire.replace(/#(?=#)/g, "#0");
+  const pv = /^PV#([^#]*)#([^#]*)#([^#]*)#%$/.exec(wire);
+  if (pv) return `PV#${pv[1] || "-1"}#CID#${pv[3]}#%`;
+  return wire;
+}
+
 // presettings
 export let selectedMenu = 1;
 export function setSelectedMenu(val: number) {
@@ -368,7 +382,7 @@ class Client {
   onMessage(e: MessageEvent) {
     const msg = e.data;
     console.debug(`S: ${msg}`);
-    this.server.receive(msg);
+    this.server.receive(typeof msg === "string" ? repairInbound(msg) : msg);
   }
 
   /**
