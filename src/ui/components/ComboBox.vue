@@ -112,30 +112,33 @@ const activeId = computed(() => (open.value && active.value >= 0 ? `${id}-${acti
       @blur="hide"
       @keydown="onKey"
     />
-    <ul
-      v-if="open"
-      :id="`${id}-list`"
-      class="list"
-      :style="place"
-      role="listbox"
-      :aria-label="label"
-      @mousedown.prevent
-    >
-      <li
-        v-for="(item, i) in items"
-        :id="`${id}-${i}`"
-        :key="item.key"
-        role="option"
-        :aria-selected="!!item.selected"
-        :class="{ active: i === active }"
-        @mouseenter="active = i"
-        @click="pick(item)"
+    <!-- Outside the panel, whose stacking context would let later panels cover the list. -->
+    <Teleport to="body">
+      <ul
+        v-if="open"
+        :id="`${id}-list`"
+        class="list"
+        :style="place"
+        role="listbox"
+        :aria-label="label"
+        @mousedown.prevent
       >
-        <span class="label">{{ item.label }}</span>
-        <span v-if="item.hint" class="hint">{{ item.hint }}</span>
-      </li>
-      <li v-if="!items.length" class="empty">{{ emptyText }}</li>
-    </ul>
+        <li
+          v-for="(item, i) in items"
+          :id="`${id}-${i}`"
+          :key="item.key"
+          role="option"
+          :aria-selected="!!item.selected"
+          :class="{ active: i === active }"
+          @mouseenter="active = i"
+          @click="pick(item)"
+        >
+          <span class="label">{{ item.label }}</span>
+          <span v-if="item.hint" class="hint">{{ item.hint }}</span>
+        </li>
+        <li v-if="!items.length" class="empty">{{ emptyText }}</li>
+      </ul>
+    </Teleport>
   </div>
 </template>
 

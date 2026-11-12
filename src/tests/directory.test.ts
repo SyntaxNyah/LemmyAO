@@ -98,11 +98,15 @@ describe("parseDirectConnect", () => {
     expect(parseDirectConnect(" wss://h.example:2096 ", "https:")).toBe("wss://h.example:2096");
     expect(parseDirectConnect("h.example:50001", "https:")).toBe("wss://h.example:50001");
     expect(parseDirectConnect("127.0.0.1:50001", "http:")).toBe("ws://127.0.0.1:50001");
+    expect(parseDirectConnect("[::1]:50001", "http:")).toBe("ws://[::1]:50001");
   });
   test("rejects nonsense", () => {
     expect(parseDirectConnect("", "https:")).toBeNull();
     expect(parseDirectConnect("http://h.example", "https:")).toBe(null);
     expect(parseDirectConnect("wss://h.example/path", "https:")).toBeNull();
+    expect(parseDirectConnect("not a server!", "https:")).toBeNull();
+    expect(parseDirectConnect("ws://foo bar:1", "https:")).toBeNull();
+    expect(parseDirectConnect("h..example:1", "https:")).toBeNull();
   });
 });
 

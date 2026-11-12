@@ -112,7 +112,9 @@ export function parseDirectConnect(input: string, pageProtocol: string): string 
     : `${pageProtocol === "https:" ? "wss" : "ws"}://${text}`;
   try {
     const url = new URL(withScheme);
-    if (!url.hostname || url.pathname.length > 1 || url.search) return null;
+    if (url.pathname.length > 1 || url.search) return null;
+    // Chrome accepts any characters in a ws:// host (percent-encoding spaces), so check it here.
+    if (!/^([a-z0-9-]+(\.[a-z0-9-]+)*|\[[0-9a-f:.]+\])$/i.test(url.hostname)) return null;
     return `${url.protocol}//${url.host}`;
   } catch {
     return null;

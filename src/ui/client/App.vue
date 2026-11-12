@@ -35,8 +35,16 @@ import PanelTree from "./PanelTree.vue";
 // stay mounted in one layer and are placed over the slot of the group showing
 // them, so moving a tab never remounts it.
 const landscapeQuery = window.matchMedia("(orientation: landscape)");
+const touchQuery = window.matchMedia("(pointer: coarse)");
 const isLandscape = ref(landscapeQuery.matches);
-const onOrientation = (e: MediaQueryListEvent) => (isLandscape.value = e.matches);
+let widthAtFlip = window.innerWidth;
+const typing = () => document.activeElement?.matches("input, textarea, [contenteditable]") ?? false;
+const onOrientation = (e: MediaQueryListEvent) => {
+  // An on-screen keyboard (interactive-widget=resizes-content) shrinks only the height, which isn't a rotation.
+  if (touchQuery.matches && typing() && window.innerWidth === widthAtFlip) return;
+  widthAtFlip = window.innerWidth;
+  isLandscape.value = e.matches;
+};
 
 const portraitTabs = computed(() => flatTabs(panels.value).filter((t) => t !== "viewport"));
 // Turning to portrait lands on the first tab showing in landscape.
