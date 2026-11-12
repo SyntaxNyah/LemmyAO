@@ -60,7 +60,6 @@ const schema = {
   oocName: field("OOC_name", text, ""),
   showname: field("ic_chat_name", text, ""),
   callwords: field("callwords", lines, [] as string[]),
-  chatbox: field("chatbox", text, "dynamic"),
   font: field("selectedFont", text, "sans-serif"),
   customFont: field("customFont", text, ""),
 

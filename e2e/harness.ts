@@ -10,11 +10,12 @@ export const BLIP_MS = 40;
 export const SHOUT_SOUND_MS = 300;
 export const SFX_MS = 150;
 
-const charIni = (name: string) => `[Options]
+const charIni = (name: string, chat = "") => `[Options]
 name = ${name}
 showname = ${name}
 side = def
 blips = male
+${chat ? `chat = ${chat}` : ""}
 
 [Emotions]
 number = 2
@@ -37,7 +38,7 @@ const ASSETS: Record<string, Buffer | string> = {
   "/evidence/test.png": png([200, 40, 40]),
 };
 for (const name of ["phoenix", "edgeworth"]) {
-  ASSETS[`/characters/${name}/char.ini`] = charIni(name === "phoenix" ? "Phoenix" : "Edgeworth");
+  ASSETS[`/characters/${name}/char.ini`] = name === "phoenix" ? charIni("Phoenix") : charIni("Edgeworth", "aa");
   ASSETS[`/characters/${name}/(a)normal.png`] = png([0, 200, 0]);
   ASSETS[`/characters/${name}/(b)normal.png`] = png([0, 0, 200]);
   ASSETS[`/characters/${name}/slam.apng`] = apng(PREANIM_FRAMES);
