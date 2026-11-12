@@ -35,4 +35,4 @@ jobs:
       - name: Allow Chrome's sandbox
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: End-to-end tests
-        run: bun test ./e2e/viewport.e2e.ts
+        run: bun run e2e
