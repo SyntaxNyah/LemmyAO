@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
 import { state } from "../../core/state";
+import LinkifiedText from "../components/LinkifiedText.vue";
 
 const ok = ref<HTMLButtonElement>();
 watch(
@@ -17,7 +18,7 @@ watch(
   <div v-if="state.alerts.length" class="overlay" role="alertdialog" aria-labelledby="server-alert-title" aria-describedby="server-alert-message">
     <div class="card" @keydown.esc="state.alerts.shift()">
       <strong id="server-alert-title" class="title">Message from the server</strong>
-      <p id="server-alert-message" class="message">{{ state.alerts[0] }}</p>
+      <LinkifiedText id="server-alert-message" class="message" :text="state.alerts[0]" />
       <button ref="ok" class="btn btn-primary" @click="state.alerts.shift()">
         OK<template v-if="state.alerts.length > 1"> ({{ state.alerts.length - 1 }} more)</template>
       </button>
@@ -56,7 +57,8 @@ watch(
   font-size: 17px;
 }
 
-.message {
+/* LinkifiedText defaults to pre-line; keep the server's own spacing. */
+.card .message {
   margin: 0;
   overflow-y: auto;
   white-space: pre-wrap;
