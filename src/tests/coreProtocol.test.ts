@@ -29,7 +29,7 @@ import {
   pairWith,
   unpair,
 } from "../core/commands";
-import { settings, setSetting } from "../core/settings";
+import { setSetting } from "../core/settings";
 import { icLogAsText, pairMentions } from "../core/log";
 import { on } from "../core/events";
 
@@ -381,12 +381,26 @@ describe("commands", () => {
     pickCharacter(0);
     changeArea(1);
     changeArea(9);
-    sendOOC("/roll", "Maya");
+    sendOOC("/roll");
     expect(outbound.map((p) => p.$header)).toEqual(["CC", "MC", "CT"]);
     expect(outbound[0]).toMatchObject({ char_id: 0, char_password: "none" });
     expect(outbound[1]).toMatchObject({ name: "Courtroom", char_id: 1 });
     expect(state.self.areaId).toBe(1);
-    expect(settings.oocName).toBe("Maya");
+  });
+
+  test("OOC goes out under the same name as IC: the showname, else the character's", () => {
+    joinAs(1);
+    const names = () => outbound.filter((p) => p.$header === "CT").map((p) => p.name);
+    setSetting("showname", "");
+    setSetting("oocName", "Guest");
+    state.self.charId = -1;
+    sendOOC("as a spectator");
+    state.self.charId = 1;
+    sendOOC("as a character");
+    setSetting("showname", "Nick");
+    sendOOC("with a showname");
+    expect(names()).toEqual(["Guest", state.characters[1].name, "Nick"]);
+    setSetting("showname", "");
   });
 
   test("health changes are clamped", () => {
