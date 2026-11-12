@@ -20,6 +20,8 @@ const displayName = (p: Player) => {
   const custom = state.spokenShownames[p.charId] ?? p.showName;
   return custom || p.charName || p.name || `Player ${p.id}`;
 };
+// Shown in brackets after the name when it's different, e.g. a desktop client's separate OOC name.
+const oocName = (p: Player) => (p.name && p.name !== displayName(p) ? p.name : "");
 const areaName = (p: Player) => state.areas[p.area]?.name ?? `Area ${p.area}`;
 
 // Voice chat reports speakers through a callback; mirror it reactively.
@@ -118,11 +120,11 @@ function confirmModeration() {
           </span>
           <span class="who">
             <span class="name">
-              {{ displayName(p) }}
+              {{ displayName(p) }}<span v-if="oocName(p)" class="ooc"> [{{ oocName(p) }}]</span>
               <span v-if="p.id === state.server.playerId" class="tag">You</span>
               <span v-if="speaking.has(p.id)" class="tag talking">Talking</span>
             </span>
-            <span class="detail" :title="p.name ? `OOC name: ${p.name}` : undefined">
+            <span class="detail">
               <span class="id">ID: {{ p.id }}</span>
               <template v-if="p.charName"> · {{ p.charName }}</template>
               · {{ areaName(p) }}
@@ -246,6 +248,11 @@ ul {
 .name {
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+
+.ooc {
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
 .tag {

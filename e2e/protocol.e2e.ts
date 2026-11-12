@@ -90,6 +90,29 @@ describe("protocol", () => {
     expect(oocNames()).toEqual(["Phoenix", "Nick"]);
   });
 
+  test("the player list adds the OOC name in brackets when it differs from the name shown", async () => {
+    const player = await openClient(browser, server);
+    const watcher = await openClient(browser, server);
+    await spectate(player);
+    await spectate(watcher);
+    const ooc = async (text: string) => {
+      await player.click('[data-tab="ooc"]');
+      await player.type('[aria-label="OOC message"]', text);
+      await player.keyboard.press("Enter");
+      await player.waitForFunction((t) => document.querySelector('[aria-label="Out-of-character chat"]')?.textContent?.includes(t), {}, text);
+    };
+    await ooc("hello as a spectator");
+    const guest = wires(player).find((w) => w.startsWith("C: CT#"))!.split("#")[1];
+    await clickButton(player, ".panel", "Change character");
+    await joinAs(player, "Phoenix");
+    await watcher.click('[data-tab="players"]');
+    const listed = (want: string) =>
+      watcher.waitForFunction((w) => [...document.querySelectorAll(".players .name")].some((n) => n.textContent?.replace(/\s+/g, " ").trim() === w), {}, want);
+    await listed(`Phoenix [${guest}]`);
+    await ooc("hello as Phoenix");
+    await listed("Phoenix");
+  });
+
   test("moving to an area, and a locked area refusing", async () => {
     const page = await openClient(browser, server);
     await joinAs(page, "Phoenix");
