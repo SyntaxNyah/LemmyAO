@@ -3,6 +3,7 @@ name: Deploy
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 concurrency:
   group: deploy
@@ -29,7 +30,17 @@ jobs:
       - name: Build
         run: bun run build
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages
-          folder: dist
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SSH_PRIVATEKEY: ${{ secrets.SSH_PRIVATEKEY }}
+          TARGET: /var/www/webao.miku.pizza/
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATEKEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Pinned so the deploy refuses any other machine at that address.
+          echo "$SERVER_IP ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICGYjaiBmS1OtKHgPi51928ebDlME+64Fq0q7c5gZdwz" > ~/.ssh/known_hosts
+          ssh="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o LogLevel=ERROR"
+          # Assets first, then the pages and service worker that reference them.
+          rsync -rlz --chmod=D755,F644 -e "$ssh" --exclude '*.html' --exclude 'sw.js' dist/ "ubuntu@$SERVER_IP:$TARGET"
+          rsync -rlz --chmod=D755,F644 -e "$ssh" dist/ "ubuntu@$SERVER_IP:$TARGET"
