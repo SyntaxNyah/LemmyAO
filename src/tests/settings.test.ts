@@ -16,7 +16,7 @@ beforeEach(() => {
 
 describe("settings", () => {
   test("falls back to defaults when nothing is stored", () => {
-    expect(settings.chatbox).toBe("dynamic");
+    expect(settings.font).toBe("sans-serif");
     expect(settings.musicVolume).toBe(1);
     expect(settings.preanimGlow).toBe(true);
     expect(settings.panTilt).toBe(false);
@@ -83,27 +83,27 @@ describe("settings", () => {
 
   test("the exported view is read-only", () => {
     const warn = spyOn(console, "warn").mockImplementation(() => {});
-    (settings as { chatbox: string }).chatbox = "aa";
-    expect(settings.chatbox).toBe("dynamic");
+    (settings as { font: string }).font = "serif";
+    expect(settings.font).toBe("sans-serif");
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
 
   test("reset clears only the named settings", () => {
-    setSetting("chatbox", "aa");
+    setSetting("font", "serif");
     setSetting("oocName", "Edgeworth");
-    resetSettings(["chatbox"]);
+    resetSettings(["font"]);
 
-    expect(settings.chatbox).toBe("dynamic");
-    expect(localStorage.getItem("chatbox")).toBeNull();
+    expect(settings.font).toBe("sans-serif");
+    expect(localStorage.getItem("selectedFont")).toBeNull();
     expect(settings.oocName).toBe("Edgeworth");
   });
 
   test("reset with no arguments clears everything", () => {
-    setSetting("chatbox", "aa");
+    setSetting("font", "serif");
     setSetting("voiceMuted", true);
     resetSettings();
-    expect(settings.chatbox).toBe("dynamic");
+    expect(settings.font).toBe("sans-serif");
     expect(settings.voiceMuted).toBe(false);
   });
 });

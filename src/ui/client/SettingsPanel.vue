@@ -3,7 +3,6 @@ import { computed, ref } from "vue";
 import { settings, setSetting, resetSettings, type SettingKey } from "../../core/settings";
 import { exportLog } from "../../dom/exportLog";
 import { modcall_test } from "../../dom/modCallTest";
-import chatboxStyles from "../../constants/chatboxes";
 import { version } from "../../version";
 import {
   voiceUi,
@@ -32,7 +31,7 @@ const SECTIONS: Record<string, string> = {
   audio: "audio volume music sfx sound effects blips mute",
   voice: "voice chat microphone mic push to talk ptt",
   appearance:
-    "appearance theme modern classic accent colour color chatbox style font dialogue courtroom 16:9 widescreen aspect inset offset pan tilt desks",
+    "appearance theme modern classic accent colour color font dialogue courtroom 16:9 widescreen aspect inset offset pan tilt desks",
   chat: "chat callwords mention modcall sound",
   layout: "layout tabs tab order arrange move split edit mode resize size panels",
   log: "log chat log download export transcript txt html",
@@ -45,16 +44,6 @@ const visible = (id: string) => {
   return !q || SECTIONS[id].includes(q) || q.split(/\s+/).every((w) => SECTIONS[id].includes(w));
 };
 const anyVisible = computed(() => Object.keys(SECTIONS).some(visible));
-
-const CHATBOX_LABELS: Record<string, string> = {
-  aa: "AA", dd: "DD / SoJ", dgs: "Chronicles", plvsaa: "PL vs AA", trilogy: "Trilogy", future: "Future",
-  legacy: "Old webAO", "999": "999", acww: "Animal Crossing", dr1: "DR 1", dr2: "DR 2", drv3: "DR 3",
-  drae: "DR: AE", ddlc: "DDLC", homestuck: "Homestuck", key: "Key", n64zelda: "N64 Zelda",
-  papermario: "Paper Mario", p1: "Persona 1", p2: "Persona 2", p3: "Persona 3", p4: "Persona 4",
-  p5: "Persona 5", stardew: "Stardew Valley", halla: "VA-11 HALL-A", whentheycry: "When They Cry",
-  yakuza: "Yakuza", yttd: "YTTD",
-};
-const chatboxes = chatboxStyles.filter((c) => c in CHATBOX_LABELS);
 
 const FONTS: [string, string][] = [
   ["sans-serif", "Default (sans-serif)"],
@@ -95,7 +84,7 @@ const DEFAULT_ACCENT = "#6d8cff";
 
 // Voice, OOC name, favorites and saved lists survive a reset, as before.
 const RESET_KEYS: SettingKey[] = [
-  "chatbox", "font", "customFont", "musicVolume", "sfxVolume", "blipVolume", "blipPitch",
+  "font", "customFont", "musicVolume", "sfxVolume", "blipVolume", "blipPitch",
   "musicMuted", "sfxMuted", "blipMuted", "callwords", "showname",
   "panTilt", "hideDesks", "widescreen", "chatOffset", "preanimGlow", "preanimGlowColor",
   "preanimGlowIntensity", "theme", "accent", "tabOrder", "offsetLockX", "offsetLockY",
@@ -169,14 +158,6 @@ const checkbox = (key: SettingKey) => ({
             />
             <button class="link-btn" :disabled="!settings.accent" @click="setSetting('accent', '')">Default</button>
           </span>
-        </label>
-        <label class="field">
-          <span class="field-label">Chatbox style</span>
-          <select class="input" :value="settings.chatbox" @change="setSetting('chatbox', ($event.target as HTMLSelectElement).value)">
-            <option value="dynamic">Each character's own</option>
-            <option value="default">LemmyAO default</option>
-            <option v-for="c in chatboxes" :key="c" :value="c">{{ CHATBOX_LABELS[c] }}</option>
-          </select>
         </label>
         <label class="field">
           <span class="field-label">Dialogue font</span>

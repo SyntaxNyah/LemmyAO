@@ -60,6 +60,10 @@ describe("protocol", () => {
     await speaker.keyboard.press("Enter");
     await listener.waitForFunction(() => document.querySelector('[aria-label="In-character log"]')?.textContent?.includes("objection overruled"));
     expect((await icLog(listener)).some((e) => e?.includes("Edgeworth") && e.includes("objection overruled"))).toBe(true);
+    // Edgeworth's char.ini asks for the AA chatbox; there's no setting to override it.
+    await listener.waitForFunction(() => (document.getElementById("chatbox_theme") as HTMLLinkElement).href.endsWith("/styles/chatbox/aa.css"));
+    await listener.click('[data-tab="settings"]');
+    expect(await listener.evaluate(() => document.querySelector(".settings, .panel[aria-label='Settings']")?.textContent?.includes("Chatbox style"))).toBe(false);
   });
 
   test("OOC chat goes out and comes back", async () => {
