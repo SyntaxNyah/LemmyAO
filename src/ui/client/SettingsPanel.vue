@@ -31,7 +31,7 @@ const SECTIONS: Record<string, string> = {
   audio: "audio volume music sfx sound effects blips mute",
   voice: "voice chat microphone mic push to talk ptt",
   appearance:
-    "appearance theme modern classic accent colour color font dialogue courtroom 16:9 widescreen aspect inset offset pan tilt desks",
+    "appearance theme modern classic accent colour color font dialogue chatbox courtroom 16:9 widescreen aspect inset offset pan tilt desks",
   chat: "chat callwords mention modcall sound",
   layout: "layout tabs tab order arrange move split edit mode resize size panels",
   log: "log chat log download export transcript txt html",
@@ -160,7 +160,7 @@ const checkbox = (key: SettingKey) => ({
           </span>
         </label>
         <label class="field">
-          <span class="field-label">Dialogue font</span>
+          <span class="field-label">Default chatbox font</span>
           <select class="input" :value="settings.font" @change="setSetting('font', ($event.target as HTMLSelectElement).value)">
             <option v-for="[value, label] in FONTS" :key="value" :value="value">{{ label }}</option>
           </select>
