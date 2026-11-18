@@ -12,23 +12,28 @@ import { applyPreanimGlow } from "../dom/switchPreanimGlow";
 const SFX_IDS = ["client_sfxaudio"];
 
 function applyAudio() {
+  // Read every value before touching the DOM: this effect starts before the
+  // music channels exist, and a value read only inside the channel loop is
+  // never tracked, so moving that slider would not re-run the effect.
+  const { musicVolume, musicMuted, sfxVolume, sfxMuted, blipVolume, blipMuted, blipPitch } = settings;
+
   const music = document.getElementsByClassName("audioChannel") as HTMLCollectionOf<HTMLAudioElement>;
   for (const channel of music) {
-    channel.volume = settings.musicVolume;
-    channel.muted = settings.musicMuted;
+    channel.volume = musicVolume;
+    channel.muted = musicMuted;
   }
   for (const id of SFX_IDS) {
     const el = document.getElementById(id) as HTMLAudioElement | null;
     if (el) {
-      el.volume = settings.sfxVolume;
-      el.muted = settings.sfxMuted;
+      el.volume = sfxVolume;
+      el.muted = sfxMuted;
     }
   }
-  setSfxVolume(settings.sfxVolume);
-  setSfxMuted(settings.sfxMuted);
-  setBlipVolume(settings.blipVolume);
-  setBlipMuted(settings.blipMuted);
-  setBlipPitch(settings.blipPitch);
+  setSfxVolume(sfxVolume);
+  setSfxMuted(sfxMuted);
+  setBlipVolume(blipVolume);
+  setBlipMuted(blipMuted);
+  setBlipPitch(blipPitch);
 }
 
 function applyLook() {

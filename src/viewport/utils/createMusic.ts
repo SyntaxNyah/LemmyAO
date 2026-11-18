@@ -1,4 +1,5 @@
 import { opusCheck } from "../../dom/opusCheck";
+import { settings } from "../../core/settings";
 import { MusicChannel } from "aolib-ts";
 
 export type MusicChannels = Record<MusicChannel, HTMLAudioElement>;
@@ -15,7 +16,8 @@ export function createMusic(): MusicChannels {
   const channels = {} as MusicChannels;
   Object.values(MusicChannel).forEach((name, i) => {
     const channel = audioChannels[i];
-    channel.volume = 0.5;
+    channel.volume = settings.musicVolume;
+    channel.muted = settings.musicMuted;
     // Wrap, don't call: `onerror = opusCheck(channel)` ran the check at
     // wire-up time (against a channel with no src yet) and left onerror
     // undefined, so the music channels had no error handler at all.
