@@ -55,7 +55,9 @@ watch(isLandscape, (landscape) => {
 });
 
 function select(tab: TabId) {
-  if (isLandscape.value) savePanels(showTab(panels.value, tab));
+  // A selection changes which tab is active, not how the panels are arranged;
+  // don't rewrite the shared cookie on every click.
+  if (isLandscape.value) savePanels(showTab(panels.value, tab), false);
   else portraitTab.value = tab;
 }
 

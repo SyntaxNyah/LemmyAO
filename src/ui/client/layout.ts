@@ -3,6 +3,7 @@ import { settings, setSetting } from "../../core/settings";
 import { loadLayout, type GroupRef, type PanelLayout, type Side } from "./panelLayout";
 import type { TabId } from "./tabs";
 import { parseLayoutFile, type LayoutFile } from "./layoutFile";
+import { clearSharedLayout, mirrorLayout } from "./layoutStorage";
 
 /** Edit mode shows knobs in the seams between panels; it isn't remembered. */
 export const editingLayout = ref(false);
@@ -19,6 +20,7 @@ export function commit() {
   if (dragging.value === null) return;
   setSetting("layoutViewportPortrait", dragging.value);
   dragging.value = null;
+  mirrorLayout(loadLayout(settings.panelLayout, settings.tabOrder), settings.layoutViewportPortrait);
 }
 
 export const layoutChanged = () => settings.layoutViewportPortrait !== 0 || settings.panelLayout !== "" || settings.tabOrder.length > 0;
@@ -27,6 +29,7 @@ export function resetLayout() {
   setSetting("layoutViewportPortrait", 0);
   setSetting("panelLayout", "");
   setSetting("tabOrder", []);
+  clearSharedLayout();
 }
 
 /** The landscape panel arrangement; a draft overrides the saved one while something is dragged. */
@@ -36,9 +39,11 @@ export const panels = computed(() => draftPanels.value ?? savedPanels.value);
 
 export const previewPanels = (layout: PanelLayout) => (draftPanels.value = layout);
 
-export function savePanels(layout: PanelLayout = panels.value) {
+/** Saves the arrangement. `mirror` is false for a tab selection, which isn't a layout edit. */
+export function savePanels(layout: PanelLayout = panels.value, mirror = true) {
   draftPanels.value = null;
   setSetting("panelLayout", JSON.stringify(layout));
+  if (mirror) mirrorLayout(layout, settings.layoutViewportPortrait);
 }
 
 /** Applies a layout file chosen in Settings, replacing the current arrangement. */
@@ -47,6 +52,7 @@ export function applyLayoutText(text: string): LayoutFile {
   draftPanels.value = null;
   setSetting("panelLayout", JSON.stringify(file.panelLayout));
   setSetting("layoutViewportPortrait", file.layoutViewportPortrait);
+  mirrorLayout(file.panelLayout, file.layoutViewportPortrait);
   return file;
 }
 
