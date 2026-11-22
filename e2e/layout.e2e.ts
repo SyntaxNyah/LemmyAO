@@ -1,3 +1,6 @@
+import { rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Browser, Page } from "puppeteer";
 import {
@@ -155,5 +158,40 @@ describe("landscape layout", () => {
     );
     await settle(200);
     expect(await ratio()).toBeCloseTo(16 / 9, 1);
+  });
+
+  test("a layout JSON file picked in Settings replaces the arrangement", async () => {
+    const page = await editing();
+    const path = join(tmpdir(), `lemmyao-layout-${Date.now()}.json`);
+    const imported = {
+      format: "lemmyao-layout",
+      version: 1,
+      panelLayout: {
+        root: {
+          kind: "split",
+          dir: "row",
+          size: 1,
+          children: [
+            { kind: "group", tabs: ["viewport", "emotes"], active: "viewport", size: 1 },
+            { kind: "group", tabs: SIDE, active: "music", size: 1 },
+          ],
+        },
+      },
+      layoutViewportPortrait: 0.4,
+    };
+
+    try {
+      await Bun.write(path, JSON.stringify(imported));
+      const input = await page.$('input[type="file"]');
+      expect(input).not.toBeNull();
+      await input!.uploadFile(path);
+      await page.waitForFunction(() => document.querySelector("[data-layout-status]")?.textContent?.includes("imported"));
+
+      expect(await layoutTree(page)).toEqual({ row: [["viewport", "emotes"], SIDE] });
+      expect(await page.evaluate(() => localStorage.getItem("layoutViewportPortrait"))).toBe("0.4");
+      expect(await page.evaluate(() => document.cookie)).toContain("lemmyao_layout=");
+    } finally {
+      await rm(path, { force: true });
+    }
   });
 });
