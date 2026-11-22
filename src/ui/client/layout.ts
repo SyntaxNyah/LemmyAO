@@ -2,6 +2,7 @@ import { computed, reactive, ref } from "vue";
 import { settings, setSetting } from "../../core/settings";
 import { loadLayout, type GroupRef, type PanelLayout, type Side } from "./panelLayout";
 import type { TabId } from "./tabs";
+import { parseLayoutFile, type LayoutFile } from "./layoutFile";
 
 /** Edit mode shows knobs in the seams between panels; it isn't remembered. */
 export const editingLayout = ref(false);
@@ -38,6 +39,15 @@ export const previewPanels = (layout: PanelLayout) => (draftPanels.value = layou
 export function savePanels(layout: PanelLayout = panels.value) {
   draftPanels.value = null;
   setSetting("panelLayout", JSON.stringify(layout));
+}
+
+/** Applies a layout file chosen in Settings, replacing the current arrangement. */
+export function applyLayoutText(text: string): LayoutFile {
+  const file = parseLayoutFile(text);
+  draftPanels.value = null;
+  setSetting("panelLayout", JSON.stringify(file.panelLayout));
+  setSetting("layoutViewportPortrait", file.layoutViewportPortrait);
+  return file;
 }
 
 /** A tab being dragged in edit mode, and where it would land. */

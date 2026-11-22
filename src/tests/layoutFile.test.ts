@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { reloadSettings, resetSettings, setSetting } from "../core/settings";
+import { reloadSettings, resetSettings, setSetting, settings } from "../core/settings";
 import { defaultLayout, flatTabs, loadLayout, moveTab, type PanelLayout } from "../ui/client/panelLayout";
 import { DEFAULT_TABS } from "../ui/client/tabs";
+import { applyLayoutText } from "../ui/client/layout";
 import { layoutFileData, layoutFileText, parseLayoutFile } from "../ui/client/layoutFile";
 
 const ALL = DEFAULT_TABS.map((tab) => tab.id);
@@ -103,5 +104,19 @@ describe("layout files", () => {
     expect(() => parseLayoutFile(JSON.stringify({ format: "lemmyao-layout", version: 2, panelLayout: custom() }))).toThrow(
       "newer version",
     );
+  });
+
+  test("applying a file updates both saved layout settings", () => {
+    const layout = custom();
+    applyLayoutText(
+      JSON.stringify({
+        format: "lemmyao-layout",
+        version: 1,
+        panelLayout: layout,
+        layoutViewportPortrait: 0.3,
+      }),
+    );
+    expect(loadLayout(settings.panelLayout, [])).toEqual(loadLayout(JSON.stringify(layout), []));
+    expect(settings.layoutViewportPortrait).toBe(0.3);
   });
 });

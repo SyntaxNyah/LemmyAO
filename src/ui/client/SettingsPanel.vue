@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { settings, setSetting, resetSettings, type SettingKey } from "../../core/settings";
 import { exportLog } from "../../dom/exportLog";
 import { modcall_test } from "../../dom/modCallTest";
+import downloadFile from "../../services/downloadFile";
 import { version } from "../../version";
 import {
   voiceUi,
@@ -15,7 +16,8 @@ import {
   chooseDevice,
   setVoiceVolume,
 } from "../../voice/voiceUI";
-import { editingLayout, layoutChanged, resetLayout } from "./layout";
+import { applyLayoutText, editingLayout, layoutChanged, resetLayout } from "./layout";
+import { layoutFileText } from "./layoutFile";
 import { state } from "../../core/state";
 import queryParser from "../../utils/queryParser";
 import LinkifiedText from "../components/LinkifiedText.vue";
@@ -33,7 +35,7 @@ const SECTIONS: Record<string, string> = {
   appearance:
     "appearance theme modern classic accent colour color font dialogue chatbox courtroom 16:9 widescreen aspect inset offset pan tilt desks",
   chat: "chat callwords mention modcall sound",
-  layout: "layout tabs tab order arrange move split edit mode resize size panels",
+  layout: "layout tabs tab order arrange move split edit mode resize size panels export import share json file",
   log: "log chat log download export transcript txt html",
   server: "server name address software version players description list leave disconnect exit",
   advanced: "advanced reset defaults",
@@ -93,6 +95,47 @@ const confirmReset = ref(false);
 function reset() {
   resetSettings(RESET_KEYS);
   confirmReset.value = false;
+}
+
+const layoutInput = ref<HTMLInputElement>();
+const layoutNotice = ref("");
+const layoutNoticeError = ref(false);
+/** A layout is a few hundred bytes; anything this big is not one. */
+const MAX_LAYOUT_FILE = 64 * 1024;
+
+const chooseLayoutFile = () => layoutInput.value?.click();
+
+function exportLayout() {
+  try {
+    const timestamp = new Date().toISOString().replace(/[T:.]/g, "-").slice(0, 19);
+    downloadFile(layoutFileText(), `lemmyao-layout-${timestamp}.json`, "application/json;charset=utf-8");
+    layoutNotice.value = "Layout exported.";
+    layoutNoticeError.value = false;
+  } catch {
+    layoutNotice.value = "Could not export the layout.";
+    layoutNoticeError.value = true;
+  }
+}
+
+async function importLayoutFile(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  // Re-selecting the same file must fire change again.
+  input.value = "";
+  if (!file) return;
+  if (file.size > MAX_LAYOUT_FILE) {
+    layoutNotice.value = "That file is too large to be a layout.";
+    layoutNoticeError.value = true;
+    return;
+  }
+  try {
+    applyLayoutText(await file.text());
+    layoutNotice.value = "Layout imported.";
+    layoutNoticeError.value = false;
+  } catch (error) {
+    layoutNotice.value = error instanceof Error ? error.message : "Could not import that layout.";
+    layoutNoticeError.value = true;
+  }
 }
 
 const micOn = computed(() => voiceUi.joined && !voiceUi.listenOnly);
@@ -200,6 +243,24 @@ const checkbox = (key: SettingKey) => ({
         <label class="check"><input v-model="editingLayout" type="checkbox" /> Edit mode</label>
         <button class="btn" :disabled="!layoutChanged()" @click="resetLayout">Reset layout</button>
       </div>
+      <div class="buttons">
+        <button class="btn" @click="exportLayout">Export layout</button>
+        <button class="btn" @click="chooseLayoutFile">Import layout</button>
+        <input
+          ref="layoutInput"
+          class="layout-file"
+          type="file"
+          accept="application/json,.json"
+          aria-label="Choose a layout JSON file"
+          @change="importLayoutFile"
+        />
+      </div>
+      <p class="muted">
+        Export your layout as a JSON file, or import someone else's. Importing replaces your current layout.
+      </p>
+      <p v-if="layoutNotice" :class="layoutNoticeError ? 'danger-text' : 'muted'" role="status" data-layout-status>
+        {{ layoutNotice }}
+      </p>
       <p v-if="editingLayout" class="muted">
         Drag the knobs on the seams to resize. Drag a tab onto another tab bar to move it, onto the edge of a panel to
         split it, or onto the edge of the screen for a full-height or full-width panel (in landscape).
@@ -493,6 +554,10 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.layout-file {
+  display: none;
 }
 
 .word-list {
