@@ -87,17 +87,32 @@ describe("shared layout cookie", () => {
     const layout = custom("music");
     setSetting("panelLayout", JSON.stringify(layout));
     setSetting("layoutViewportPortrait", 0.5);
+    setSetting("tabOrder", ["log", "emotes"]);
     clearSharedLayout();
 
     // The other scheme still has the old layout with an older timestamp.
     setUrl(HTTP);
     setSetting("panelLayout", JSON.stringify(layout));
     setSetting("layoutViewportPortrait", 0.5);
+    setSetting("tabOrder", ["log", "emotes"]);
     localStorage.setItem(LAYOUT_TIME_KEY, String(Date.now() - 60_000));
 
     syncSharedLayout();
     expect(settings.panelLayout).toBe("");
     expect(settings.layoutViewportPortrait).toBe(0);
+    expect(settings.tabOrder).toEqual([]);
+  });
+
+  test("a shared layout wins a same-millisecond tie when this scheme has no layout", () => {
+    const layout = custom("evidence");
+    mirrorLayout(layout, 0.5);
+    // Clearing the settings keeps the time the mirror just wrote, so the two
+    // timestamps are equal and the explicit shared layout should win.
+    resetSettings();
+
+    syncSharedLayout();
+    expect(settings.layoutViewportPortrait).toBe(0.5);
+    expect(tabs(saved())).toEqual(tabs(layout));
   });
 
   test("does not resurrect a layout after this scheme was reset", () => {

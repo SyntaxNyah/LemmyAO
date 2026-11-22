@@ -124,13 +124,15 @@ export function syncSharedLayout() {
     if (shared.at > localAt) {
       setSetting("panelLayout", "");
       setSetting("layoutViewportPortrait", 0);
+      setSetting("tabOrder", []);
       writeTime(shared.at);
     }
     return;
   }
 
-  // A layout with no timestamp on this scheme is a fresh origin: adopt the shared one.
-  if (shared && (shared.at > localAt || (!localCustom && localAt === 0))) {
+  // A custom layout only loses to a strictly newer shared one; when this scheme
+  // has no custom layout, the shared copy also wins a same-millisecond tie.
+  if (shared && (localCustom ? shared.at > localAt : shared.at >= localAt)) {
     setSetting("panelLayout", JSON.stringify(shared.file.panelLayout));
     setSetting("layoutViewportPortrait", shared.file.layoutViewportPortrait);
     writeTime(shared.at);
@@ -143,5 +145,5 @@ export function syncSharedLayout() {
   }
 
   // This scheme was reset after the cookie was written; tombstone the stale copy.
-  if (shared && localAt >= shared.at) clearSharedLayout();
+  if (shared && localAt > shared.at) clearSharedLayout();
 }
