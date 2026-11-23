@@ -76,4 +76,26 @@ describe("phone", () => {
     await spectate(desktop);
     expect((await small(desktop)).length).toBeGreaterThan(0);
   });
+
+  test("the OOC name row opens above the composer and survives the keyboard", async () => {
+    const page = await onPhone();
+    await page.click('[data-tab="ooc"]');
+    await page.click('[aria-label="Change OOC name"]');
+    const row = await rect(page, ".name-row");
+    const composer = await rect(page, ".composer");
+    expect(row.bottom).toBeLessThanOrEqual(composer.top + 1);
+    expect(
+      await page.$eval('[aria-label="Custom OOC name"]', (input) => parseFloat(getComputedStyle(input).fontSize)),
+    ).toBeGreaterThanOrEqual(16);
+    await page.focus('[aria-label="Custom OOC name"]');
+    await page.setViewport(phone(390, 330));
+    await settle(300);
+    expect([await layoutOf(page), await selectedTab(page), await focused(page)]).toEqual([
+      "portrait",
+      "ooc",
+      "Custom OOC name",
+    ]);
+    await page.setViewport(phone(390, 844));
+    await settle(300);
+  });
 });

@@ -76,11 +76,13 @@ describe("protocol", () => {
     expect(wires(page).some((w) => w.startsWith("C: CT#") && w.includes("hello out of character"))).toBe(true);
   });
 
-  test("OOC goes out under the showname, else the character's name; there's no separate OOC name", async () => {
+  test("OOC uses a custom name when set, else the showname or character name", async () => {
     const page = await openClient(browser, server);
     await joinAs(page, "Phoenix");
     await page.click('[data-tab="ooc"]');
-    expect(await page.$('[aria-label="OOC name"]')).toBeNull();
+    expect(await page.$('[aria-label="Custom OOC name"]')).toBeNull();
+    await page.click('[aria-label="Change OOC name"]');
+    expect(await page.$('[aria-label="Custom OOC name"]')).not.toBeNull();
     const oocNames = () => wires(page).filter((w) => w.startsWith("C: CT#")).map((w) => w.split("#")[1]);
     const say = async (text: string) => {
       await page.type('[aria-label="OOC message"]', text);
@@ -91,7 +93,16 @@ describe("protocol", () => {
     await page.type('input[placeholder="Pick a name…"]', "Nick");
     await page.keyboard.press("Enter");
     await say("with a showname");
-    expect(oocNames()).toEqual(["Phoenix", "Nick"]);
+    await page.type('[aria-label="Custom OOC name"]', "Custom OOC");
+    await say("with a custom name");
+    expect(oocNames().at(-1)).toBe("Custom OOC");
+    await page.$eval('[aria-label="Custom OOC name"]', (input) => {
+      const field = input as HTMLInputElement;
+      field.value = "";
+      field.dispatchEvent(new Event("input"));
+    });
+    await say("after clearing");
+    expect(oocNames()).toEqual(["Phoenix", "Nick", "Custom OOC", "Nick"]);
   });
 
   test("the player list adds the OOC name in brackets when it differs from the name shown", async () => {
