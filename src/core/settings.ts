@@ -57,7 +57,10 @@ const field = <T>(key: string, codec: Codec<T>, fallback: T): Field<T> => ({
 });
 
 const schema = {
+  /** Spectator guest name, picked once; a custom OOC name overrides it. */
   oocName: field("OOC_name", text, ""),
+  /** A name used only for OOC chat; "" follows the character/showname. */
+  customOocName: field("customOocName", text, ""),
   showname: field("ic_chat_name", text, ""),
   callwords: field("callwords", lines, [] as string[]),
   font: field("selectedFont", text, "sans-serif"),

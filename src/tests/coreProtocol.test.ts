@@ -403,6 +403,21 @@ describe("commands", () => {
     setSetting("showname", "");
   });
 
+  test("a custom OOC name overrides the IC name, and clearing it falls back", () => {
+    joinAs(1);
+    const names = () => outbound.filter((p) => p.$header === "CT").map((p) => p.name);
+    setSetting("showname", "Nick");
+    setSetting("customOocName", "Alex");
+    sendOOC("with a custom name");
+    state.self.charId = -1;
+    sendOOC("as a spectator");
+    state.self.charId = 1;
+    setSetting("customOocName", "");
+    sendOOC("after clearing");
+    expect(names()).toEqual(["Alex", "Alex", "Nick"]);
+    setSetting("showname", "");
+  });
+
   test("health changes are clamped", () => {
     changeHealth(PenaltyBar.defense, 1);
     conn.clientSession.send.HP({ bar: PenaltyBar.prosecution, value: 0 });

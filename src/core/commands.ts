@@ -140,10 +140,12 @@ export function sendIC(): boolean {
 }
 
 /**
- * The name OOC messages go out under, the same as in IC: the showname, else the
- * character's. Spectators have neither and get a guest name, picked once.
+ * The name OOC messages go out under: a custom OOC name, else the same as in
+ * IC (the showname, else the character's). Spectators get a guest name, picked once.
  */
 export function oocName() {
+  const custom = settings.customOocName.trim();
+  if (custom) return custom;
   const own = settings.showname.trim() || state.self.character?.showname || state.characters[state.self.charId]?.name;
   if (own) return own;
   if (!settings.oocName) setSetting("oocName", `web${Math.floor(Math.random() * 900 + 100)}`);
