@@ -6,6 +6,7 @@ import { pickCharacter, sendOOC } from "../../core/commands";
 import { characterFolder } from "../../core/character";
 import AssetImage from "./AssetImage.vue";
 import { charSelectOpen } from "./overlays";
+import { orderCharacters, type CharacterChoice } from "./characterOrder";
 
 const query = ref("");
 const search = ref<HTMLInputElement>();
@@ -41,10 +42,10 @@ function toggleFavourite(id: number) {
 
 const tiles = computed(() => {
   const q = query.value.trim().toLowerCase();
-  return state.characters
-    .map((c, id) => ({ id, name: c?.name ?? "", taken: !!c?.taken, favourite: favourites.value.has(id) }))
-    .filter((t) => t.name && (!q || t.name.toLowerCase().includes(q)))
-    .sort((a, b) => Number(b.favourite) - Number(a.favourite) || a.id - b.id);
+  const choices = state.characters
+    .map((c, id) => ({ id, name: c?.name ?? "", taken: !!c?.taken, favourite: favourites.value.has(id), current: state.self.charId === id }))
+    .filter((t) => t.name && (!q || t.name.toLowerCase().includes(q)));
+  return orderCharacters(choices);
 });
 
 const initials = (name: string) =>
@@ -100,11 +101,11 @@ function close() {
       </p>
 
       <ul class="grid" role="listbox" aria-label="Characters">
-        <li v-for="t in tiles.slice(0, rendered)" :key="t.id" class="tile" :class="{ taken: t.taken, current: state.self.charId === t.id }">
+        <li v-for="t in tiles.slice(0, rendered)" :key="t.id" class="tile" :class="{ taken: t.taken, current: t.current }">
           <button
             class="pick"
             role="option"
-            :aria-selected="state.self.charId === t.id"
+            :aria-selected="t.current"
             :aria-disabled="t.taken"
             :disabled="t.taken"
             :title="t.taken ? `${t.name} (taken)` : t.name"
