@@ -152,4 +152,22 @@ describe("protocol", () => {
     await settle(100);
     expect(wires(page).some((w) => w.startsWith("C: PE#") && w.includes("test.png"))).toBe(true);
   });
+
+  test("character select puts the current character first", async () => {
+    const page = await openClient(browser, server);
+    await joinAs(page, "Phoenix");
+    await clickButton(page, ".panel", "Change character");
+    await page.waitForSelector(".sheet .tile .pick");
+
+    const first = await page.$eval(".sheet .tile", (tile) => ({
+      name: tile.querySelector(".name")?.textContent?.trim(),
+      current: tile.classList.contains("current"),
+      selected: tile.querySelector(".pick")?.getAttribute("aria-selected"),
+    }));
+    expect(first).toEqual({ name: "Phoenix", current: true, selected: "true" });
+
+    // The star on the current tile can favorite the character you just picked.
+    await page.click(".sheet .tile .star");
+    expect(await page.$eval(".sheet .tile .star", (star) => star.getAttribute("aria-pressed"))).toBe("true");
+  });
 });
