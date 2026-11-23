@@ -80,6 +80,8 @@ const schema = {
   offsetLockX: field("offsetLockX", flagText, false),
   offsetLockY: field("offsetLockY", flagText, true),
   hideDesks: field("hideDesks", flagText, false),
+  /** Judge's defense/prosecution controls; off until the player shows them. */
+  showPenaltyBars: field("showPenaltyBars", flagText, false),
   chatOffset: field("chatOffset", range(0, 100), 0),
   preanimGlow: field("preanimGlowEnabled", flagText, true),
   preanimGlowColor: field("preanimGlowColor", text, "#ffcf4d"),

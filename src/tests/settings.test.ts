@@ -21,6 +21,13 @@ describe("settings", () => {
     expect(settings.preanimGlow).toBe(true);
     expect(settings.panTilt).toBe(false);
     expect(settings.callwords).toEqual([]);
+    expect(settings.showPenaltyBars).toBe(false);
+  });
+
+  test("penalty bar controls are opt-in", () => {
+    setSetting("showPenaltyBars", true);
+    expect(settings.showPenaltyBars).toBe(true);
+    expect(localStorage.getItem("showPenaltyBars")).toBe("true");
   });
 
   test("reads values written by the legacy UI", () => {

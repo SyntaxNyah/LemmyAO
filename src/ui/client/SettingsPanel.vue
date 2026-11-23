@@ -33,7 +33,7 @@ const SECTIONS: Record<string, string> = {
   audio: "audio volume music sfx sound effects blips mute",
   voice: "voice chat microphone mic push to talk ptt",
   appearance:
-    "appearance theme modern classic accent colour color font dialogue chatbox courtroom 16:9 widescreen aspect inset offset pan tilt desks",
+    "appearance theme modern classic accent colour color font dialogue chatbox courtroom 16:9 widescreen aspect inset offset pan tilt desks penalty bar hp health judge",
   chat: "chat callwords mention modcall sound",
   layout: "layout tabs tab order arrange move split edit mode resize size panels export import share json file",
   log: "log chat log download export transcript txt html",
@@ -88,7 +88,7 @@ const DEFAULT_ACCENT = "#6d8cff";
 const RESET_KEYS: SettingKey[] = [
   "font", "customFont", "musicVolume", "sfxVolume", "blipVolume", "blipPitch",
   "musicMuted", "sfxMuted", "blipMuted", "callwords", "showname",
-  "panTilt", "hideDesks", "widescreen", "chatOffset", "preanimGlow", "preanimGlowColor",
+  "panTilt", "hideDesks", "widescreen", "showPenaltyBars", "chatOffset", "preanimGlow", "preanimGlowColor",
   "preanimGlowIntensity", "theme", "accent", "tabOrder", "offsetLockX", "offsetLockY",
 ];
 const confirmReset = ref(false);
@@ -222,6 +222,7 @@ const checkbox = (key: SettingKey) => ({
         <label class="check"><input type="checkbox" v-bind="checkbox('widescreen')" /> 16:9 viewport</label>
         <label class="check"><input type="checkbox" v-bind="checkbox('panTilt')" /> Pan between positions</label>
         <label class="check"><input type="checkbox" v-bind="checkbox('hideDesks')" /> Hide desks</label>
+        <label class="check"><input type="checkbox" v-bind="checkbox('showPenaltyBars')" /> Penalty bar controls</label>
       </div>
       <label v-if="settings.widescreen" class="field narrow">
         <span class="field-label">Chatbox inset <span class="value">{{ settings.chatOffset }}%</span></span>

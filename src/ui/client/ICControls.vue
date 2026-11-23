@@ -199,12 +199,12 @@ const pickedName = computed(() => state.characters[state.self.charId]?.name ?? "
         <button class="btn" @click="playTestimony(RTAnimation.cross_examination)">Cross-examination</button>
         <button class="btn" @click="playTestimony(RTAnimation.not_guilty)">Not guilty</button>
         <button class="btn" @click="playTestimony(RTAnimation.guilty)">Guilty</button>
-        <span class="hp">
+        <span v-if="settings.showPenaltyBars" class="hp">
           Defense
           <button class="btn" aria-label="Lower defense health" @click="changeHealth(PenaltyBar.defense, -1)">−</button>
           <button class="btn" aria-label="Raise defense health" @click="changeHealth(PenaltyBar.defense, 1)">+</button>
         </span>
-        <span class="hp">
+        <span v-if="settings.showPenaltyBars" class="hp">
           Prosecution
           <button class="btn" aria-label="Lower prosecution health" @click="changeHealth(PenaltyBar.prosecution, -1)">−</button>
           <button class="btn" aria-label="Raise prosecution health" @click="changeHealth(PenaltyBar.prosecution, 1)">+</button>
