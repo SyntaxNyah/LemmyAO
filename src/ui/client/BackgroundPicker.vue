@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 import {
   backgrounds,
   backgroundFolder,
@@ -11,6 +11,8 @@ import { state } from "../../core/state";
 import { changeBackground } from "../../core/commands";
 import { getFavouriteBackgrounds, setFavouriteBackgrounds } from "../../core/settings";
 import { orderBackgrounds, type BackgroundChoice } from "./backgroundOrder";
+import { availableBackgroundPositions, backgroundPositionFile, type BackgroundPosition } from "./backgroundPositions";
+import CaretIcon from "./CaretIcon.vue";
 import AssetImage from "./AssetImage.vue";
 import PictureIcon from "./PictureIcon.vue";
 
@@ -63,6 +65,10 @@ function renderRestSoon(delay: number) {
 
 interface Preview {
   name: string;
+  positions: BackgroundPosition[];
+  files: string[];
+  index: number;
+  label?: string;
   file?: string;
   src?: string;
   base?: string;
@@ -112,27 +118,52 @@ function toggleFavourite(name: string) {
 
 async function previewRandom(name: string) {
   const seq = ++previewSeq;
-  preview.value = { name, loading: true };
+  preview.value = { name, positions: [], files: [], index: 0, loading: true };
   const files = await backgroundImages(name);
   if (seq !== previewSeq) return;
-  const file = files[Math.floor(Math.random() * files.length)];
-  if (file) {
-    preview.value = {
-      name,
-      file,
-      src: `${backgroundFolder(state.server.assetHost, name)}${encodeURIComponent(file)}`,
-    };
-  } else {
-    preview.value = {
-      name,
-      file: "defenseempty",
-      base: backgroundPreviewBase(state.server.assetHost, name),
-    };
-  }
+  const positions = availableBackgroundPositions(files);
+  const index = Math.floor(Math.random() * positions.length);
+  preview.value = { name, positions, files, index };
+  showPreviewPosition();
 }
+
+function showPreviewPosition() {
+  const p = preview.value;
+  if (!p) return;
+  const position = p.positions[p.index];
+  const file = backgroundPositionFile(position, p.files);
+  p.label = position.label;
+  p.file = file ?? `${position.image}${backgrounds.extensions[0] ?? ""}`;
+  p.src = file ? `${backgroundFolder(state.server.assetHost, p.name)}${encodeURIComponent(file)}` : undefined;
+  p.base = file ? undefined : backgroundPreviewBase(state.server.assetHost, p.name, position.image);
+}
+
+function stepPreview(delta: number) {
+  const p = preview.value;
+  if (!p || p.positions.length < 2) return;
+  p.index = (p.index + delta + p.positions.length) % p.positions.length;
+  showPreviewPosition();
+}
+
+const autoCycle = ref(false);
+let cycleTimer: ReturnType<typeof setInterval> | undefined;
+
+function clearCycle() {
+  clearInterval(cycleTimer);
+  cycleTimer = undefined;
+}
+
+watch([autoCycle, preview], ([on, p]) => {
+  clearCycle();
+  if (on && p && !p.loading && p.positions.length > 1) {
+    cycleTimer = setInterval(() => stepPreview(1), 1200);
+  }
+});
 
 function closePreview() {
   previewSeq++;
+  clearCycle();
+  autoCycle.value = false;
   preview.value = null;
 }
 
@@ -140,6 +171,8 @@ function onEscape() {
   if (preview.value) closePreview();
   else close();
 }
+
+onUnmounted(clearCycle);
 </script>
 <template>
   <Teleport to="body">
@@ -162,7 +195,7 @@ function onEscape() {
         </div>
 
         <p class="hint">
-          Loaded from the server's background folder. Right-click a tile to preview a random image; on touch, tap the
+          Loaded from the server's background folder. Right-click a tile to preview its positions; on touch, tap the
           picture.
         </p>
 
@@ -207,8 +240,8 @@ function onEscape() {
             <button
               class="preview"
               type="button"
-              :aria-label="`Preview a random image of ${t.name}`"
-              title="Preview a random image"
+              :aria-label="`Preview ${t.name} positions`"
+              title="Preview positions"
               @click.stop="previewRandom(t.name)"
             >
               <PictureIcon />
@@ -221,7 +254,9 @@ function onEscape() {
         <figure class="preview-card" role="dialog" aria-modal="true" aria-label="Background preview">
           <figcaption>
             <strong>{{ preview.name }}</strong>
+            <span v-if="preview.label" class="position-label">{{ preview.label }}</span>
             <span v-if="preview.file" class="file">{{ preview.file }}</span>
+            <span v-if="preview.positions.length" class="count">{{ preview.index + 1 }} / {{ preview.positions.length }}</span>
             <button class="icon-btn" type="button" aria-label="Close preview" title="Close preview" @click="closePreview">
               ✕
             </button>
@@ -237,8 +272,33 @@ function onEscape() {
               <template #fallback><span class="muted">No preview.</span></template>
             </AssetImage>
             <img v-else-if="preview.src" :src="preview.src" :alt="`${preview.name} preview`" />
+            <template v-if="!preview.loading && preview.positions.length > 1">
+              <button
+                class="preview-arrow left"
+                type="button"
+                aria-label="Previous position"
+                title="Previous position"
+                @click.stop="stepPreview(-1)"
+              >
+                <CaretIcon direction="left" />
+              </button>
+              <button
+                class="preview-arrow right"
+                type="button"
+                aria-label="Next position"
+                title="Next position"
+                @click.stop="stepPreview(1)"
+              >
+                <CaretIcon direction="right" />
+              </button>
+            </template>
           </div>
-          <p class="preview-hint">Right-click again for another image.</p>
+          <div class="preview-footer">
+            <label v-if="!preview.loading && preview.positions.length > 1" class="cycle">
+              <input v-model="autoCycle" type="checkbox" /> Auto-cycle
+            </label>
+            <span class="preview-hint">Use the arrows to cycle positions.</span>
+          </div>
         </figure>
       </div>
     </div>
@@ -524,4 +584,101 @@ function onEscape() {
     padding: 10px;
   }
 }
-</style>
+.preview-image {
+  position: relative;
+}
+
+.preview-card .position-label {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.preview-card .count {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.preview-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.5);
+  color: #fff;
+  font-size: 26px;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.preview-arrow:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.preview-arrow:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.preview-arrow.left {
+  left: 12px;
+}
+
+.preview-arrow.right {
+  right: 12px;
+}
+
+.preview-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+.preview-hint {
+  margin: 0;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.cycle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+@media (max-width: 600px) {
+  .preview-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+
+  .preview-arrow.left {
+    left: 8px;
+  }
+
+  .preview-arrow.right {
+    right: 8px;
+  }
+}</style>
