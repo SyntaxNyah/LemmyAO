@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { state } from "../../core/state";
-import { backgrounds, searchBackgrounds } from "../../core/backgrounds";
+import { backgrounds, backgroundPreviewBase, searchBackgrounds } from "../../core/backgrounds";
 import { changeBackground } from "../../core/commands";
 import ComboBox, { type ComboItem } from "../components/ComboBox.vue";
 import AssetImage from "./AssetImage.vue";
-
-const BG_EXTENSIONS = [".png", ".gif", ".webp", ".apng"];
+import BackgroundPicker from "./BackgroundPicker.vue";
+import PictureIcon from "./PictureIcon.vue";
 
 const query = ref("");
+const pickerOpen = ref(false);
 const current = computed(() => state.court.background);
-const previewBase = (name: string) =>
-  `${state.server.assetHost}background/${encodeURI(name.toLowerCase())}/defenseempty`;
 
 const results = computed<ComboItem[]>(() => {
   const isCurrent = (name: string) => name.toLowerCase() === current.value.toLowerCase();
@@ -43,8 +42,8 @@ function pick(item: ComboItem) {
           <AssetImage
             v-if="current"
             :key="current"
-            :base="previewBase(current)"
-            :extensions="BG_EXTENSIONS"
+            :base="backgroundPreviewBase(state.server.assetHost, current)"
+            :extensions="backgrounds.extensions"
             :alt="`${current} background`"
           />
         </div>
@@ -53,7 +52,18 @@ function pick(item: ComboItem) {
     </section>
 
     <section>
-      <h3>Change background</h3>
+      <div class="section-head">
+        <h3>Change background</h3>
+        <button
+          class="browse"
+          type="button"
+          aria-label="Browse backgrounds"
+          title="Browse the server's full background list. Right-click a tile to preview a random image."
+          @click="pickerOpen = true"
+        >
+          <PictureIcon />
+        </button>
+      </div>
       <div class="search">
         <ComboBox
           v-model="query"
@@ -65,6 +75,7 @@ function pick(item: ComboItem) {
         />
       </div>
     </section>
+    <BackgroundPicker v-model:open="pickerOpen" />
   </div>
 </template>
 
@@ -114,4 +125,39 @@ h3 {
   gap: 8px;
   max-width: 420px;
 }
-</style>
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.section-head h3 {
+  margin: 0;
+}
+
+.browse {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.browse:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.browse:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}</style>
