@@ -24,6 +24,7 @@ describe("settings", () => {
     expect(settings.panTilt).toBe(false);
     expect(settings.callwords).toEqual([]);
     expect(settings.showPenaltyBars).toBe(false);
+    expect(settings.showBackgroundPositions).toBe(true);
   });
 
   test("penalty bar controls are opt-in", () => {

@@ -88,7 +88,7 @@ const DEFAULT_ACCENT = "#6d8cff";
 const RESET_KEYS: SettingKey[] = [
   "font", "customFont", "musicVolume", "sfxVolume", "blipVolume", "blipPitch",
   "musicMuted", "sfxMuted", "blipMuted", "callwords", "showname",
-  "panTilt", "hideDesks", "widescreen", "showPenaltyBars", "chatOffset", "preanimGlow", "preanimGlowColor",
+  "panTilt", "hideDesks", "widescreen", "showPenaltyBars", "showBackgroundPositions", "chatOffset", "preanimGlow", "preanimGlowColor",
   "preanimGlowIntensity", "theme", "accent", "tabOrder", "offsetLockX", "offsetLockY",
 ];
 const confirmReset = ref(false);

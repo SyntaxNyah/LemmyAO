@@ -82,6 +82,8 @@ const schema = {
   hideDesks: field("hideDesks", flagText, false),
   /** Judge's defense/prosecution controls; off until the player shows them. */
   showPenaltyBars: field("showPenaltyBars", flagText, false),
+  /** Show the position thumbnails under the Background tab; toggled from that panel. */
+  showBackgroundPositions: field("showBackgroundPositions", flagText, true),
   chatOffset: field("chatOffset", range(0, 100), 0),
   preanimGlow: field("preanimGlowEnabled", flagText, true),
   preanimGlowColor: field("preanimGlowColor", text, "#ffcf4d"),
