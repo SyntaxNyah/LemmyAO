@@ -36,9 +36,12 @@ const ASSETS: Record<string, Buffer | string> = {
   "/sounds/general/sfx-test.opus": wav(SFX_MS, 660),
   "/evidence.json": JSON.stringify(["test.png"]),
   "/evidence/test.png": png([200, 40, 40]),
-  "/background/gs4/": '<a href="defenseempty.png">defenseempty.png</a><a href="prosecutorempty.png">prosecutorempty.png</a>',
+  "/background/gs4/": '<a href="defenseempty.png">defenseempty.png</a><a href="prosecutorempty.png">prosecutorempty.png</a><a href="helperstand.png">helperstand.png</a><a href="prohelperstand.png">prohelperstand.png</a><a href="witnessempty.png">witnessempty.png</a><a href="judgestand.png">judgestand.png</a>',
   "/background/gs4/defenseempty.png": png([30, 60, 90]),
-  "/background/gs4/prosecutorempty.png": png([90, 60, 30]),
+  "/background/gs4/prosecutorempty.png": png([90, 60, 30]),  "/background/gs4/helperstand.png": png([20, 80, 40]),
+  "/background/gs4/prohelperstand.png": png([80, 20, 40]),
+  "/background/gs4/witnessempty.png": png([40, 40, 120]),
+  "/background/gs4/judgestand.png": png([120, 80, 20]),
 };
 for (const name of ["phoenix", "edgeworth"]) {
   ASSETS[`/characters/${name}/char.ini`] = name === "phoenix" ? charIni("Phoenix") : charIni("Edgeworth", "aa");
