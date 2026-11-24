@@ -52,8 +52,18 @@ function pick(item: ComboItem) {
     </section>
 
     <section>
-      <div class="section-head">
-        <h3>Change background</h3>
+      <h3>Change background</h3>
+      <div class="browse-row">
+        <div class="search">
+        <ComboBox
+          v-model="query"
+          :items="results"
+          label="Backgrounds"
+          placeholder="Search backgrounds…"
+          :empty-text="backgrounds.loading ? 'Loading backgrounds…' : 'No backgrounds found.'"
+          @pick="pick"
+        />
+        </div>
         <button
           class="browse"
           type="button"
@@ -63,16 +73,6 @@ function pick(item: ComboItem) {
         >
           <PictureIcon />
         </button>
-      </div>
-      <div class="search">
-        <ComboBox
-          v-model="query"
-          :items="results"
-          label="Backgrounds"
-          placeholder="Search backgrounds…"
-          :empty-text="backgrounds.loading ? 'Loading backgrounds…' : 'No backgrounds found.'"
-          @pick="pick"
-        />
       </div>
     </section>
     <BackgroundPicker v-model:open="pickerOpen" />
@@ -126,35 +126,37 @@ h3 {
   max-width: 420px;
 }
 
-.section-head {
+.browse-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: 8px;
-  margin-bottom: 8px;
+  max-width: 480px;
 }
 
-.section-head h3 {
-  margin: 0;
+.browse-row .search {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
 }
 
 .browse {
   flex: none;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: none;
-  color: var(--text-muted);
-  font-size: 18px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 22px;
   cursor: pointer;
 }
 
 .browse:hover {
+  border-color: var(--accent);
   background: var(--surface-hover);
-  color: var(--text);
+  color: var(--accent);
 }
 
 .browse:focus-visible {
