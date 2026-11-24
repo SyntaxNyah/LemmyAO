@@ -36,6 +36,9 @@ const ASSETS: Record<string, Buffer | string> = {
   "/sounds/general/sfx-test.opus": wav(SFX_MS, 660),
   "/evidence.json": JSON.stringify(["test.png"]),
   "/evidence/test.png": png([200, 40, 40]),
+  "/background/gs4/": '<a href="defenseempty.png">defenseempty.png</a><a href="prosecutorempty.png">prosecutorempty.png</a>',
+  "/background/gs4/defenseempty.png": png([30, 60, 90]),
+  "/background/gs4/prosecutorempty.png": png([90, 60, 30]),
 };
 for (const name of ["phoenix", "edgeworth"]) {
   ASSETS[`/characters/${name}/char.ini`] = name === "phoenix" ? charIni("Phoenix") : charIni("Edgeworth", "aa");
