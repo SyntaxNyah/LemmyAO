@@ -1,13 +1,17 @@
 import { reactive } from "@vue/reactivity";
 import vanillaBackgrounds from "../constants/backgrounds";
 import { parseBackgroundFolderListing } from "../utils/parseBackgroundFolderListing";
+import { parseBackgroundImageListing } from "../utils/parseBackgroundImageListing";
 import { state } from "./state";
 import { on } from "./events";
 
 type Fetch = (url: string) => Promise<Response>;
 
+export const BACKGROUND_EXTENSIONS = [".png", ".gif", ".webp", ".apng"];
+
 export const backgrounds = reactive({
   names: [] as string[],
+  extensions: [...BACKGROUND_EXTENSIONS],
   loading: false,
 });
 
@@ -58,3 +62,32 @@ export function searchBackgrounds(names: readonly string[], query: string, limit
 on("joined", () => {
   loadBackgrounds();
 });
+
+/** The asset host's preferred background extension order, once it publishes extensions.json. */
+export function setBackgroundExtensions(extensions: readonly string[]) {
+  if (extensions.length) backgrounds.extensions = [...extensions];
+}
+
+/** The URL of a background's folder, with a trailing slash. */
+export const backgroundFolder = (host: string, name: string) =>
+  `${host}background/${encodeURI(name.toLowerCase())}/`;
+
+/** A background image base, with the extension left off for AssetImage. */
+export const backgroundPreviewBase = (host: string, name: string, image = "defenseempty") =>
+  `${backgroundFolder(host, name)}${image}`;
+
+const imageCache = new Map<string, Promise<string[]>>();
+
+/** The image filenames in a background folder; [] when the host has no listing. */
+export function backgroundImages(name: string, fetchFn: Fetch = fetch): Promise<string[]> {
+  const host = state.server.assetHost;
+  const key = `${host}|${name.toLowerCase()}`;
+  let images = imageCache.get(key);
+  if (!images) {
+    images = text(fetchFn, backgroundFolder(host, name))
+      .then(parseBackgroundImageListing)
+      .catch((): string[] => []);
+    imageCache.set(key, images);
+  }
+  return images;
+}

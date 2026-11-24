@@ -7,6 +7,8 @@ import {
   reloadSettings,
   getFavourites,
   setFavourites,
+  getFavouriteBackgrounds,
+  setFavouriteBackgrounds,
 } from "../core/settings";
 
 beforeEach(() => {
@@ -128,5 +130,21 @@ describe("favourites", () => {
     expect(getFavourites("h").size).toBe(0);
     localStorage.setItem("favourites_h", '[1,"x",2.5,3]');
     expect([...getFavourites("h")]).toEqual([1, 3]);
+  });
+});
+
+describe("background favourites", () => {
+  test("are stored per asset host, lowercased", () => {
+    setFavouriteBackgrounds("https://a.example/", ["GS4", "Anime"]);
+    expect([...getFavouriteBackgrounds("https://a.example/")]).toEqual(["gs4", "anime"]);
+    expect(getFavouriteBackgrounds("https://b.example/").size).toBe(0);
+    expect(localStorage.getItem("favouriteBackgrounds_https://a.example/")).toBe('["gs4","anime"]');
+  });
+
+  test("survive corrupt storage", () => {
+    localStorage.setItem("favouriteBackgrounds_h", "{not json");
+    expect(getFavouriteBackgrounds("h").size).toBe(0);
+    localStorage.setItem("favouriteBackgrounds_h", '["GS4", 7, "anime"]');
+    expect([...getFavouriteBackgrounds("h")]).toEqual(["gs4", "anime"]);
   });
 });

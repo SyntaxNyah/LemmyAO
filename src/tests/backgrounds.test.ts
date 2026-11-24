@@ -1,5 +1,12 @@
 import { describe, test, expect, beforeEach } from "bun:test";
-import { backgrounds, loadBackgrounds, searchBackgrounds } from "../core/backgrounds";
+import {
+  backgroundImages,
+  backgrounds,
+  loadBackgrounds,
+  searchBackgrounds,
+  setBackgroundExtensions,
+} from "../core/backgrounds";
+import { parseBackgroundImageListing } from "../utils/parseBackgroundImageListing";
 import { state } from "../core/state";
 import vanilla from "../constants/backgrounds";
 
@@ -36,4 +43,36 @@ test("searchBackgrounds ranks prefix matches first and caps the list", () => {
   expect(searchBackgrounds(names, "gs")).toEqual(["gs4"]);
   expect(searchBackgrounds(names, "court")).toEqual(["Courtroom", "County Court", "Old Court"]);
   expect(searchBackgrounds(names, "", 2)).toEqual(["Courtroom", "County Court"]);
+});
+
+describe("parseBackgroundImageListing", () => {
+  test("keeps image files and skips links that are not images", () => {
+    const html = `<a href="../">../</a><a href="sub/">sub/</a><a href="defenseempty.webp">defenseempty.webp</a><a href="my%20bg.png">my bg.png</a><a href="https://other.example/x.png">x</a><a href="?C=N">sort</a><a href="notes.txt">notes</a>`;
+    expect(parseBackgroundImageListing(html)).toEqual(["defenseempty.webp", "my bg.png"]);
+  });
+});
+
+describe("backgroundImages", () => {
+  test("reads a background folder listing and caches it", async () => {
+    const urls: string[] = [];
+    const images = await backgroundImages("CacheTown", (url) => {
+      urls.push(url);
+      return respond('<a href="defenseempty.png">defenseempty.png</a><a href="sub/">sub/</a>');
+    });
+    expect(images).toEqual(["defenseempty.png"]);
+    expect(urls).toEqual(["https://assets.example/base/background/cachetown/"]);
+    await backgroundImages("CacheTown", () => respond(""));
+    expect(urls).toHaveLength(1);
+  });
+
+  test("returns an empty list when the host has no folder listing", async () => {
+    expect(await backgroundImages("MissingTown", () => respond("", false))).toEqual([]);
+  });
+});
+
+test("setBackgroundExtensions follows the server's preferred order", () => {
+  setBackgroundExtensions([".webp"]);
+  expect(backgrounds.extensions).toEqual([".webp"]);
+  setBackgroundExtensions([".png", ".webp"]);
+  expect(backgrounds.extensions).toEqual([".png", ".webp"]);
 });

@@ -185,3 +185,23 @@ export function getFavourites(host: string): Set<number> {
 export function setFavourites(host: string, ids: Iterable<number>) {
   write(favouritesKey(host), JSON.stringify([...ids]));
 }
+
+const backgroundFavouritesKey = (host: string) => `favouriteBackgrounds_${host}`;
+
+/** Favourite background folder names (lowercased), stored per asset host. */
+export function getFavouriteBackgrounds(host: string): Set<string> {
+  try {
+    const parsed = JSON.parse(read(backgroundFavouritesKey(host)) ?? "[]");
+    return new Set(
+      Array.isArray(parsed)
+        ? parsed.filter((name): name is string => typeof name === "string").map((name) => name.toLowerCase())
+        : [],
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+export function setFavouriteBackgrounds(host: string, names: Iterable<string>) {
+  write(backgroundFavouritesKey(host), JSON.stringify([...names].map((name) => name.toLowerCase())));
+}
