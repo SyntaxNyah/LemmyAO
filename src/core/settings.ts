@@ -80,7 +80,7 @@ const schema = {
   offsetLockX: field("offsetLockX", flagText, false),
   offsetLockY: field("offsetLockY", flagText, true),
   hideDesks: field("hideDesks", flagText, false),
-  /** Judge's defense/prosecution controls; off until the player shows them. */
+  /** Draws defense/prosecution health bars on the stage; off by default. */
   showPenaltyBars: field("showPenaltyBars", flagText, false),
   /** Show the position thumbnails under the Background tab; toggled from that panel. */
   showBackgroundPositions: field("showBackgroundPositions", flagText, true),

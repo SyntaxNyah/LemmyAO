@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, provide, reactive, ref, wat
 import { focusICInput } from "./focus";
 import { mountViewport } from "../../viewport/mount";
 import VoiceSpeakers from "./VoiceSpeakers.vue";
+import PenaltyBars from "./PenaltyBars.vue";
 import ICLog from "./ICLog.vue";
 import ICControls from "./ICControls.vue";
 import SettingsPanel from "./SettingsPanel.vue";
@@ -221,6 +222,7 @@ onUnmounted(() => {
             <div :ref="setViewportHost" class="legacy viewport"></div>
             <OffsetGhost v-if="offsetPreview" />
             <VoiceSpeakers />
+            <PenaltyBars />
           </div>
         </div>
         <form class="ic-input" @submit.prevent="sendMessage">

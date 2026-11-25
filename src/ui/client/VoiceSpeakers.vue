@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import { settings } from "../../core/settings";
 import { voiceUi } from "../../voice/voiceUI";
 </script>
 
 <template>
-  <ul v-if="voiceUi.speakers.length" class="speakers" aria-live="polite" aria-label="Speaking in voice chat">
+  <ul
+    v-if="voiceUi.speakers.length"
+    class="speakers"
+    :style="{ top: settings.showPenaltyBars ? '44px' : undefined }"
+    aria-live="polite"
+    aria-label="Speaking in voice chat"
+  >
     <li v-for="s in voiceUi.speakers" :key="`${s.self}:${s.uid}`" :class="{ self: s.self }">
       <span class="dot" aria-hidden="true"></span>
       <span class="name">{{ s.label }}</span>

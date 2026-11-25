@@ -27,7 +27,7 @@ describe("settings", () => {
     expect(settings.showBackgroundPositions).toBe(true);
   });
 
-  test("penalty bar controls are opt-in", () => {
+  test("penalty bars are opt-in", () => {
     setSetting("showPenaltyBars", true);
     expect(settings.showPenaltyBars).toBe(true);
     expect(localStorage.getItem("showPenaltyBars")).toBe("true");

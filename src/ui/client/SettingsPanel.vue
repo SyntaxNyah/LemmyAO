@@ -222,7 +222,7 @@ const checkbox = (key: SettingKey) => ({
         <label class="check"><input type="checkbox" v-bind="checkbox('widescreen')" /> 16:9 viewport</label>
         <label class="check"><input type="checkbox" v-bind="checkbox('panTilt')" /> Pan between positions</label>
         <label class="check"><input type="checkbox" v-bind="checkbox('hideDesks')" /> Hide desks</label>
-        <label class="check"><input type="checkbox" v-bind="checkbox('showPenaltyBars')" /> Penalty bar controls</label>
+        <label class="check"><input type="checkbox" v-bind="checkbox('showPenaltyBars')" /> Penalty bars</label>
       </div>
       <label v-if="settings.widescreen" class="field narrow">
         <span class="field-label">Chatbox inset <span class="value">{{ settings.chatOffset }}%</span></span>
