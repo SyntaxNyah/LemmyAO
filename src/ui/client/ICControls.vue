@@ -10,6 +10,7 @@ import EmoteTile from "./EmoteTile.vue";
 import { focusICInput } from "./focus";
 import { charSelectOpen } from "./overlays";
 import OffsetPad from "./OffsetPad.vue";
+import { pulseOffsetPreview } from "./offsetPreview";
 import ComboBox, { type ComboItem } from "../components/ComboBox.vue";
 
 const character = computed(() => state.self.character);
@@ -83,9 +84,38 @@ const showJudge = computed(
     (state.self.judgeControls === "by_position" && draft.side === Side.jud),
 );
 
+const clampOffset = (value: number) => Math.min(100, Math.max(-100, Math.round(value)));
+
+function setOffset(axis: "x" | "y", value: number) {
+  draft.pair.offset[axis] = clampOffset(value);
+  pulseOffsetPreview();
+}
+
+function editOffset(axis: "x" | "y", event: Event) {
+  const input = event.target as HTMLInputElement;
+  const text = input.value.trim();
+  if (!text || text === "-") return;
+  const value = Number(text);
+  if (!Number.isFinite(value)) return;
+  setOffset(axis, value);
+  input.value = String(draft.pair.offset[axis]);
+}
+
+function syncOffset(axis: "x" | "y", event: Event) {
+  (event.target as HTMLInputElement).value = String(draft.pair.offset[axis]);
+}
+
+function wheelOffset(axis: "x" | "y", event: WheelEvent) {
+  const locked = axis === "x" ? settings.offsetLockX : settings.offsetLockY;
+  if (locked) return;
+  const step = event.shiftKey ? 10 : 1;
+  setOffset(axis, draft.pair.offset[axis] + (event.deltaY < 0 ? step : -step));
+}
+
 function resetOffsets() {
   draft.pair.offset.x = 0;
   draft.pair.offset.y = 0;
+  pulseOffsetPreview();
 }
 
 const openCharacterSelect = () => (charSelectOpen.value = true);
@@ -226,11 +256,49 @@ const pickedName = computed(() => state.characters[state.self.charId]?.name ?? "
         </div>
         <div class="pad-side">
           <dl class="readout">
-            <dt>Horizontal</dt>
-            <dd>{{ draft.pair.offset.x }}%</dd>
+            <dt><label for="offset-x">Horizontal</label></dt>
+            <dd>
+              <span class="offset-value">
+                <input
+                  id="offset-x"
+                  class="offset-input"
+                  type="number"
+                  inputmode="numeric"
+                  min="-100"
+                  max="100"
+                  step="1"
+                  title="Type a value or scroll to adjust"
+                  :value="draft.pair.offset.x"
+                  :disabled="settings.offsetLockX"
+                  @input="editOffset('x', $event)"
+                  @blur="syncOffset('x', $event)"
+                  @wheel.prevent="wheelOffset('x', $event)"
+                />
+                <span aria-hidden="true">%</span>
+              </span>
+            </dd>
             <template v-if="features.has('y_offset')">
-              <dt>Vertical</dt>
-              <dd>{{ draft.pair.offset.y }}%</dd>
+              <dt><label for="offset-y">Vertical</label></dt>
+              <dd>
+                <span class="offset-value">
+                  <input
+                    id="offset-y"
+                    class="offset-input"
+                    type="number"
+                    inputmode="numeric"
+                    min="-100"
+                    max="100"
+                    step="1"
+                    title="Type a value or scroll to adjust"
+                    :value="draft.pair.offset.y"
+                    :disabled="settings.offsetLockY"
+                    @input="editOffset('y', $event)"
+                    @blur="syncOffset('y', $event)"
+                    @wheel.prevent="wheelOffset('y', $event)"
+                  />
+                  <span aria-hidden="true">%</span>
+                </span>
+              </dd>
             </template>
           </dl>
           <label class="check">
@@ -414,7 +482,8 @@ const pickedName = computed(() => state.characters[state.self.charId]?.name ?? "
 .readout {
   display: grid;
   grid-template-columns: auto auto;
-  gap: 4px 10px;
+  align-items: center;
+  gap: 6px 10px;
   margin: 0;
   font-size: 13px;
 }
@@ -428,6 +497,41 @@ const pickedName = computed(() => state.characters[state.self.charId]?.name ?? "
   margin: 0;
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+.offset-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.offset-input {
+  width: 64px;
+  min-height: 36px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.offset-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.offset-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.offset-value span {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .mute {
